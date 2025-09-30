@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Satellite Dashboard – New View</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #121212;
+      color: #f0f0f0;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #2c2c2c;
+      padding: 15px 25px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 22px;
+      color: #f0f0f0;
+    }
+
+    .top-buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .top-buttons a {
+      background: #007acc;
+      color: #fff;
+      padding: 8px 14px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    .top-buttons a:hover {
+      background: #005f99;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 14px rgba(0,0,0,0.5);
+    }
+
+    main {
+      margin: 20px;
+    }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .tabs button {
+      padding: 12px 20px;
+      background: #1e1e1e;
+      color: #f0f0f0;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+
+    .tabs button.active {
+      background: #007acc;
+      color: white;
+    }
+
+    .tabs button:hover {
+      background: #2a2a2a;
+    }
+
+    .tab-content {
+      opacity: 0;
+      max-height: 0;
+      overflow: hidden;
+      transition: opacity 0.5s ease, max-height 0.5s ease;
+    }
+
+    .tab-content.active {
+      opacity: 1;
+      max-height: 3000px; /* large enough for tall plots */
+    }
+
+    .card {
+      background: #1e1e1e;
+      border-radius: 12px;
+      padding: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+      margin-bottom: 20px;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.7);
+      background: #2a2a2a;
+    }
+
+    .card h3 {
+      margin-top: 0;
+      color: #f0f0f0;
+    }
+
+    iframe {
+      width: 100%;
+      height: 700px;
+      border: none;
+      border-radius: 8px;
+      background: #000;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+    }
+
+    .card iframe:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+      filter: brightness(1.1);
+    }
+
+    @media (max-width: 600px) {
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .top-buttons {
+        margin-top: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Satellite Dashboard – New View</h1>
+  <div class="top-buttons">
+    <a href="index.html">🏠 Main Grid</a>
+    <a href="overview_starlink.html">📊 Overview</a>
+  </div>
+</header>
+
+<main>
+  <div class="tabs">
+    <button class="active" onclick="showTab('globe', this)">🌍 Globe View</button>
+    <button onclick="showTab('ground', this)">🛰 Ground Tracks</button>
+    <button onclick="showTab('altitude', this)">📈 Altitude History</button>
+    <button onclick="showTab('category', this)">🗂 Satellite Category</button>
+    <button onclick="showTab('distribution', this)">🌌 Orbital Distribution</button>
+    <button onclick="showTab('starlink', this)">⭐ Starlink Plot</button>
+  </div>
+
+  <div id="globe" class="tab-content active">
+    <div class="card"><h3>🌍 Globe View</h3><iframe src="globe_tracks.html"></iframe></div>
+  </div>
+  <div id="ground" class="tab-content">
+    <div class="card"><h3>🛰 Ground Tracks</h3><iframe src="ground_tracks.html"></iframe></div>
+  </div>
+  <div id="altitude" class="tab-content">
+    <div class="card"><h3>📈 Altitude History</h3><iframe src="historical_orbital_parameters.html"></iframe></div>
+  </div>
+  <div id="category" class="tab-content">
+    <div class="card"><h3>🗂 Satellite Category</h3><iframe src="satellite_altitude_by_category.html"></iframe></div>
+  </div>
+  <div id="distribution" class="tab-content">
+    <div class="card"><h3>🌌 Orbital Distribution</h3><iframe src="orbital_distributions_titles_higher.html"></iframe></div>
+  </div>
+  <div id="starlink" class="tab-content">
+    <div class="card"><h3>⭐ Interactive Starlink Plot</h3><iframe src="starlink_interactive_satellite_plot.html"></iframe></div>
+  </div>
+</main>
+
+<script>
+function showTab(tabId, btn) {
+  const contents = document.querySelectorAll('.tab-content');
+  const buttons = document.querySelectorAll('.tabs button');
+
+  contents.forEach(div => div.classList.remove('active'));
+  buttons.forEach(b => b.classList.remove('active'));
+
+  document.getElementById(tabId).classList.add('active');
+  btn.classList.add('active');
+}
+</script>
+
+</body>
+</html>

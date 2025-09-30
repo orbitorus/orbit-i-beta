@@ -5,174 +5,228 @@
   <title>Satellite Constellations Overview</title>
   <style>
     body { margin: 0; background: black; font-family: sans-serif; color: white; }
+    
+    /* Top banner */
     #top-banner {
-      position: fixed; top: 0; left: 0; width: 100%; height: 50px;
-      background: rgba(40, 40, 40, 0.95); display: flex; align-items: center;
-      gap: 20px; padding: 0 20px; z-index: 20; font-size: 20px; font-weight: bold;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 50px;
+      background: rgba(40, 40, 40, 0.95);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 20px;
+      z-index: 20;
+      font-size: 20px;
+      font-weight: bold;
       box-shadow: 0 2px 6px rgba(0,0,0,0.5);
     }
-    #top-banner button, #top-banner select {
-      padding: 6px 14px; font-size: 14px; border-radius: 4px; border: none;
-      cursor: pointer; transition: background 0.2s, opacity 0.2s;
+
+    #top-banner button {
+      background-color: #1e90ff;
+      border: none;
+      color: white;
+      padding: 6px 14px;
+      font-size: 14px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.2s, opacity 0.2s;
     }
-    #top-banner button { background-color: #1e90ff; color: white; }
-    #top-banner button:hover:not(:disabled) { background-color: #63b3ff; }
-    #chart { width: 100%; height: 100vh; margin-top: 50px; }
-    #time-log {
-      position: absolute; font-size: 12px; font-family: sans-serif; padding: 5px;
-      border-radius: 3px; background-color: rgba(200, 200, 200, 0.1);
-      color: lavender; bottom: 10px; right: 10px; z-index: 10;
+    #top-banner button:hover:not(:disabled) {
+      background-color: #63b3ff;
     }
+    #top-banner button:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+
+    #top-banner select {
+      background-color: #222;
+      color: white;
+      border: 1px solid #555;
+      padding: 5px 10px;
+      font-size: 14px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
     #loading {
-      position: absolute; top: 60px; left: 50%; transform: translateX(-50%);
-      color: white; font-family: sans-serif; font-size: 18px; z-index: 15;
-      background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 8px;
+      position: fixed;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255,255,255,0.1);
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 14px;
+      display: none;
+      z-index: 15;
     }
+
+    #time-log {
+      position: absolute;
+      font-size: 12px;
+      padding: 5px;
+      border-radius: 3px;
+      background-color: rgba(200, 200, 200, 0.1);
+      color: lavender;
+      bottom: 10px;
+      right: 10px;
+    }
+
+    #chart { width: 100%; height: 100vh; margin-top: 50px; }
   </style>
+
   <script src="https://cdn.jsdelivr.net/npm/globe.gl"></script>
 </head>
 <body>
+  <!-- Top Banner -->
+  <div id="top-banner">
+    <span>Constellation Visualization</span>
+    <select id="constellation-select">
+      <option value="all">🌐 All Active Satellites</option>
+      <option value="oneweb">🇬🇧 OneWeb</option>
+      <option value="kuiper">🇺🇸 Kuiper</option>
+      <option value="starlink">🇺🇸 Starlink</option>
+      <option value="iridium-NEXT">🇺🇸 Iridium-NEXT</option>
+      <option value="hulianwang">🇨🇳 Hulianwang</option>
+      <option value="qianfan">🇨🇳 Qianfan</option>
+      <option value="planet">🇺🇸 Planet</option>
+    </select>
+    <button id="orbit-btn">Orbit Analysis</button>
+  </div>
 
-<div id="top-banner">
-  <span>Constellation Visualization</span>
-  <select id="constellation-select">
-    <option value="all">All Active Satellites</option>
-    <option value="oneweb">🇬🇧 OneWeb</option>
-    <option value="kuiper">🇺🇸 Kuiper</option>
-    <option value="starlink">🇺🇸 Starlink</option>
-    <option value="iridium-NEXT">🇺🇸 Iridium-NEXT</option>
-    <option value="hulianwang">🇨🇳 Hulianwang</option>
-    <option value="qianfan">🇨🇳 Qianfan</option>
-    <option value="planet">🇺🇸 Planet</option>
-  </select>
-  <button id="orbit-btn" onclick="goToOrbitAnalysis()">Orbit Analysis</button>
-</div>
+  <div id="loading">Loading satellites...</div>
+  <div id="chart"></div>
+  <div id="time-log"></div>
 
-<div id="chart"></div>
-<div id="time-log"></div>
-<div id="loading">Loading satellites...</div>
+  <script type="module">
+    import * as satellite from 'https://esm.sh/satellite.js';
 
-<script type="module">
-import * as satellite from 'https://esm.sh/satellite.js';
+    const TLE_URLS = {
+      starlink: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=tle',
+      kuiper: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=kuiper&FORMAT=tle',
+      oneweb: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=oneweb&FORMAT=tle',
+      "iridium-NEXT": 'https://celestrak.org/NORAD/elements/gp.php?GROUP=iridium-NEXT&FORMAT=tle',
+      hulianwang: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=hulianwang&FORMAT=tle',
+      qianfan: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=qianfan&FORMAT=tle',
+      planet: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=planet&FORMAT=tle'
+    };
 
-const EARTH_RADIUS_KM = 6371;
-const TIME_STEP = 1000; // 1 second per frame
+    const EARTH_RADIUS_KM = 6371;
+    const TIME_STEP = 1000;
+    const timeLogger = document.getElementById('time-log');
+    const loading = document.getElementById('loading');
+    const orbitBtn = document.getElementById("orbit-btn");
+    const selectEl = document.getElementById("constellation-select");
 
-const TLE_URLS = {
-  starlink: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=tle',
-  kuiper: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=kuiper&FORMAT=tle',
-  oneweb: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=oneweb&FORMAT=tle',
-  "iridium-NEXT": 'https://celestrak.org/NORAD/elements/gp.php?GROUP=iridium-NEXT&FORMAT=tle',
-  hulianwang: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=hulianwang&FORMAT=tle',
-  qianfan: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=qianfan&FORMAT=tle',
-  planet: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=planet&FORMAT=tle'
-};
+    let satDataMap = {};
+    let time = new Date();
+    let activeConstellation = "all"; // default
 
-let satDataMap = {};
-let allSatData = [];
-let time = new Date();
+    // Initialize globe
+    const world = Globe()(document.getElementById('chart'))
+      .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-night.jpg')
+      .backgroundColor('#000')
+      .showAtmosphere(true)
+      .atmosphereColor('rgba(70, 120, 180, 0.3)')
+      .particleLat('lat')
+      .particleLng('lng')
+      .particleAltitude('alt')
+      .particlesColor(() => 'rgba(255,255,200,1)');
 
-const world = Globe()(document.getElementById('chart'))
-  .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-night.jpg')
-  .backgroundColor('#000')
-  .particleLat('lat')
-  .particleLng('lng')
-  .particleAltitude('alt')
-  .particlesColor(() => 'palegreen');
+    setTimeout(() => world.pointOfView({ altitude: 3.5 }));
 
-setTimeout(() => world.pointOfView({ altitude: 3.5 }));
+    // Adjust particle size
+    setTimeout(() => {
+      world.scene().traverse(obj => {
+        if (obj.type === "Points" && obj.material?.onBeforeCompile) {
+          obj.material.onBeforeCompile = shader => {
+            shader.vertexShader = shader.vertexShader.replace('gl_PointSize = size;', 'gl_PointSize = size * 4.0;');
+            shader.fragmentShader = shader.fragmentShader.replace(
+              'gl_FragColor = vec4( color, opacity );',
+              `
+              float d = distance(gl_PointCoord, vec2(0.5,0.5));
+              float alpha = smoothstep(0.5, 0.0, d);
+              gl_FragColor = vec4(color.rgb, opacity*alpha);
+              `
+            );
+          };
+          obj.material.needsUpdate = true;
+        }
+      });
+    }, 1000);
 
-const timeLogger = document.getElementById('time-log');
-const select = document.getElementById('constellation-select');
-const orbitBtn = document.getElementById('orbit-btn');
-const loadingEl = document.getElementById('loading');
-
-// Disable orbit button for "All Active"
-function updateOrbitButton() {
-  if (select.value === 'all') {
-    orbitBtn.disabled = true;
-    orbitBtn.style.opacity = 0.5;
-  } else {
-    orbitBtn.disabled = false;
-    orbitBtn.style.opacity = 1;
-  }
-}
-select.addEventListener('change', updateOrbitButton);
-updateOrbitButton();
-
-// Navigate to selected constellation folder
-function goToOrbitAnalysis() {
-  const folder = select.value;
-  if (folder !== 'all') window.location.href = folder + '/index2.html';
-}
-
-// Fetch individual constellation TLEs
-async function fetchConstellation(name) {
-  const res = await fetch(TLE_URLS[name]);
-  const raw = await res.text();
-  const tleData = raw.replace(/\r/g, '').split(/\n(?=[^12])/).filter(d => d).map(tle => tle.split('\n'));
-  const sats = tleData.map(([name, ...tle]) => ({
-    satrec: satellite.twoline2satrec(...tle),
-    name: name.trim().replace(/^0 /, '')
-  })).filter(d => !!satellite.propagate(satrec, new Date())?.position);
-  satDataMap[name] = sats;
-  checkLoadingComplete();
-}
-
-// Fetch full dataset for "All Active Satellites"
-async function fetchAllSatellites() {
-  const res = await fetch('../datasets/space-track-leo.txt'); // local full LEO TLE file
-  const rawData = await res.text();
-  const tleData = rawData.replace(/\r/g, '').split(/\n(?=[^12])/).filter(d => d).map(tle => tle.split('\n'));
-  allSatData = tleData.map(([name, ...tle]) => ({
-    satrec: satellite.twoline2satrec(...tle),
-    name: name.trim().replace(/^0 /, '')
-  })).filter(d => !!satellite.propagate(satrec, new Date())?.position);
-  checkLoadingComplete();
-}
-
-// Loading progress tracking
-let loadedCount = 0;
-const totalLoads = Object.keys(TLE_URLS).length + 1; // +1 for full dataset
-
-function checkLoadingComplete() {
-  loadedCount++;
-  loadingEl.innerText = `Loading satellites... (${loadedCount}/${totalLoads})`;
-  if (loadedCount === totalLoads) loadingEl.style.display = 'none';
-}
-
-// Initial fetches
-Object.keys(TLE_URLS).forEach(fetchConstellation);
-fetchAllSatellites();
-
-// Animation loop
-function updateSatPositions() {
-  time = new Date(+time + TIME_STEP);
-  timeLogger.innerText = time.toString();
-  const gmst = satellite.gstime(time);
-
-  let activeData = (select.value === 'all') ? allSatData : (satDataMap[select.value] || []);
-
-  activeData.forEach(d => {
-    const eci = satellite.propagate(d.satrec, time);
-    if (eci?.position) {
-      const gdPos = satellite.eciToGeodetic(eci.position, gmst);
-      d.lat = satellite.radiansToDegrees(gdPos.latitude);
-      d.lng = satellite.radiansToDegrees(gdPos.longitude);
-      d.alt = gdPos.height / EARTH_RADIUS_KM;
-    } else {
-      d.lat = NaN; d.lng = NaN; d.alt = NaN;
+    async function fetchConstellation(name) {
+      if (!name || satDataMap[name]) return;
+      loading.style.display = 'block';
+      const res = await fetch(TLE_URLS[name]);
+      const raw = await res.text();
+      const tleData = raw.replace(/\r/g, '').split(/\n(?=[^12])/).filter(d => d).map(tle => tle.split('\n'));
+      const sats = tleData.map(([name, ...tle]) => ({
+        satrec: satellite.twoline2satrec(...tle),
+        name: name.trim().replace(/^0 /, '')
+      })).filter(d => !!satellite.propagate(d.satrec, new Date())?.position);
+      satDataMap[name] = sats;
+      loading.style.display = 'none';
     }
-  });
 
-  world.particlesData([activeData.filter(d => !isNaN(d.lat) && !isNaN(d.lng) && !isNaN(d.alt))]);
-}
+    async function fetchAllConstellations() {
+      loading.style.display = 'block';
+      const keys = Object.keys(TLE_URLS);
+      await Promise.all(keys.map(fetchConstellation));
+      loading.style.display = 'none';
+    }
 
-(function frameTicker() {
-  requestAnimationFrame(frameTicker);
-  updateSatPositions();
-})();
-</script>
+    function updateSatPositions() {
+      time = new Date(+time + TIME_STEP);
+      timeLogger.innerText = time.toString();
+      const gmst = satellite.gstime(time);
 
+      Object.values(satDataMap).flat().forEach(d => {
+        const eci = satellite.propagate(d.satrec, time);
+        if (eci?.position) {
+          const gdPos = satellite.eciToGeodetic(eci.position, gmst);
+          d.lat = satellite.radiansToDegrees(gdPos.latitude);
+          d.lng = satellite.radiansToDegrees(gdPos.longitude);
+          d.alt = gdPos.height / EARTH_RADIUS_KM;
+        } else {
+          d.lat = NaN; d.lng = NaN; d.alt = NaN;
+        }
+      });
+
+      let activeData = activeConstellation === "all" ? Object.values(satDataMap).flat() : satDataMap[activeConstellation] || [];
+      world.particlesData([activeData.filter(d => !isNaN(d.lat))]);
+    }
+
+    // Animation loop
+    (function frameTicker() {
+      requestAnimationFrame(frameTicker);
+      updateSatPositions();
+    })();
+
+    // Dropdown change handler
+    selectEl.addEventListener("change", async (e) => {
+      activeConstellation = e.target.value;
+      orbitBtn.disabled = activeConstellation === "all";
+
+      if (activeConstellation === "all") {
+        await fetchAllConstellations();
+      } else {
+        await fetchConstellation(activeConstellation);
+      }
+    });
+
+    // Orbit Analysis button
+    orbitBtn.addEventListener("click", () => {
+      if (!activeConstellation || activeConstellation === "all") return;
+      window.location.href = `${activeConstellation}/index2.html`;
+    });
+
+    // Initial load
+    fetchAllConstellations();
+  </script>
 </body>
 </html>

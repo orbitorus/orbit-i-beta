@@ -45,6 +45,8 @@
 
     #chart { width: 100%; height: 100vh; margin-top: 50px; }
   </style>
+  <!-- Globe.gl library -->
+  <script src="https://cdn.jsdelivr.net/npm/globe.gl"></script>
 </head>
 <body>
 
@@ -68,33 +70,58 @@
 <div id="chart"></div>
 
 <script>
-const orbitBtn = document.getElementById('orbit-btn');
-const select = document.getElementById('constellation-select');
+  // References
+  const orbitBtn = document.getElementById('orbit-btn');
+  const select = document.getElementById('constellation-select');
 
-function updateOrbitButton() {
-  if (select.value === 'all') {
-    orbitBtn.disabled = true;
-    orbitBtn.style.opacity = 0.5;
-  } else {
-    orbitBtn.disabled = false;
-    orbitBtn.style.opacity = 1;
+  // Disable/enable Orbit Analysis button based on selection
+  function updateOrbitButton() {
+    if (select.value === 'all') {
+      orbitBtn.disabled = true;
+      orbitBtn.style.opacity = 0.5;
+    } else {
+      orbitBtn.disabled = false;
+      orbitBtn.style.opacity = 1;
+    }
   }
-}
 
-// Call immediately on page load
-updateOrbitButton();
+  // Call immediately on page load
+  updateOrbitButton();
 
-// Call whenever dropdown changes
-select.addEventListener('change', updateOrbitButton);
+  // Call whenever dropdown changes
+  select.addEventListener('change', updateOrbitButton);
 
-// Navigate to the selected constellation folder
-function goToOrbitAnalysis() {
-  const folder = select.value;
-  if (folder !== 'all') {
-    window.location.href = folder + '/index2.html';
+  // Navigate to the selected constellation folder
+  function goToOrbitAnalysis() {
+    const folder = select.value;
+    if (folder !== 'all') {
+      window.location.href = folder + '/index2.html';
+    }
   }
-}
+
+  // -----------------------------
+  // Globe.gl initialization
+  // -----------------------------
+  const world = Globe()(document.getElementById('chart'))
+    .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-night.jpg')
+    .backgroundColor('#000')
+    .showAtmosphere(true)
+    .atmosphereColor('rgba(70, 120, 180, 0.3)');
+
+  // Example: placeholder particle (satellite) data
+  // This can be replaced with real TLE data
+  const exampleSats = [
+    { lat: 0, lng: 0, alt: 0.05 },
+    { lat: 45, lng: 45, alt: 0.08 },
+    { lat: -30, lng: 60, alt: 0.06 }
+  ];
+
+  world.particlesData(exampleSats)
+       .particleLat(d => d.lat)
+       .particleLng(d => d.lng)
+       .particleAltitude(d => d.alt)
+       .particlesColor(() => 'orange');
+
 </script>
-
 </body>
 </html>

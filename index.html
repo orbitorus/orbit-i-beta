@@ -16,8 +16,8 @@
       background: rgba(40, 40, 40, 0.95);
       display: flex;
       align-items: center;
-      justify-content: flex-start;  /* all items aligned left */
-      gap: 40px;  /* space between title and button */
+      justify-content: flex-start;
+      gap: 20px;
       padding: 0 20px;
       z-index: 20;
       color: white;
@@ -40,6 +40,16 @@
       background-color: #63b3ff;
     }
 
+    #top-banner select {
+      background-color: #222;
+      color: white;
+      border: 1px solid #555;
+      padding: 5px 10px;
+      font-size: 14px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
     #legend {
       position: absolute;
       top: 70px;
@@ -56,8 +66,6 @@
       font-size: 18px;
       text-align: center;
     }
-    #legend table { border-collapse: collapse; }
-    #legend td { padding: 6px 8px; vertical-align: middle; }
 
     #time-log {
       position: absolute;
@@ -78,44 +86,23 @@
   <!-- Top Banner -->
   <div id="top-banner">
     <span>Constellation Visualization</span>
-    <button onclick="window.location.href='index2.html'">Orbit Analysis</button>
+    <button id="orbit-btn">Orbit Analysis</button>
+    <select id="constellation-select">
+      <option value="">-- Select Constellation --</option>
+      <option value="oneweb">🇬🇧 OneWeb</option>
+      <option value="kuiper">🇺🇸 Kuiper</option>
+      <option value="starlink">🇺🇸 Starlink</option>
+      <option value="iridium-NEXT">🇺🇸 Iridium-NEXT</option>
+      <option value="hulianwang">🇨🇳 Hulianwang</option>
+      <option value="qianfan">🇨🇳 Qianfan</option>
+      <option value="planet">🇺🇸 Planet</option>
+    </select>
   </div>
 
-  <!-- Legend / checkbox panel -->
   <div id="legend">
-  <h3>Popular Constellation</h3>
-  <table>
-    <tr>
-      <td><input type="checkbox" data-value="oneweb" checked></td>
-      <td>🇬🇧 OneWeb</td>
-    </tr>
-    <tr>
-      <td><input type="checkbox" data-value="kuiper"></td>
-      <td>🇺🇸 Kuiper</td>
-    </tr>
-    <tr>
-      <td><input type="checkbox" data-value="starlink"></td>
-      <td>🇺🇸 Starlink</td>
-    </tr>
-    <tr>
-      <td><input type="checkbox" data-value="iridium-NEXT"></td>
-      <td>🇺🇸 Iridium-NEXT</td>
-    </tr>
-    <tr>
-      <td><input type="checkbox" data-value="hulianwang"></td>
-      <td>🇨🇳 Hulianwang</td>
-    </tr>
-    <tr>
-      <td><input type="checkbox" data-value="qianfan"></td>
-      <td>🇨🇳 Qianfan</td>
-    </tr>
-    <tr>
-      <td><input type="checkbox" data-value="planet"></td>
-      <td>🇺🇸 Planet</td>
-    </tr>
-  </table>
-</div>
-
+    <h3>Popular Constellation</h3>
+    <p>Legend and checkboxes can stay or be removed as needed.</p>
+  </div>
 
   <div id="chart"></div>
   <div id="time-log"></div>
@@ -139,6 +126,7 @@
 
     let satDataMap = {};
     let time = new Date();
+    let activeConstellation = "oneweb"; // default
 
     const world = Globe()(document.getElementById('chart'))
       .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-night.jpg')
@@ -152,7 +140,6 @@
 
     setTimeout(() => world.pointOfView({ altitude: 3.5 }));
 
-    // Shader patch for bigger glowing satellites
     setTimeout(() => {
       world.scene().traverse(obj => {
         if (obj.type === "Points" && obj.material?.onBeforeCompile) {
@@ -176,6 +163,8 @@
     }, 1000);
 
     async function fetchConstellation(name) {
+      if (!name) return;
+      if (satDataMap[name]) return;
       const res = await fetch(TLE_URLS[name]);
       const raw = await res.text();
       const tleData = raw.replace(/\r/g, '').split(/\n(?=[^12])/).filter(d => d).map(tle => tle.split('\n'));
@@ -203,13 +192,8 @@
         }
       });
 
-      const activeConstellations = Array.from(document.querySelectorAll('#legend input[type=checkbox]:checked'))
-        .map(chk => chk.getAttribute('data-value'));
-
-      const activeData = activeConstellations.flatMap(c => satDataMap[c] || [])
-        .filter(d => !isNaN(d.lat) && !isNaN(d.lng) && !isNaN(d.alt));
-
-      world.particlesData([activeData]);
+      const activeData = satDataMap[activeConstellation] || [];
+      world.particlesData([activeData.filter(d => !isNaN(d.lat))]);
     }
 
     (function frameTicker() {
@@ -217,13 +201,27 @@
       updateSatPositions();
     })();
 
-    document.querySelectorAll('#legend input[type=checkbox]').forEach(chk => {
-      chk.addEventListener('change', () => {
-        const c = chk.getAttribute('data-value');
-        if (chk.checked && !satDataMap[c]) fetchConstellation(c);
-      });
+    // Dropdown change handler (independent)
+    const selectEl = document.getElementById("constellation-select");
+    selectEl.addEventListener("change", async (e) => {
+      activeConstellation = e.target.value;
+      if (activeConstellation) {
+        await fetchConstellation(activeConstellation);
+      }
     });
 
+    // Orbit Analysis button
+    const orbitBtn = document.getElementById("orbit-btn");
+    orbitBtn.addEventListener("click", () => {
+      const selected = selectEl.value;
+      if (!selected) {
+        alert("Please select a constellation first.");
+        return;
+      }
+      window.location.href = `${selected}/index2.html`; // replace current page
+    });
+
+    // Fetch default constellation data
     fetchConstellation('oneweb');
   </script>
 </body>

@@ -45,7 +45,6 @@
 
     #chart { width: 100%; height: 100vh; margin-top: 50px; }
   </style>
-  <!-- Globe.gl library -->
   <script src="https://cdn.jsdelivr.net/npm/globe.gl"></script>
 </head>
 <body>
@@ -54,7 +53,7 @@
   <span>Constellation Visualization</span>
 
   <select id="constellation-select">
-    <option value="all">All Active Satellites</option>
+    <option value="all" selected>All Active Satellites</option>
     <option value="oneweb">🇬🇧 OneWeb</option>
     <option value="kuiper">🇺🇸 Kuiper</option>
     <option value="starlink">🇺🇸 Starlink</option>
@@ -69,58 +68,105 @@
 
 <div id="chart"></div>
 
-<script>
-  // References
-  const orbitBtn = document.getElementById('orbit-btn');
-  const select = document.getElementById('constellation-select');
+<script type="module">
+import * as satellite from 'https://esm.sh/satellite.js';
 
-  // Disable/enable Orbit Analysis button based on selection
-  function updateOrbitButton() {
-    if (select.value === 'all') {
-      orbitBtn.disabled = true;
-      orbitBtn.style.opacity = 0.5;
+const orbitBtn = document.getElementById('orbit-btn');
+const select = document.getElementById('constellation-select');
+
+const TLE_URLS = {
+  starlink: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=tle',
+  kuiper: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=kuiper&FORMAT=tle',
+  oneweb: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=oneweb&FORMAT=tle',
+  "iridium-NEXT": 'https://celestrak.org/NORAD/elements/gp.php?GROUP=iridium-NEXT&FORMAT=tle',
+  hulianwang: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=hulianwang&FORMAT=tle',
+  qianfan: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=qianfan&FORMAT=tle',
+  planet: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=planet&FORMAT=tle'
+};
+
+const EARTH_RADIUS_KM = 6371;
+const TIME_STEP = 1000;
+let time = new Date();
+const satDataMap = {};
+
+function updateOrbitButton() {
+  if (select.value === 'all') {
+    orbitBtn.disabled = true;
+    orbitBtn.style.opacity = 0.5;
+  } else {
+    orbitBtn.disabled = false;
+    orbitBtn.style.opacity = 1;
+  }
+}
+updateOrbitButton();
+select.addEventListener('change', updateOrbitButton);
+
+function goToOrbitAnalysis() {
+  const folder = select.value;
+  if (folder !== 'all') {
+    window.location.href = folder + '/index2.html';
+  }
+}
+
+// Initialize Globe
+const world = Globe()(document.getElementById('chart'))
+  .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-night.jpg')
+  .backgroundColor('#000')
+  .showAtmosphere(true)
+  .atmosphereColor('rgba(70, 120, 180, 0.3)')
+  .particleLat('lat')
+  .particleLng('lng')
+  .particleAltitude('alt')
+  .particlesColor(() => 'orange');
+
+// Fetch TLE for a constellation
+async function fetchConstellation(name) {
+  const res = await fetch(TLE_URLS[name]);
+  const raw = await res.text();
+  const tleData = raw.replace(/\r/g, '').split(/\n(?=[^12])/).filter(d => d).map(tle => tle.split('\n'));
+  const sats = tleData.map(([name, ...tle]) => ({
+    satrec: satellite.twoline2satrec(...tle),
+    name: name.trim().replace(/^0 /, '')
+  })).filter(d => !!satellite.propagate(d.satrec, new Date())?.position);
+  satDataMap[name] = sats;
+}
+
+// Update satellite positions on globe
+function updateSatPositions() {
+  time = new Date(+time + TIME_STEP);
+  const gmst = satellite.gstime(time);
+
+  Object.values(satDataMap).flat().forEach(d => {
+    const eci = satellite.propagate(d.satrec, time);
+    if (eci?.position) {
+      const gdPos = satellite.eciToGeodetic(eci.position, gmst);
+      d.lat = satellite.radiansToDegrees(gdPos.latitude);
+      d.lng = satellite.radiansToDegrees(gdPos.longitude);
+      d.alt = gdPos.height / EARTH_RADIUS_KM;
     } else {
-      orbitBtn.disabled = false;
-      orbitBtn.style.opacity = 1;
+      d.lat = NaN; d.lng = NaN; d.alt = NaN;
     }
+  });
+
+  let activeData = [];
+  if (select.value === 'all') {
+    activeData = Object.values(satDataMap).flat();
+  } else {
+    activeData = satDataMap[select.value] || [];
   }
+  activeData = activeData.filter(d => !isNaN(d.lat) && !isNaN(d.lng) && !isNaN(d.alt));
 
-  // Call immediately on page load
-  updateOrbitButton();
+  world.particlesData(activeData);
+}
 
-  // Call whenever dropdown changes
-  select.addEventListener('change', updateOrbitButton);
+// Animation loop
+(function frameTicker() {
+  requestAnimationFrame(frameTicker);
+  updateSatPositions();
+})();
 
-  // Navigate to the selected constellation folder
-  function goToOrbitAnalysis() {
-    const folder = select.value;
-    if (folder !== 'all') {
-      window.location.href = folder + '/index2.html';
-    }
-  }
-
-  // -----------------------------
-  // Globe.gl initialization
-  // -----------------------------
-  const world = Globe()(document.getElementById('chart'))
-    .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-night.jpg')
-    .backgroundColor('#000')
-    .showAtmosphere(true)
-    .atmosphereColor('rgba(70, 120, 180, 0.3)');
-
-  // Example: placeholder particle (satellite) data
-  // This can be replaced with real TLE data
-  const exampleSats = [
-    { lat: 0, lng: 0, alt: 0.05 },
-    { lat: 45, lng: 45, alt: 0.08 },
-    { lat: -30, lng: 60, alt: 0.06 }
-  ];
-
-  world.particlesData(exampleSats)
-       .particleLat(d => d.lat)
-       .particleLng(d => d.lng)
-       .particleAltitude(d => d.alt)
-       .particlesColor(() => 'orange');
+// Fetch all constellations on load
+Object.keys(TLE_URLS).forEach(fetchConstellation);
 
 </script>
 </body>

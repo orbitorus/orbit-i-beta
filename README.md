@@ -1,107 +1,88 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Satellite Constellations Overview – Developer Readme</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #121212;
-      color: #f0f0f0;
-      margin: 0;
-      padding: 20px;
-    }
-    h1 { color: #1e90ff; }
-    pre {
-      background: #1e1e1e;
-      padding: 15px;
-      border-radius: 8px;
-      overflow-x: auto;
-    }
-    p { line-height: 1.6; }
-    code { color: #63b3ff; }
-  </style>
-</head>
-<body>
+# Satellite Constellations Overview - Developer Readme
 
-<h1>Satellite Constellations Overview – Developer Guide</h1>
+This document describes the `index.html` page, its structure, and JavaScript logic in pseudo-code for developers to understand and continue development.
 
-<p>This page describes the <code>index.html</code> page, its structure, and JavaScript logic in pseudo-code for developers to understand and continue development.</p>
+---
 
-<h2>Page Structure</h2>
-<ul>
-  <li><strong>Top Banner</strong> (<code>#top-banner</code>)
-    <ul>
-      <li>Title text: "Constellation Visualization"</li>
-      <li>Dropdown (<code>&lt;select&gt;</code>) to choose satellite constellation:
-        <ul>
-          <li>Options include "All Active Satellites", "OneWeb", "Kuiper", "Starlink", etc.</li>
-        </ul>
-      </li>
-      <li>Orbit Analysis Button (<code>Orbit Analysis</code>):
-        <ul>
-          <li>Navigates to selected constellation folder's <code>index2.html</code></li>
-          <li>Disabled if "All Active Satellites" is selected</li>
-        </ul>
-      </li>
-    </ul>
-  </li>
+## Table of Contents
 
-  <li><strong>Main Chart Area</strong> (<code>#chart</code>)
-    <ul>
-      <li>Placeholder div for rendering 3D globe and satellites using <code>globe.gl</code> or similar</li>
-    </ul>
-  </li>
-</ul>
+- [Page Structure](#page-structure)
+- [JavaScript Logic (Pseudo-Code)](#javascript-logic-pseudo-code)
+- [Developer Notes](#developer-notes)
+- [Folder Structure Suggestion](#folder-structure-suggestion)
 
-<h2>JavaScript Logic (Pseudo-Code)</h2>
-<pre>
-1. Get references to:
-   - <code>select</code> dropdown
-   - <code>orbitBtn</code> button
+---
 
-2. Function: updateOrbitButton()
+## Page Structure
+
+### Top Banner (`#top-banner`)
+
+- **Title text:** "Constellation Visualization"
+- **Dropdown (`<select>`)** to choose satellite constellation:
+  - Options include:
+    - "All Active Satellites"
+    - "OneWeb"
+    - "Kuiper"
+    - "Starlink"
+    - "Iridium-NEXT"
+    - "Hulianwang"
+    - "Qianfan"
+    - "Planet"
+- **Orbit Analysis Button:**
+  - Navigates to the selected constellation folder's `index2.html`
+  - Disabled if "All Active Satellites" is selected
+
+### Main Chart Area (`#chart`)
+
+- Placeholder div for rendering the 3D globe and satellites
+- Uses `globe.gl` or similar WebGL library
+- Satellite positions updated in real time based on TLE data
+
+---
+
+## JavaScript Logic (Pseudo-Code)
+
+1. Get references to the dropdown and the Orbit Analysis button
+2. `updateOrbitButton()` function:
    - If selected value is "all":
-       - Disable orbitBtn
-       - Reduce opacity to indicate disabled state
+     - Disable the Orbit Analysis button
+     - Reduce its opacity to indicate disabled state
    - Else:
-       - Enable orbitBtn
-       - Set normal opacity
-
+     - Enable the button
+     - Restore normal opacity
 3. On page load:
-   - Call updateOrbitButton() to set correct button state
-
+   - Call `updateOrbitButton()` to set initial button state
 4. On dropdown change event:
-   - Call updateOrbitButton() to update button dynamically
-
-5. Function: goToOrbitAnalysis()
+   - Call `updateOrbitButton()` to dynamically update the button
+5. `goToOrbitAnalysis()` function:
    - Get selected constellation folder from dropdown
    - If selected is NOT "all":
-       - Redirect browser to <folder>/index2.html
+     - Redirect browser to `<folder>/index2.html`
    - Else:
-       - Do nothing (button is disabled)
-</pre>
+     - Do nothing (button is disabled)
 
-<h2>Developer Notes</h2>
-<ul>
-  <li>Use <code>globe.gl</code> or other WebGL libraries to render satellites in <code>#chart</code></li>
-  <li>Data for each constellation comes from TLE sources (NORAD/Celestrak)</li>
-  <li>Button state logic ensures invalid navigation is prevented</li>
-  <li>Dropdown can be expanded to include new constellations easily</li>
-  <li>Future improvement: allow multiple constellation selection, real-time satellite updates, and persistent user settings</li>
-</ul>
+---
 
-<h2>Folder Structure Suggestion</h2>
-<pre>
-root/
- ├─ index.html          <-- Current main visualization page
- ├─ readme.html         <-- Developer guide (this page)
- ├─ <constellation_name>/
- │    └─ index2.html    <-- Orbit Analysis page for that constellation
- └─ assets/             <-- Images, scripts, stylesheets
-</pre>
+## Developer Notes
 
-<p>This readme is intended to help new developers quickly understand the page flow, UI elements, and core JavaScript behavior so they can continue development or integrate additional features.</p>
+- **Rendering:** Use `globe.gl` or another WebGL library to render satellites in the `#chart` div
+- **Data Source:** Satellite data comes from TLE sources such as NORAD or Celestrak
+- **Button Logic:** Orbit Analysis button state prevents invalid navigation
+- **Extensibility:** Dropdown can be easily expanded to include new constellations
+- **Future Improvements:**
+  - Allow multiple constellation selection
+  - Add real-time satellite updates
+  - Persist user settings across sessions
 
-</body>
-</html>
+---
+
+## Folder Structure Suggestion
+
+- `root/`
+  - `index.html` — Main visualization page
+  - `readme.md` — Developer guide (this file)
+  - `<constellation_name>/`
+    - `index2.html` — Orbit Analysis page for that constellation
+  - `assets/` — Images, scripts, and stylesheets
+
+This structure helps developers quickly locate the main visualization, per-constellation pages, and assets.

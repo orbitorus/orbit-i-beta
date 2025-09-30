@@ -144,14 +144,14 @@
 <header>
   <h1>Satellite Dashboard – New View</h1>
   <div class="top-buttons">
-    <a href="index.html">🏠 Main Grid</a>
-    <a href="overview_starlink.html">📊 Overview</a>
+    <a href="index3.html">🗂 Alternate View</a>
+    <a href="index.html">📊 Overview</a>
   </div>
 </header>
 
 <main>
   <div class="tabs">
-    <button class="active" onclick="showTab('globe', this)">🌍 Globe View</button>
+    <button onclick="showTab('globe', this)">🌍 Globe View</button>
     <button onclick="showTab('ground', this)">🛰 Ground Tracks</button>
     <button onclick="showTab('altitude', this)">📈 Altitude History</button>
     <button onclick="showTab('category', this)">🗂 Satellite Category</button>
@@ -159,7 +159,7 @@
     <button onclick="showTab('starlink', this)">⭐ Starlink Plot</button>
   </div>
 
-  <div id="globe" class="tab-content active">
+  <div id="globe" class="tab-content">
     <div class="card"><h3>🌍 Globe View</h3><iframe src="globe_tracks.html"></iframe></div>
   </div>
   <div id="ground" class="tab-content">
@@ -189,7 +189,21 @@ function showTab(tabId, btn) {
 
   document.getElementById(tabId).classList.add('active');
   btn.classList.add('active');
+
+  // Store active tab in localStorage
+  localStorage.setItem('activeTab', tabId);
 }
+
+// On page load, restore last active tab
+document.addEventListener('DOMContentLoaded', () => {
+  const lastTab = localStorage.getItem('activeTab') || 'globe';
+  const buttons = document.querySelectorAll('.tabs button');
+  buttons.forEach(btn => {
+    if (btn.getAttribute('onclick').includes(lastTab)) {
+      btn.click();
+    }
+  });
+});
 </script>
 
 </body>

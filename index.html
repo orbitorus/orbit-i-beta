@@ -16,8 +16,7 @@
       background: rgba(40, 40, 40, 0.95);
       display: flex;
       align-items: center;
-      justify-content: flex-start;
-      gap: 20px;
+      gap: 10px;
       padding: 0 20px;
       z-index: 20;
       color: white;
@@ -34,10 +33,14 @@
       font-size: 14px;
       border-radius: 4px;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: background 0.2s, opacity 0.2s;
     }
-    #top-banner button:hover {
+    #top-banner button:hover:not(:disabled) {
       background-color: #63b3ff;
+    }
+    #top-banner button:disabled {
+      opacity: 0.4;
+      cursor: default;
     }
 
     #top-banner select {
@@ -69,9 +72,8 @@
   <!-- Top Banner -->
   <div id="top-banner">
     <span>Constellation Visualization</span>
-    <button id="orbit-btn">Orbit Analysis</button>
     <select id="constellation-select">
-      <option value="">-- Select Constellation --</option>
+      <option value="all">🌐 All Active Satellites</option>
       <option value="oneweb">🇬🇧 OneWeb</option>
       <option value="kuiper">🇺🇸 Kuiper</option>
       <option value="starlink">🇺🇸 Starlink</option>
@@ -80,6 +82,7 @@
       <option value="qianfan">🇨🇳 Qianfan</option>
       <option value="planet">🇺🇸 Planet</option>
     </select>
+    <button id="orbit-btn">Orbit Analysis</button>
   </div>
 
   <div id="chart"></div>
@@ -104,7 +107,7 @@
 
     let satDataMap = {};
     let time = new Date();
-    let activeConstellation = "oneweb"; // default
+    let activeConstellation = "all"; // default to all satellites
 
     const world = Globe()(document.getElementById('chart'))
       .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-night.jpg')
@@ -141,7 +144,7 @@
     }, 1000);
 
     async function fetchConstellation(name) {
-      if (!name) return;
+      if (!name || name === "all") return;
       if (satDataMap[name]) return;
       const res = await fetch(TLE_URLS[name]);
       const raw = await res.text();
@@ -151,6 +154,11 @@
         name: name.trim().replace(/^0 /, '')
       })).filter(d => !!satellite.propagate(d.satrec, new Date())?.position);
       satDataMap[name] = sats;
+    }
+
+    async function fetchAllConstellations() {
+      const keys = Object.keys(TLE_URLS);
+      await Promise.all(keys.map(fetchConstellation));
     }
 
     function updateSatPositions() {
@@ -170,7 +178,13 @@
         }
       });
 
-      const activeData = satDataMap[activeConstellation] || [];
+      let activeData = [];
+      if (activeConstellation === "all") {
+        activeData = Object.values(satDataMap).flat();
+      } else {
+        activeData = satDataMap[activeConstellation] || [];
+      }
+
       world.particlesData([activeData.filter(d => !isNaN(d.lat))]);
     }
 
@@ -181,26 +195,30 @@
 
     // Dropdown change handler
     const selectEl = document.getElementById("constellation-select");
+    const orbitBtn = document.getElementById("orbit-btn");
+
     selectEl.addEventListener("change", async (e) => {
       activeConstellation = e.target.value;
-      if (activeConstellation) {
+
+      // Disable orbit button if "all" is selected
+      orbitBtn.disabled = activeConstellation === "all";
+
+      if (activeConstellation === "all") {
+        await fetchAllConstellations();
+      } else {
         await fetchConstellation(activeConstellation);
       }
     });
 
-    // Orbit Analysis button
-    const orbitBtn = document.getElementById("orbit-btn");
+    // Orbit Analysis button click
     orbitBtn.addEventListener("click", () => {
       const selected = selectEl.value;
-      if (!selected) {
-        alert("Please select a constellation first.");
-        return;
-      }
-      window.location.href = `${selected}/index2.html`; // replace current page
+      if (!selected || selected === "all") return;
+      window.location.href = `${selected}/index2.html`;
     });
 
-    // Fetch default constellation data
-    fetchConstellation('oneweb');
+    // Initial load: fetch all satellites by default
+    fetchAllConstellations();
   </script>
 </body>
 </html>

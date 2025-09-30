@@ -6,37 +6,28 @@
   <style>
     body { margin: 0; background: black; font-family: sans-serif; color: white; }
     #top-banner {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 50px;
-      background: rgba(40, 40, 40, 0.95);
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      padding: 0 20px;
-      z-index: 20;
-      font-size: 20px;
-      font-weight: bold;
+      position: fixed; top: 0; left: 0; width: 100%; height: 50px;
+      background: rgba(40, 40, 40, 0.95); display: flex; align-items: center;
+      gap: 20px; padding: 0 20px; z-index: 20; font-size: 20px; font-weight: bold;
       box-shadow: 0 2px 6px rgba(0,0,0,0.5);
     }
     #top-banner button, #top-banner select {
-      padding: 6px 14px;
-      font-size: 14px;
-      border-radius: 4px;
-      border: none;
-      cursor: pointer;
-      transition: background 0.2s, opacity 0.2s;
+      padding: 6px 14px; font-size: 14px; border-radius: 4px; border: none;
+      cursor: pointer; transition: background 0.2s, opacity 0.2s;
     }
-    #top-banner button {
-      background-color: #1e90ff;
-      color: white;
-    }
-    #top-banner button:hover:not(:disabled) {
-      background-color: #63b3ff;
-    }
+    #top-banner button { background-color: #1e90ff; color: white; }
+    #top-banner button:hover:not(:disabled) { background-color: #63b3ff; }
     #chart { width: 100%; height: 100vh; margin-top: 50px; }
+    #time-log {
+      position: absolute; font-size: 12px; font-family: sans-serif; padding: 5px;
+      border-radius: 3px; background-color: rgba(200, 200, 200, 0.1);
+      color: lavender; bottom: 10px; right: 10px; z-index: 10;
+    }
+    #loading {
+      position: absolute; top: 60px; left: 50%; transform: translateX(-50%);
+      color: white; font-family: sans-serif; font-size: 18px; z-index: 15;
+      background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 8px;
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/globe.gl"></script>
 </head>
@@ -45,7 +36,7 @@
 <div id="top-banner">
   <span>Constellation Visualization</span>
   <select id="constellation-select">
-    <option value="all" selected>All Active Satellites</option>
+    <option value="all">All Active Satellites</option>
     <option value="oneweb">🇬🇧 OneWeb</option>
     <option value="kuiper">🇺🇸 Kuiper</option>
     <option value="starlink">🇺🇸 Starlink</option>
@@ -58,12 +49,14 @@
 </div>
 
 <div id="chart"></div>
+<div id="time-log"></div>
+<div id="loading">Loading satellites...</div>
 
 <script type="module">
 import * as satellite from 'https://esm.sh/satellite.js';
 
-const orbitBtn = document.getElementById('orbit-btn');
-const select = document.getElementById('constellation-select');
+const EARTH_RADIUS_KM = 6371;
+const TIME_STEP = 1000; // 1 second per frame
 
 const TLE_URLS = {
   starlink: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=tle',
@@ -75,12 +68,26 @@ const TLE_URLS = {
   planet: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=planet&FORMAT=tle'
 };
 
-const EARTH_RADIUS_KM = 6371;
-const TIME_STEP = 1000;
+let satDataMap = {};
+let allSatData = [];
 let time = new Date();
-const satDataMap = {}; // Stores satellites per constellation
 
-// Orbit button logic
+const world = Globe()(document.getElementById('chart'))
+  .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-night.jpg')
+  .backgroundColor('#000')
+  .particleLat('lat')
+  .particleLng('lng')
+  .particleAltitude('alt')
+  .particlesColor(() => 'palegreen');
+
+setTimeout(() => world.pointOfView({ altitude: 3.5 }));
+
+const timeLogger = document.getElementById('time-log');
+const select = document.getElementById('constellation-select');
+const orbitBtn = document.getElementById('orbit-btn');
+const loadingEl = document.getElementById('loading');
+
+// Disable orbit button for "All Active"
 function updateOrbitButton() {
   if (select.value === 'all') {
     orbitBtn.disabled = true;
@@ -90,44 +97,63 @@ function updateOrbitButton() {
     orbitBtn.style.opacity = 1;
   }
 }
-updateOrbitButton();
 select.addEventListener('change', updateOrbitButton);
+updateOrbitButton();
 
+// Navigate to selected constellation folder
 function goToOrbitAnalysis() {
   const folder = select.value;
   if (folder !== 'all') window.location.href = folder + '/index2.html';
 }
 
-// Initialize Globe
-const world = Globe()(document.getElementById('chart'))
-  .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-night.jpg')
-  .backgroundColor('#000')
-  .showAtmosphere(true)
-  .atmosphereColor('rgba(70, 120, 180, 0.3)')
-  .particleLat('lat')
-  .particleLng('lng')
-  .particleAltitude('alt')
-  .particlesColor(() => 'orange');
-
-// Fetch TLE for a single constellation
+// Fetch individual constellation TLEs
 async function fetchConstellation(name) {
-  if (satDataMap[name]) return; // Already fetched
   const res = await fetch(TLE_URLS[name]);
   const raw = await res.text();
   const tleData = raw.replace(/\r/g, '').split(/\n(?=[^12])/).filter(d => d).map(tle => tle.split('\n'));
   const sats = tleData.map(([name, ...tle]) => ({
     satrec: satellite.twoline2satrec(...tle),
     name: name.trim().replace(/^0 /, '')
-  }));
+  })).filter(d => !!satellite.propagate(satrec, new Date())?.position);
   satDataMap[name] = sats;
+  checkLoadingComplete();
 }
 
-// Update positions for all satellites
+// Fetch full dataset for "All Active Satellites"
+async function fetchAllSatellites() {
+  const res = await fetch('../datasets/space-track-leo.txt'); // local full LEO TLE file
+  const rawData = await res.text();
+  const tleData = rawData.replace(/\r/g, '').split(/\n(?=[^12])/).filter(d => d).map(tle => tle.split('\n'));
+  allSatData = tleData.map(([name, ...tle]) => ({
+    satrec: satellite.twoline2satrec(...tle),
+    name: name.trim().replace(/^0 /, '')
+  })).filter(d => !!satellite.propagate(satrec, new Date())?.position);
+  checkLoadingComplete();
+}
+
+// Loading progress tracking
+let loadedCount = 0;
+const totalLoads = Object.keys(TLE_URLS).length + 1; // +1 for full dataset
+
+function checkLoadingComplete() {
+  loadedCount++;
+  loadingEl.innerText = `Loading satellites... (${loadedCount}/${totalLoads})`;
+  if (loadedCount === totalLoads) loadingEl.style.display = 'none';
+}
+
+// Initial fetches
+Object.keys(TLE_URLS).forEach(fetchConstellation);
+fetchAllSatellites();
+
+// Animation loop
 function updateSatPositions() {
   time = new Date(+time + TIME_STEP);
+  timeLogger.innerText = time.toString();
   const gmst = satellite.gstime(time);
 
-  Object.values(satDataMap).flat().forEach(d => {
+  let activeData = (select.value === 'all') ? allSatData : (satDataMap[select.value] || []);
+
+  activeData.forEach(d => {
     const eci = satellite.propagate(d.satrec, time);
     if (eci?.position) {
       const gdPos = satellite.eciToGeodetic(eci.position, gmst);
@@ -139,27 +165,14 @@ function updateSatPositions() {
     }
   });
 
-  // Determine which satellites to display
-  let activeData;
-  if (select.value === 'all') {
-    activeData = Object.values(satDataMap).flat();
-  } else {
-    activeData = satDataMap[select.value] || [];
-  }
-
-  activeData = activeData.filter(d => !isNaN(d.lat) && !isNaN(d.lng) && !isNaN(d.alt));
-  world.particlesData(activeData);
+  world.particlesData([activeData.filter(d => !isNaN(d.lat) && !isNaN(d.lng) && !isNaN(d.alt))]);
 }
 
-// Animation loop
 (function frameTicker() {
   requestAnimationFrame(frameTicker);
   updateSatPositions();
 })();
-
-// Fetch all TLEs initially
-Object.keys(TLE_URLS).forEach(fetchConstellation);
-
 </script>
+
 </body>
 </html>

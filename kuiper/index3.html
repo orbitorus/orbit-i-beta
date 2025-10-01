@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Satellite Dashboard – Accordion View</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #121212;
+      color: #f0f0f0;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #2c2c2c;
+      padding: 15px 25px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 22px;
+      color: #f0f0f0;
+    }
+
+    .top-buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .top-buttons a {
+      background: #007acc;
+      color: #fff;
+      padding: 8px 14px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    .top-buttons a:hover {
+      background: #005f99;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 14px rgba(0,0,0,0.5);
+    }
+
+    main {
+      margin: 20px;
+    }
+
+    .accordion-item {
+      margin-bottom: 12px;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    }
+
+    .accordion-header {
+      background: #1e1e1e;
+      padding: 14px 18px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background 0.2s;
+    }
+
+    .accordion-header:hover {
+      background: #2a2a2a;
+    }
+
+    .accordion-header.active {
+      background: #007acc;
+    }
+
+    .accordion-header span {
+      transition: transform 0.3s ease;
+    }
+
+    .accordion-header.active span {
+      transform: rotate(90deg);
+    }
+
+    .accordion-content {
+      max-height: 0;
+      overflow: hidden;
+      background: #1e1e1e;
+      transition: max-height 0.5s ease, opacity 0.5s ease;
+      opacity: 0;
+    }
+
+    .accordion-content.active {
+      max-height: 2000px; /* large enough */
+      opacity: 1;
+    }
+
+    .accordion-content iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+      border-radius: 0 0 8px 8px;
+      background: #000;
+    }
+
+    @media (max-width: 600px) {
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .top-buttons {
+        margin-top: 10px;
+      }
+      .accordion-content iframe {
+        height: 400px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Satellite Dashboard – Accordion View</h1>
+  <div class="top-buttons">
+    <a href="index2.html">🗂 Tab View</a>
+    <a href="https://orbitorus.github.io/orbit-i-beta/index.html">📊 Overview</a>
+  </div>
+</header>
+
+<main>
+  <div class="accordion-item">
+    <div class="accordion-header">🌍 Globe View <span>▶</span></div>
+    <div class="accordion-content"><iframe src="globe_tracks.html"></iframe></div>
+  </div>
+
+  <div class="accordion-item">
+    <div class="accordion-header">🛰 Ground Tracks <span>▶</span></div>
+    <div class="accordion-content"><iframe src="ground_tracks.html"></iframe></div>
+  </div>
+
+  <div class="accordion-item">
+    <div class="accordion-header">📈 Altitude History <span>▶</span></div>
+    <div class="accordion-content"><iframe src="historical_orbital_parameters.html"></iframe></div>
+  </div>
+
+  <div class="accordion-item">
+    <div class="accordion-header">🗂 Satellite Category <span>▶</span></div>
+    <div class="accordion-content"><iframe src="mean_altitude_by_category.html"></iframe></div>
+  </div>
+
+  <div class="accordion-item">
+    <div class="accordion-header">🌌 Orbital Distribution <span>▶</span></div>
+    <div class="accordion-content"><iframe src="orbital_distributions_titles_higher.html"></iframe></div>
+  </div>
+
+  <div class="accordion-item">
+    <div class="accordion-header">⭐ Interactive Starlink Plot <span>▶</span></div>
+    <div class="accordion-content"><iframe src="interactive_satellite_plot.html"></iframe></div>
+  </div>
+</main>
+
+<script>
+  const headers = document.querySelectorAll('.accordion-header');
+
+  headers.forEach(header => {
+    header.addEventListener('click', () => {
+      const content = header.nextElementSibling;
+      const isActive = header.classList.contains('active');
+
+      // Close all
+      document.querySelectorAll('.accordion-header').forEach(h => h.classList.remove('active'));
+      document.querySelectorAll('.accordion-content').forEach(c => {
+        c.classList.remove('active');
+      });
+
+      // Toggle this one
+      if (!isActive) {
+        header.classList.add('active');
+        content.classList.add('active');
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

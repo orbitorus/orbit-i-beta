@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Satellite Dashboard – New View</title>
+  <title>Satellite Dashboard – Tab View</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -142,9 +142,9 @@
 <body>
 
 <header>
-  <h1>Satellite Dashboard – New View</h1>
+  <h1>Satellite Dashboard – Tab View</h1>
   <div class="top-buttons">
-    <a href="index3.html">🗂 Alternate View</a>
+    <a href="index3.html">🗂 Panel View</a>
     <a href="https://orbitorus.github.io/orbit-i-beta/index.html">📊 Overview</a>
   </div>
 </header>
@@ -156,7 +156,7 @@
     <button onclick="showTab('altitude', this)">📈 Altitude History</button>
     <button onclick="showTab('category', this)">🗂 Satellite Category</button>
     <button onclick="showTab('distribution', this)">🌌 Orbital Distribution</button>
-    <button onclick="showTab('starlink', this)">⭐ Starlink Plot</button>
+    <button onclick="showTab('satellite', this)">⭐ Satellite Plot</button>
   </div>
 
   <div id="globe" class="tab-content">
@@ -169,13 +169,13 @@
     <div class="card"><h3>📈 Altitude History</h3><iframe src="historical_orbital_parameters.html"></iframe></div>
   </div>
   <div id="category" class="tab-content">
-    <div class="card"><h3>🗂 Satellite Category</h3><iframe src="satellite_altitude_by_category.html"></iframe></div>
+    <div class="card"><h3>🗂 Satellite Category</h3><iframe src="mean_altitude_by_category.html"></iframe></div>
   </div>
   <div id="distribution" class="tab-content">
     <div class="card"><h3>🌌 Orbital Distribution</h3><iframe src="orbital_distributions_titles_higher.html"></iframe></div>
   </div>
-  <div id="starlink" class="tab-content">
-    <div class="card"><h3>⭐ Interactive Starlink Plot</h3><iframe src="starlink_interactive_satellite_plot.html"></iframe></div>
+  <div id="satellite" class="tab-content">
+    <div class="card"><h3>⭐ Interactive Starlink Plot</h3><iframe src="interactive_satellite_plot.html"></iframe></div>
   </div>
 </main>
 

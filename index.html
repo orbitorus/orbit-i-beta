@@ -5,7 +5,7 @@
   <title>Satellite Constellations Overview</title>
   <style>
     body { margin: 0; background: black; font-family: sans-serif; color: white; }
-    
+
     /* Top banner */
     #top-banner {
       position: fixed;
@@ -24,7 +24,9 @@
       box-shadow: 0 2px 6px rgba(0,0,0,0.5);
     }
 
-    #top-banner button {
+    #top-banner span { flex-shrink: 0; }
+
+    #top-banner button, #top-banner a {
       background-color: #1e90ff;
       border: none;
       color: white;
@@ -33,10 +35,13 @@
       border-radius: 4px;
       cursor: pointer;
       transition: background 0.2s, opacity 0.2s;
+      text-decoration: none;
     }
-    #top-banner button:hover:not(:disabled) {
+
+    #top-banner button:hover:not(:disabled), #top-banner a:hover {
       background-color: #63b3ff;
     }
+
     #top-banner button:disabled {
       opacity: 0.4;
       cursor: default;
@@ -85,6 +90,7 @@
   <!-- Top Banner -->
   <div id="top-banner">
     <span>Major LEO Constellation Visualization</span>
+
     <select id="constellation-select">
       <option value="all">🌐 All Active Satellites</option>
       <option value="oneweb">🇬🇧 OneWeb</option>
@@ -95,8 +101,17 @@
       <option value="qianfan">🇨🇳 Qianfan</option>
       <option value="planet">🇺🇸 Planet</option>
     </select>
+
     <button id="orbit-btn" disabled>Orbit Analysis</button>
-    <button id="dashboard-btn">Dashboard</button>
+
+    <!-- Rightmost button -->
+    <a href="https://orbitorus.grafana.net/public-dashboards/a983503e27b34b19a1efc0f8f5f4dd9c"
+       target="_blank"
+       rel="noopener noreferrer"
+       class="btn"
+       style="margin-left:auto;">
+      Summary Dashboard
+    </a>
   </div>
 
   <div id="loading">Loading satellites...</div>
@@ -121,14 +136,12 @@
     const timeLogger = document.getElementById('time-log');
     const loading = document.getElementById('loading');
     const orbitBtn = document.getElementById("orbit-btn");
-    const dashboardBtn = document.getElementById("dashboard-btn");
     const selectEl = document.getElementById("constellation-select");
 
     let satDataMap = {};
     let time = new Date();
-    let activeConstellation = "all"; // default
+    let activeConstellation = "all";
 
-    // Initialize globe
     const world = Globe()(document.getElementById('chart'))
       .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-night.jpg')
       .backgroundColor('#000')
@@ -141,7 +154,6 @@
 
     setTimeout(() => world.pointOfView({ altitude: 3.5 }));
 
-    // Adjust particle size
     setTimeout(() => {
       world.scene().traverse(obj => {
         if (obj.type === "Points" && obj.material?.onBeforeCompile) {
@@ -203,13 +215,11 @@
       world.particlesData([activeData.filter(d => !isNaN(d.lat))]);
     }
 
-    // Animation loop
     (function frameTicker() {
       requestAnimationFrame(frameTicker);
       updateSatPositions();
     })();
 
-    // Dropdown change handler
     selectEl.addEventListener("change", async (e) => {
       activeConstellation = e.target.value;
       orbitBtn.disabled = activeConstellation === "all";
@@ -221,18 +231,11 @@
       }
     });
 
-    // Orbit Analysis button
     orbitBtn.addEventListener("click", () => {
       if (!activeConstellation || activeConstellation === "all") return;
       window.location.href = `${activeConstellation}/index2.html`;
     });
 
-    // Dashboard button
-    dashboardBtn.addEventListener("click", () => {
-      window.location.href = "dashboard.html";
-    });
-
-    // Initial load
     fetchAllConstellations();
   </script>
 </body>

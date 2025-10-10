@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Summary Dashboard</title>
+  <style>
+    /* Reset & base */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #0b0c10;
+      color: #c5c6c7;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #1f2833;
+      color: #66fcf1;
+      padding: 1rem 2rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+      flex-wrap: wrap;
+    }
+
+    header h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      text-align: left;
+    }
+
+    /* Overview button */
+    .btn {
+      background-color: #45a29e;
+      color: #0b0c10;
+      border: none;
+      padding: 0.6rem 1.2rem;
+      font-size: 1rem;
+      font-weight: 500;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: all 0.2s ease-in-out;
+    }
+    .btn:hover {
+      background-color: #66fcf1;
+      transform: translateY(-2px);
+    }
+
+    /* Iframe container */
+    .iframe-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 80px);
+    }
+
+    iframe {
+      flex: 1;
+      width: 100%;
+      border: none;
+    }
+
+    footer {
+      text-align: center;
+      padding: 0.5rem;
+      font-size: 0.9rem;
+      color: #666;
+      background-color: #1f2833;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      header h1 {
+        margin-bottom: 0.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Summary Dashboard</h1>
+    <a href="index.html" class="btn">Overview</a>
+  </header>
+
+  <div class="iframe-container">
+    <iframe
+      src="https://orbitorus.grafana.net/public-dashboards/a983503e27b34b19a1efc0f8f5f4dd9c"
+      title="Orbitorus Satellite Dashboard"
+      loading="lazy">
+    </iframe>
+  </div>
+
+  <footer>© 2025 Orbitorus | Powered by Grafana</footer>
+
+</body>
+</html>

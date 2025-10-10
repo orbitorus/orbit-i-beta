@@ -95,8 +95,9 @@
       <option value="qianfan">🇨🇳 Qianfan</option>
       <option value="planet">🇺🇸 Planet</option>
     </select>
-    <button id="orbit-btn" disabled>Orbit Analysis</button> <!-- disabled by default -->
-</div>
+    <button id="orbit-btn" disabled>Orbit Analysis</button>
+    <button id="dashboard-btn">Dashboard</button>
+  </div>
 
   <div id="loading">Loading satellites...</div>
   <div id="chart"></div>
@@ -120,6 +121,7 @@
     const timeLogger = document.getElementById('time-log');
     const loading = document.getElementById('loading');
     const orbitBtn = document.getElementById("orbit-btn");
+    const dashboardBtn = document.getElementById("dashboard-btn");
     const selectEl = document.getElementById("constellation-select");
 
     let satDataMap = {};
@@ -223,6 +225,11 @@
     orbitBtn.addEventListener("click", () => {
       if (!activeConstellation || activeConstellation === "all") return;
       window.location.href = `${activeConstellation}/index2.html`;
+    });
+
+    // Dashboard button
+    dashboardBtn.addEventListener("click", () => {
+      window.location.href = "dashboard.html";
     });
 
     // Initial load

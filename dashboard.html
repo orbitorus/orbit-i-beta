@@ -3,27 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Summary Dashboard</title>
+  <title>Orbitorus Satellite Dashboard</title>
   <style>
-    /* Base styling */
-    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background-color: #0b0c10;
       color: #c5c6c7;
       display: flex;
       flex-direction: column;
+      align-items: center;
+      justify-content: center;
       height: 100vh;
+      margin: 0;
+      text-align: center;
     }
 
-    /* Header */
     header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      position: absolute;
+      top: 0;
+      width: 100%;
       background-color: #1f2833;
       color: #66fcf1;
       padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       box-shadow: 0 2px 6px rgba(0,0,0,0.4);
       flex-wrap: wrap;
     }
@@ -33,7 +37,6 @@
       font-weight: 600;
     }
 
-    /* Button */
     .btn {
       background-color: #45a29e;
       color: #0b0c10;
@@ -45,6 +48,7 @@
       text-decoration: none;
       transition: all 0.2s ease-in-out;
       cursor: pointer;
+      margin-left: 10px;
     }
 
     .btn:hover {
@@ -52,29 +56,25 @@
       transform: translateY(-2px);
     }
 
-    /* Iframe container */
-    .iframe-container {
-      flex: 1;
+    .content {
       display: flex;
       flex-direction: column;
-      height: calc(100vh - 80px);
-    }
-
-    iframe {
-      flex: 1;
-      width: 100%;
-      border: none;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
     }
 
     footer {
+      position: absolute;
+      bottom: 0;
       text-align: center;
       padding: 0.5rem;
       font-size: 0.9rem;
       color: #666;
+      width: 100%;
       background-color: #1f2833;
     }
 
-    /* Responsive */
     @media (max-width: 600px) {
       header {
         flex-direction: column;
@@ -89,21 +89,21 @@
 <body>
 
   <header>
-    <h1>Summary Dashboard</h1>
+    <h1>Orbitorus Satellite Dashboard</h1>
     <a href="index.html" class="btn">Overview</a>
   </header>
 
-  <div class="iframe-container">
-    <!-- Grafana official embed iframe -->
-    <iframe
-      src="https://orbitorus.grafana.net/public-dashboards/a983503e27b34b19a1efc0f8f5f4dd9c"
-      title="Summary of Major Constellation Dashboard"
-      width="100%"   
-      height="800px"   
-      frameborder="0"  
-      allow="fullscreen"  
-      sandbox="allow-scripts allow-same-origin allow-popups allow-forms">
-    </iframe>    
+  <div class="content">
+    <p>The Grafana dashboard cannot be embedded directly due to security restrictions.</p>
+    <a href="https://orbitorus.grafana.net/public-dashboards/a983503e27b34b19a1efc0f8f5f4dd9c" 
+       target="_blank" 
+       rel="noopener noreferrer" 
+       class="btn">
+      View Satellite Dashboard
+    </a>
+    <button class="btn" onclick="window.open('https://orbitorus.grafana.net/public-dashboards/a983503e27b34b19a1efc0f8f5f4dd9c', '_blank')">
+      Open Dashboard
+    </button>
   </div>
 
   <footer>© 2025 Orbitorus | Powered by Grafana</footer>

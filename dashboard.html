@@ -5,12 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Summary Dashboard</title>
   <style>
-    /* Reset & base */
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    /* Base styling */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background-color: #0b0c10;
@@ -35,10 +31,9 @@
     header h1 {
       font-size: 1.5rem;
       font-weight: 600;
-      text-align: left;
     }
 
-    /* Overview button */
+    /* Button */
     .btn {
       background-color: #45a29e;
       color: #0b0c10;
@@ -49,7 +44,9 @@
       border-radius: 8px;
       text-decoration: none;
       transition: all 0.2s ease-in-out;
+      cursor: pointer;
     }
+
     .btn:hover {
       background-color: #66fcf1;
       transform: translateY(-2px);
@@ -97,9 +94,10 @@
   </header>
 
   <div class="iframe-container">
+    <!-- Grafana official embed iframe -->
     <iframe
       src="https://orbitorus.grafana.net/public-dashboards/a983503e27b34b19a1efc0f8f5f4dd9c"
-      title="Orbitorus Satellite Dashboard"
+      title="Summary of Major Constellation Dashboard"
       loading="lazy">
     </iframe>
   </div>

@@ -12,7 +12,6 @@
       overflow-x: hidden;
     }
 
-    /* Top banner */
     #top-banner {
       position: fixed;
       top: 0;
@@ -27,17 +26,13 @@
       z-index: 20;
       font-size: 20px;
       font-weight: bold;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
     }
 
-    #top-banner select {
-      background-color: #222;
-      color: white;
-      border: 1px solid #555;
-      padding: 5px 10px;
-      font-size: 14px;
-      border-radius: 4px;
-      cursor: pointer;
+    #chart {
+      width: 100%;
+      height: 100vh;
+      margin-top: 50px;
     }
 
     #loading {
@@ -53,13 +48,7 @@
       z-index: 15;
     }
 
-    #chart {
-      width: 100%;
-      height: 100vh;
-      margin-top: 50px;
-    }
-
-    /* SIDE TAB + PANEL */
+    /* Side Panel + Tab */
     #side-tab {
       position: fixed;
       top: 50%;
@@ -78,6 +67,7 @@
       gap: 8px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.4);
       animation: sideGlow 1.5s infinite alternate;
+      user-select: none;
     }
 
     @keyframes sideGlow {
@@ -98,12 +88,12 @@
       z-index: 1000;
       display: flex;
       flex-direction: column;
-      align-items: stretch;
       padding: 10px;
-      overflow-y: auto;
     }
 
-    #side-panel.open { right: 0; }
+    #side-panel.open {
+      right: 0;
+    }
 
     #panel-header {
       height: 50px;
@@ -113,196 +103,111 @@
       padding: 0 12px;
       color: #e6eef8;
       border-bottom: 1px solid rgba(255,255,255,0.04);
-      flex-shrink: 0;
     }
 
-    #panel-header .title {
-      font-weight: 700;
-      font-size: 14px;
+    #table-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
     }
 
-    #panel-close {
-      background: transparent;
-      border: none;
-      color: #cfe8ff;
-      font-size: 18px;
-      cursor: pointer;
-      padding: 6px;
-      border-radius: 6px;
-    }
-
-    #panel-close:hover { background: rgba(255,255,255,0.02); }
-
-    /* TABLE styling */
     table {
       width: 100%;
       border-collapse: collapse;
-      color: white;
+      color: #cfe8ff;
       font-size: 14px;
-      margin-top: 10px;
     }
 
     th, td {
-      border: 1px solid rgba(255,255,255,0.1);
-      padding: 6px 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding: 8px;
       text-align: left;
     }
 
     th {
-      background: rgba(255,255,255,0.1);
-      font-weight: bold;
-    }
-
-    tr:nth-child(even) {
       background: rgba(255,255,255,0.05);
     }
+
   </style>
+
   <script src="https://cdn.jsdelivr.net/npm/globe.gl"></script>
 </head>
-
 <body>
-  <!-- Top Banner -->
   <div id="top-banner">
     <span>Major LEO Constellation Visualization</span>
-    <select id="constellation-select">
-      <option value="all">🌐 All Active Satellites</option>
-      <option value="oneweb">🇬🇧 OneWeb</option>
-      <option value="kuiper">🇺🇸 Kuiper</option>
-      <option value="starlink">🇺🇸 Starlink</option>
-      <option value="iridium-NEXT">🇺🇸 Iridium-NEXT</option>
-      <option value="hulianwang">🇨🇳 Hulianwang</option>
-      <option value="qianfan">🇨🇳 Qianfan</option>
-      <option value="planet">🇺🇸 Planet</option>
-    </select>
   </div>
 
   <div id="loading">Loading satellites...</div>
   <div id="chart"></div>
 
-  <!-- SIDE TAB -->
-  <div id="side-tab" title="Open dataset table">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+  <!-- Side Tab -->
+  <div id="side-tab" title="Open Summary Table">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="flex-shrink:0;">
       <path d="M3 13h2v7H3zM7 9h2v11H7zM11 5h2v15h-2zM15 3h2v17h-2z" fill="white"/>
     </svg>
-    <span style="font-size:13px;">Open Dataset</span>
+    <span style="font-size:13px;">Open Table</span>
   </div>
 
-  <!-- SIDE PANEL -->
+  <!-- Side Panel -->
   <div id="side-panel" aria-hidden="true">
     <div id="panel-header">
-      <div class="title">Constellation Size Dataset</div>
+      <div class="title">Constellation Summary</div>
       <div><button id="panel-close" aria-label="Close panel">✕</button></div>
     </div>
-    <div id="csv-table-container">Loading table...</div>
+    <div id="table-container">Loading table...</div>
   </div>
 
-  <!-- GLOBE JS (unchanged) -->
   <script type="module">
     import * as satellite from 'https://esm.sh/satellite.js';
 
-    const TLE_URLS = {
-      starlink: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=tle',
-      kuiper: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=kuiper&FORMAT=tle',
-      oneweb: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=oneweb&FORMAT=tle',
-      "iridium-NEXT": 'https://celestrak.org/NORAD/elements/gp.php?GROUP=iridium-NEXT&FORMAT=tle',
-      hulianwang: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=hulianwang&FORMAT=tle',
-      qianfan: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=qianfan&FORMAT=tle',
-      planet: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=planet&FORMAT=tle'
-    };
-
     const EARTH_RADIUS_KM = 6371;
     const TIME_STEP = 1000;
-    const loading = document.getElementById('loading');
-    let satDataMap = {};
-    let time = new Date();
-    let activeConstellation = "all";
-
+    const time = new Date();
     const world = Globe()(document.getElementById('chart'))
       .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-night.jpg')
       .backgroundColor('#000')
       .showAtmosphere(true)
       .atmosphereColor('rgba(70, 120, 180, 0.3)')
-      .pointOfView({ altitude: 3.5 });
+      .particleLat('lat')
+      .particleLng('lng')
+      .particleAltitude('alt')
+      .particlesColor(() => 'rgba(255,255,200,1)');
 
-    async function fetchConstellation(name) {
-      if (!name || satDataMap[name]) return;
-      loading.style.display = 'block';
-      const res = await fetch(TLE_URLS[name]);
-      const raw = await res.text();
-      const tleData = raw.replace(/\r/g, '').split(/\n(?=[^12])/).filter(d => d).map(tle => tle.split('\n'));
-      const sats = tleData.map(([name, ...tle]) => ({ satrec: satellite.twoline2satrec(...tle), name: name.trim().replace(/^0 /, '') }))
-        .filter(d => !!satellite.propagate(d.satrec, new Date())?.position);
-      satDataMap[name] = sats;
-      loading.style.display = 'none';
-    }
-
-    async function fetchAllConstellations() {
-      loading.style.display = 'block';
-      const keys = Object.keys(TLE_URLS);
-      await Promise.all(keys.map(fetchConstellation));
-      loading.style.display = 'none';
-    }
-
-    function updateSatPositions() {
-      time = new Date(+time + TIME_STEP);
-      const gmst = satellite.gstime(time);
-      Object.values(satDataMap).flat().forEach(d => {
-        const eci = satellite.propagate(d.satrec, time);
-        if (eci?.position) {
-          const gdPos = satellite.eciToGeodetic(eci.position, gmst);
-          d.lat = satellite.radiansToDegrees(gdPos.latitude);
-          d.lng = satellite.radiansToDegrees(gdPos.longitude);
-          d.alt = gdPos.height / EARTH_RADIUS_KM;
-        }
-      });
-      const activeData = activeConstellation === "all" ? Object.values(satDataMap).flat() : satDataMap[activeConstellation] || [];
-      world.pointsData(activeData.filter(d => !isNaN(d.lat)));
-    }
-
-    (function frameTicker() {
-      requestAnimationFrame(frameTicker);
-      updateSatPositions();
-    })();
-
-    fetchAllConstellations();
+    setTimeout(() => world.pointOfView({ altitude: 3.5 }), 1000);
   </script>
 
-  <!-- SIDE PANEL LOGIC -->
   <script>
+    // Side panel logic
     const sideTab = document.getElementById('side-tab');
     const sidePanel = document.getElementById('side-panel');
     const panelClose = document.getElementById('panel-close');
-    const tableContainer = document.getElementById('csv-table-container');
+    const tableContainer = document.getElementById('table-container');
 
     sideTab.addEventListener('click', () => {
       sidePanel.classList.toggle('open');
       sidePanel.setAttribute('aria-hidden', !sidePanel.classList.contains('open'));
     });
+    panelClose.addEventListener('click', () => sidePanel.classList.remove('open'));
 
-    panelClose.addEventListener('click', () => {
-      sidePanel.classList.remove('open');
-    });
-
+    // Load CSV from GitHub and display table
     async function loadCSV() {
-      try {
-        const url = "https://raw.githubusercontent.com/orbitorus/orbit-i-beta/main/dataset/constellation_size_sample.csv";
-        const res = await fetch(url);
-        const text = await res.text();
-        const rows = text.trim().split('\n').map(r => r.split(','));
-        const headers = rows.shift();
+      const csvUrl = 'https://raw.githubusercontent.com/orbitorus/orbit-i-beta/main/dataset/constellation_size_sample.csv';
+      const res = await fetch(csvUrl);
+      const text = await res.text();
 
-        let html = '<table><thead><tr>';
-        headers.forEach(h => html += `<th>${h}</th>`);
-        html += '</tr></thead><tbody>';
+      const rows = text.trim().split('\n').map(r => r.split(','));
+      const headers = rows.shift();
 
-        rows.forEach(r => {
-          html += '<tr>' + r.map(v => `<td>${v}</td>`).join('') + '</tr>';
-        });
-        html += '</tbody></table>';
-        tableContainer.innerHTML = html;
-      } catch (e) {
-        tableContainer.innerHTML = '<p style="color:red;">Failed to load CSV.</p>';
+      let html = '<table><thead><tr>' +
+        headers.map(h => `<th>${h}</th>`).join('') +
+        '</tr></thead><tbody>';
+
+      for (const row of rows) {
+        html += '<tr>' + row.map(c => `<td>${c}</td>`).join('') + '</tr>';
       }
+      html += '</tbody></table>';
+
+      tableContainer.innerHTML = html;
     }
     loadCSV();
   </script>

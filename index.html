@@ -1,212 +1,99 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Satellite Constellations Overview</title>
+  <meta charset="UTF-8" />
+  <title>Globe View</title>
   <style>
-    body { 
-      margin: 0; 
-      background: black; 
-      font-family: 'Segoe UI', Roboto, sans-serif; 
-      color: white; 
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      background: black;
+      font-family: sans-serif;
     }
 
-    /* Top banner (main nav) */
-    #top-banner {
-      position: fixed;
+    /* The container holding the globe */
+    #globe-container {
+      position: absolute;
       top: 0;
       left: 0;
       width: 100%;
-      height: 50px;
-      background: rgba(40, 40, 40, 0.95);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 0 20px;
-      z-index: 20;
-      font-size: 20px;
-      font-weight: bold;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+      height: 100%;
+      transition: width 0.6s ease;
     }
 
-    #top-banner span { flex-shrink: 0; }
-
-    #top-banner a {
-      background-color: #1e90ff;
-      border: none;
-      color: white;
-      padding: 6px 14px;
-      font-size: 14px;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: background 0.2s, opacity 0.2s;
-      text-decoration: none;
-    }
-
-    #top-banner a:hover {
-      background-color: #63b3ff;
-    }
-
-    #top-banner select {
-      background-color: #222;
-      color: white;
-      border: 1px solid #555;
-      padding: 5px 10px;
-      font-size: 14px;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-
-    /* Orbit button - moved below top banner, right side */
-    #orbit-btn {
-      position: fixed;
-      top: 60px;
-      right: 20px;
-      background-color: #1e90ff;
-      border: none;
-      color: white;
-      padding: 8px 16px;
-      font-size: 15px;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: background 0.2s, opacity 0.2s;
-      z-index: 25;
-    }
-
-    #orbit-btn:hover:not(:disabled) {
-      background-color: #63b3ff;
-    }
-
-    #orbit-btn:disabled {
-      opacity: 0.4;
-      cursor: default;
-    }
-
-    /* Info banner, chart, etc. remain same */
-    #info-banner {
-      position: fixed;
-      top: 50px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 90%;
-      max-width: 900px;
-      background: linear-gradient(90deg, rgba(50,50,50,0.9), rgba(20,20,20,0.9));
-      color: #e0e0e0;
-      text-align: center;
-      padding: 14px 20px;
-      font-size: 15px;
-      border-radius: 8px;
-      margin-top: 10px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-      opacity: 0;
-      z-index: 30;
-      transition: opacity 0.8s ease, transform 0.8s ease;
-      backdrop-filter: blur(4px);
-    }
-
-    #info-banner.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
-
-    #info-banner.hide {
-      opacity: 0;
-      transform: translateX(-50%) translateY(-10px);
-    }
-
-    #loading {
-      position: fixed;
-      top: 60px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(255,255,255,0.1);
-      padding: 6px 12px;
-      border-radius: 4px;
-      font-size: 14px;
-      display: none;
-      z-index: 15;
-    }
-
-    #time-log {
+    /* Side panel container */
+    #side-panel {
       position: absolute;
-      font-size: 12px;
-      padding: 5px;
-      border-radius: 3px;
-      background-color: rgba(200, 200, 200, 0.1);
-      color: lavender;
-      bottom: 10px;
-      right: 10px;
+      top: 0;
+      right: -50%; /* initially hidden off-screen */
+      width: 50%;
+      height: 100%;
+      background: #111;
+      border-left: 2px solid #333;
+      transition: right 0.6s ease;
+      z-index: 10;
     }
 
-    #chart { width: 100%; height: 100vh; margin-top: 50px; }
-  </style>
+    #side-panel iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
 
-  <script src="https://cdn.jsdelivr.net/npm/globe.gl"></script>
+    /* Floating button integrated into UI */
+    #toggle-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: white;
+      padding: 10px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      z-index: 20;
+      transition: background 0.3s;
+      backdrop-filter: blur(5px);
+    }
+
+    #toggle-btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    /* When active (panel open) */
+    body.panel-open #globe-container {
+      width: 50%;
+    }
+    body.panel-open #side-panel {
+      right: 0;
+    }
+  </style>
 </head>
 <body>
-  <!-- Top Navigation Banner -->
-  <div id="top-banner">
-    <span>Major LEO Constellation Visualization</span>
+  <!-- Floating Button -->
+  <div id="toggle-btn">☰ Info</div>
 
-    <select id="constellation-select">
-      <option value="all">🌐 All Active Satellites</option>
-      <option value="oneweb">🇬🇧 OneWeb</option>
-      <option value="kuiper">🇺🇸 Kuiper</option>
-      <option value="starlink">🇺🇸 Starlink</option>
-      <option value="iridium-NEXT">🇺🇸 Iridium-NEXT</option>
-      <option value="hulianwang">🇨🇳 Hulianwang</option>
-      <option value="qianfan">🇨🇳 Qianfan</option>
-      <option value="planet">🇺🇸 Planet</option>
-    </select>
-
-    <div style="margin-left:auto; display:flex; gap:10px;">
-      <a href="https://orbitorus.grafana.net/public-dashboards/b8a8e84a4de84bb2b02b57b866dd158d"
-         target="_blank"
-         rel="noopener noreferrer">
-        Track and Monitor
-      </a>
-
-      <a href="https://orbitorus.grafana.net/public-dashboards/a983503e27b34b19a1efc0f8f5f4dd9c"
-         target="_blank"
-         rel="noopener noreferrer">
-        Summary Dashboard
-      </a>
-    </div>
+  <!-- Globe Container -->
+  <div id="globe-container">
+    <!-- Your 3D Globe Script -->
+    <canvas id="globe"></canvas>
   </div>
 
-  <!-- Orbit Analysis button - now below banner -->
-  <button id="orbit-btn" disabled>Orbit Analysis</button>
-
-  <!-- Temporary Info Banner -->
-  <div id="info-banner">
-    This website helps you in finding apparent anomalous satellites from major mega constellations.<br>
-    Select interested constellation from the drop-down list above.
+  <!-- Sliding Panel -->
+  <div id="side-panel">
+    <iframe src="index3.html"></iframe>
   </div>
 
-  <div id="loading">Loading satellites...</div>
-  <div id="chart"></div>
-  <div id="time-log"></div>
-
-  <script type="module">
-    import * as satellite from 'https://esm.sh/satellite.js';
-
-    const orbitBtn = document.getElementById("orbit-btn");
-    const selectEl = document.getElementById("constellation-select");
-
-    let activeConstellation = "all";
-
-    // Disable button for "all", enable for others
-    selectEl.addEventListener("change", (e) => {
-      activeConstellation = e.target.value;
-      orbitBtn.disabled = activeConstellation === "all";
+  <script>
+    const btn = document.getElementById('toggle-btn');
+    btn.addEventListener('click', () => {
+      document.body.classList.toggle('panel-open');
     });
 
-    orbitBtn.addEventListener("click", () => {
-      if (!activeConstellation || activeConstellation === "all") return;
-      window.location.href = `${activeConstellation}/index2.html`;
-    });
-
-    // ... your existing satellite fetching code below ...
+    // Example: Initialize globe here (Three.js, etc.)
+    // const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('globe') });
+    // renderer.setSize(window.innerWidth, window.innerHeight);
   </script>
 </body>
 </html>

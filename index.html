@@ -292,11 +292,31 @@
       }
     });
 
-    // <-- Only change: navigate to constellation/index3.html on click -->
-    orbitBtn.addEventListener("click", () => {
+    // <--Slide out side panel constellation/index3.html on click -->
+    const sidePanel = document.getElementById("side-panel");
+    const orbitLink = document.getElementById("orbitLink");
+    
+    orbitBtn.addEventListener("click", (event) => {
       if (!activeConstellation || activeConstellation === "all") return;
-      window.location.href = `${activeConstellation}/index3.html`;
+    
+      // Prevent page navigation
+      event.preventDefault();
+      event.stopPropagation();
+    
+      // Show side panel
+      sidePanel.classList.add("active");
+    
+      // Set the link inside the panel dynamically
+      orbitLink.href = `${activeConstellation}/index3.html`;
     });
+    
+    // Clicking outside closes the panel
+    document.addEventListener("click", (event) => {
+      if (!sidePanel.contains(event.target) && event.target !== orbitBtn) {
+        sidePanel.classList.remove("active");
+      }
+    });
+
 
     fetchAllConstellations();
   </script>

@@ -130,16 +130,19 @@
       width: 100%; 
       height: 100vh; 
       margin-top: 50px; 
-      transition: width 0.5s ease; 
+      transition: all 0.5s ease; 
+      position: absolute;
+      top: 50px;
+      left: 0;
     }
 
     /* Slide-out side panel */
     #side-panel {
       position: fixed;
-      top: 0;
+      top: 50px; /* below top-banner */
       right: 0;
       width: 50%;
-      height: 100%;
+      height: calc(100% - 50px);
       background: rgba(20, 20, 20, 0.95);
       transform: translateX(100%);
       transition: transform 0.4s ease;
@@ -219,7 +222,7 @@
     const orbitLink = document.getElementById("orbitLink");
     const chart = document.getElementById("chart");
 
-    // Show info banner
+    // Info banner show
     window.addEventListener("load", () => {
       infoBanner.classList.add("show");
       setTimeout(() => {
@@ -251,7 +254,7 @@
       .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-night.jpg')
       .backgroundColor('#000')
       .showAtmosphere(true)
-      .atmosphereColor('rgba(70, 120, 180, 0.3)')
+      .atmosphereColor('rgba(70, 120, 180,0.3)')
       .particleLat('lat')
       .particleLng('lng')
       .particleAltitude('alt')
@@ -345,8 +348,9 @@
       sidePanel.classList.add("active");
       orbitLink.src = `${activeConstellation}/index3.html`;
 
-      // Shrink globe container
+      // Shrink globe container and move left
       chart.style.width = "50%";
+      chart.style.left = "0"; // align left
       world.renderer().setSize(chart.offsetWidth, chart.offsetHeight);
 
       // Smooth camera shift
@@ -358,8 +362,9 @@
       if (!sidePanel.contains(event.target) && event.target !== orbitBtn) {
         sidePanel.classList.remove("active");
 
-        // Restore globe full size
+        // Restore globe full size and center
         chart.style.width = "100%";
+        chart.style.left = "0";
         world.renderer().setSize(chart.offsetWidth, chart.offsetHeight);
 
         // Restore camera

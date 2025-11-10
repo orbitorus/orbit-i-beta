@@ -119,7 +119,14 @@
       right: 10px;
     }
 
-    #chart { width: 100%; height: 100vh; margin-top: 50px; }
+    /* Globe container */
+    #chart {
+      width: 100%;
+      height: 100vh;
+      margin-top: 50px;
+      transition: width 0.4s ease;
+      float: left;
+    }
 
     /* Slide-out side panel */
     #side-panel {
@@ -219,8 +226,8 @@
     const selectEl = document.getElementById("constellation-select");
     const sidePanel = document.getElementById("side-panel");
     const orbitLink = document.getElementById("orbitLink");
+    const chart = document.getElementById("chart");
 
-    // Show info banner for 10 seconds
     window.addEventListener("load", () => {
       infoBanner.classList.add("show");
       setTimeout(() => {
@@ -247,7 +254,7 @@
     let activeConstellation = "all";
 
     // 3D Globe
-    const world = Globe()(document.getElementById('chart'))
+    const world = Globe()(chart)
       .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-night.jpg')
       .backgroundColor('#000')
       .showAtmosphere(true)
@@ -345,6 +352,7 @@
       event.stopPropagation();
 
       sidePanel.classList.add("active");
+      chart.style.width = "50%"; // resize globe
       orbitLink.href = `${activeConstellation}/index3.html`;
     });
 
@@ -352,6 +360,7 @@
     document.addEventListener("click", (event) => {
       if (!sidePanel.contains(event.target) && event.target !== orbitBtn) {
         sidePanel.classList.remove("active");
+        chart.style.width = "100%"; // restore globe width
       }
     });
 

@@ -9,6 +9,7 @@
       background: black; 
       font-family: 'Segoe UI', Roboto, sans-serif; 
       color: white; 
+      overflow-x: hidden;
     }
 
     /* Top banner (main nav) */
@@ -119,6 +120,39 @@
     }
 
     #chart { width: 100%; height: 100vh; margin-top: 50px; }
+
+    /* Slide-out side panel */
+    #side-panel {
+      position: fixed;
+      top: 0;
+      right: -50%; /* hidden by default */
+      width: 50%;
+      height: 100%;
+      background: rgba(20, 20, 20, 0.95);
+      color: white;
+      transition: right 0.4s ease;
+      padding: 20px;
+      box-shadow: -4px 0 12px rgba(0, 0, 0, 0.5);
+      z-index: 2000;
+    }
+
+    #side-panel.active {
+      right: 0;
+    }
+
+    #side-panel h2 {
+      margin-top: 0;
+    }
+
+    #orbitLink {
+      display: inline-block;
+      margin-top: 20px;
+      background: #1e90ff;
+      color: white;
+      padding: 10px 16px;
+      border-radius: 6px;
+      text-decoration: none;
+    }
   </style>
 
   <script src="https://cdn.jsdelivr.net/npm/globe.gl"></script>
@@ -168,10 +202,23 @@
   <div id="chart"></div>
   <div id="time-log"></div>
 
+  <!-- Slide-out side panel -->
+  <div id="side-panel">
+    <h2>Orbit Analysis Panel</h2>
+    <p>Detailed orbit visualization for the selected constellation.</p>
+    <a id="orbitLink" href="#">Open in Full View</a>
+  </div>
+
   <script type="module">
     import * as satellite from 'https://esm.sh/satellite.js';
 
     const infoBanner = document.getElementById('info-banner');
+    const loading = document.getElementById('loading');
+    const timeLogger = document.getElementById('time-log');
+    const orbitBtn = document.getElementById("orbit-btn");
+    const selectEl = document.getElementById("constellation-select");
+    const sidePanel = document.getElementById("side-panel");
+    const orbitLink = document.getElementById("orbitLink");
 
     // Show info banner for 10 seconds
     window.addEventListener("load", () => {
@@ -194,15 +241,12 @@
 
     const EARTH_RADIUS_KM = 6371;
     const TIME_STEP = 1000;
-    const timeLogger = document.getElementById('time-log');
-    const loading = document.getElementById('loading');
-    const orbitBtn = document.getElementById("orbit-btn");
-    const selectEl = document.getElementById("constellation-select");
 
     let satDataMap = {};
     let time = new Date();
     let activeConstellation = "all";
 
+    // 3D Globe
     const world = Globe()(document.getElementById('chart'))
       .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-night.jpg')
       .backgroundColor('#000')
@@ -281,6 +325,7 @@
       updateSatPositions();
     })();
 
+    // Dropdown change
     selectEl.addEventListener("change", async (e) => {
       activeConstellation = e.target.value;
       orbitBtn.disabled = activeConstellation === "all";
@@ -292,31 +337,23 @@
       }
     });
 
-    // <--Slide out side panel constellation/index3.html on click -->
-    const sidePanel = document.getElementById("side-panel");
-    const orbitLink = document.getElementById("orbitLink");
-    
+    // Slide-out panel logic
     orbitBtn.addEventListener("click", (event) => {
       if (!activeConstellation || activeConstellation === "all") return;
-    
-      // Prevent page navigation
+
       event.preventDefault();
       event.stopPropagation();
-    
-      // Show side panel
+
       sidePanel.classList.add("active");
-    
-      // Set the link inside the panel dynamically
       orbitLink.href = `${activeConstellation}/index3.html`;
     });
-    
-    // Clicking outside closes the panel
+
+    // Close panel when clicking outside
     document.addEventListener("click", (event) => {
       if (!sidePanel.contains(event.target) && event.target !== orbitBtn) {
         sidePanel.classList.remove("active");
       }
     });
-
 
     fetchAllConstellations();
   </script>

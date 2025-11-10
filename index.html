@@ -1,155 +1,304 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Satellite Constellations Overview</title>
   <style>
-    body {
-      margin: 0;
-      background: black;
-      font-family: sans-serif;
-      color: white;
-      overflow: hidden;
+    body { 
+      margin: 0; 
+      background: black; 
+      font-family: 'Segoe UI', Roboto, sans-serif; 
+      color: white; 
     }
 
-    /* Top banner */
+    /* Top banner (main nav) */
     #top-banner {
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 50px;
-      background: rgba(0, 0, 0, 0.8);
+      background: rgba(40, 40, 40, 0.95);
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      gap: 10px;
       padding: 0 20px;
-      box-sizing: border-box;
-      z-index: 10;
+      z-index: 20;
+      font-size: 20px;
+      font-weight: bold;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
     }
 
-    /* Dropdown & Button styling */
-    #constellation-select,
-    #orbit-btn {
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.3);
+    #top-banner span { flex-shrink: 0; }
+
+    #top-banner button, #top-banner a {
+      background-color: #1e90ff;
+      border: none;
       color: white;
-      padding: 8px 14px;
-      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 14px;
+      border-radius: 4px;
       cursor: pointer;
-      backdrop-filter: blur(5px);
-      transition: background 0.3s;
+      transition: background 0.2s, opacity 0.2s;
+      text-decoration: none;
     }
 
-    #constellation-select:hover,
-    #orbit-btn:hover:enabled {
-      background: rgba(255, 255, 255, 0.25);
+    #top-banner button:hover:not(:disabled), #top-banner a:hover {
+      background-color: #63b3ff;
     }
 
-    #orbit-btn:disabled {
+    #top-banner button:disabled {
       opacity: 0.4;
-      cursor: not-allowed;
+      cursor: default;
     }
 
-    /* Globe container */
-    #chart {
-      position: absolute;
-      top: 50px;
-      left: 0;
-      width: 100%;
-      height: calc(100% - 50px);
-      transition: width 0.6s ease;
+    #top-banner select {
+      background-color: #222;
+      color: white;
+      border: 1px solid #555;
+      padding: 5px 10px;
+      font-size: 14px;
+      border-radius: 4px;
+      cursor: pointer;
     }
 
-    /* Slide-out side panel */
-    #side-panel {
+    /* Temporary info banner */
+    #info-banner {
       position: fixed;
       top: 50px;
-      right: -50%;
-      width: 50%;
-      height: calc(100% - 50px);
-      background: #111;
-      border-left: 2px solid #333;
-      transition: right 0.6s ease;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      max-width: 900px;
+      background: linear-gradient(90deg, rgba(50,50,50,0.9), rgba(20,20,20,0.9));
+      color: #e0e0e0;
+      text-align: center;
+      padding: 14px 20px;
+      font-size: 15px;
+      border-radius: 8px;
+      margin-top: 10px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+      opacity: 0;
+      z-index: 30;
+      transition: opacity 0.8s ease, transform 0.8s ease;
+      backdrop-filter: blur(4px);
+    }
+
+    #info-banner.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    #info-banner.hide {
+      opacity: 0;
+      transform: translateX(-50%) translateY(-10px);
+    }
+
+    #loading {
+      position: fixed;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255,255,255,0.1);
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 14px;
+      display: none;
       z-index: 15;
     }
 
-    #side-panel iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
+    #time-log {
+      position: absolute;
+      font-size: 12px;
+      padding: 5px;
+      border-radius: 3px;
+      background-color: rgba(200, 200, 200, 0.1);
+      color: lavender;
+      bottom: 10px;
+      right: 10px;
     }
 
-    /* Active panel states */
-    body.panel-open #chart {
-      width: 50%;
-    }
-
-    body.panel-open #side-panel {
-      right: 0;
-    }
+    #chart { width: 100%; height: 100vh; margin-top: 50px; }
   </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/globe.gl"></script>
 </head>
 <body>
+  <!-- Top Navigation Banner -->
   <div id="top-banner">
+    <span>Major LEO Constellation Visualization</span>
+
     <select id="constellation-select">
-      <option value="all">All Active Satellites</option>
-      <option value="starlink">Starlink</option>
-      <option value="oneweb">OneWeb</option>
-      <option value="gps">GPS</option>
+      <option value="all">🌐 All Active Satellites</option>
+      <option value="oneweb">🇬🇧 OneWeb</option>
+      <option value="kuiper">🇺🇸 Kuiper</option>
+      <option value="starlink">🇺🇸 Starlink</option>
+      <option value="iridium-NEXT">🇺🇸 Iridium-NEXT</option>
+      <option value="hulianwang">🇨🇳 Hulianwang</option>
+      <option value="qianfan">🇨🇳 Qianfan</option>
+      <option value="planet">🇺🇸 Planet</option>
     </select>
+
     <button id="orbit-btn" disabled>Orbit Analysis</button>
+
+    <div style="margin-left:auto; display:flex; gap:10px;">
+      <a href="https://orbitorus.grafana.net/public-dashboards/b8a8e84a4de84bb2b02b57b866dd158d"
+         target="_blank"
+         rel="noopener noreferrer"
+         class="btn">
+        Track and Monitor
+      </a>
+
+      <a href="https://orbitorus.grafana.net/public-dashboards/a983503e27b34b19a1efc0f8f5f4dd9c"
+         target="_blank"
+         rel="noopener noreferrer"
+         class="btn">
+        Summary Dashboard
+      </a>
+    </div>
   </div>
 
-  <div id="chart">
-    <!-- Your 3D globe or particle system -->
-    <canvas id="globe"></canvas>
+  <!-- Temporary Info Banner -->
+  <div id="info-banner">
+    This website helps you in finding apparent anomalous satellites from major mega constellations.<br>
+    Select interested constellation from the drop-down list above.
   </div>
 
-  <!-- Slide-out side panel -->
-  <div id="side-panel">
-    <iframe id="side-iframe" src=""></iframe>
-  </div>
+  <div id="loading">Loading satellites...</div>
+  <div id="chart"></div>
+  <div id="time-log"></div>
 
-  <script>
-    const constellationSelect = document.getElementById("constellation-select");
+  <script type="module">
+    import * as satellite from 'https://esm.sh/satellite.js';
+
+    const infoBanner = document.getElementById('info-banner');
+
+    // Show info banner for 10 seconds
+    window.addEventListener("load", () => {
+      infoBanner.classList.add("show");
+      setTimeout(() => {
+        infoBanner.classList.add("hide");
+        setTimeout(() => infoBanner.style.display = "none", 800);
+      }, 10000);
+    });
+
+    const TLE_URLS = {
+      starlink: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=tle',
+      kuiper: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=kuiper&FORMAT=tle',
+      oneweb: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=oneweb&FORMAT=tle',
+      "iridium-NEXT": 'https://celestrak.org/NORAD/elements/gp.php?GROUP=iridium-NEXT&FORMAT=tle',
+      hulianwang: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=hulianwang&FORMAT=tle',
+      qianfan: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=qianfan&FORMAT=tle',
+      planet: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=planet&FORMAT=tle'
+    };
+
+    const EARTH_RADIUS_KM = 6371;
+    const TIME_STEP = 1000;
+    const timeLogger = document.getElementById('time-log');
+    const loading = document.getElementById('loading');
     const orbitBtn = document.getElementById("orbit-btn");
-    const sidePanel = document.getElementById("side-panel");
-    const sideIframe = document.getElementById("side-iframe");
+    const selectEl = document.getElementById("constellation-select");
 
+    let satDataMap = {};
+    let time = new Date();
     let activeConstellation = "all";
 
-    // Enable Orbit Analysis button only if a specific constellation is selected
-    constellationSelect.addEventListener("change", (e) => {
+    const world = Globe()(document.getElementById('chart'))
+      .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-night.jpg')
+      .backgroundColor('#000')
+      .showAtmosphere(true)
+      .atmosphereColor('rgba(70, 120, 180, 0.3)')
+      .particleLat('lat')
+      .particleLng('lng')
+      .particleAltitude('alt')
+      .particlesColor(() => 'rgba(255,255,200,1)');
+
+    setTimeout(() => world.pointOfView({ altitude: 3.5 }));
+
+    setTimeout(() => {
+      world.scene().traverse(obj => {
+        if (obj.type === "Points" && obj.material?.onBeforeCompile) {
+          obj.material.onBeforeCompile = shader => {
+            shader.vertexShader = shader.vertexShader.replace('gl_PointSize = size;', 'gl_PointSize = size * 4.0;');
+            shader.fragmentShader = shader.fragmentShader.replace(
+              'gl_FragColor = vec4( color, opacity );',
+              `
+              float d = distance(gl_PointCoord, vec2(0.5,0.5));
+              float alpha = smoothstep(0.5, 0.0, d);
+              gl_FragColor = vec4(color.rgb, opacity*alpha);
+              `
+            );
+          };
+          obj.material.needsUpdate = true;
+        }
+      });
+    }, 1000);
+
+    async function fetchConstellation(name) {
+      if (!name || satDataMap[name]) return;
+      loading.style.display = 'block';
+      const res = await fetch(TLE_URLS[name]);
+      const raw = await res.text();
+      const tleData = raw.replace(/\r/g, '').split(/\n(?=[^12])/).filter(d => d).map(tle => tle.split('\n'));
+      const sats = tleData.map(([name, ...tle]) => ({
+        satrec: satellite.twoline2satrec(...tle),
+        name: name.trim().replace(/^0 /, '')
+      })).filter(d => !!satellite.propagate(d.satrec, new Date())?.position);
+      satDataMap[name] = sats;
+      loading.style.display = 'none';
+    }
+
+    async function fetchAllConstellations() {
+      loading.style.display = 'block';
+      const keys = Object.keys(TLE_URLS);
+      await Promise.all(keys.map(fetchConstellation));
+      loading.style.display = 'none';
+    }
+
+    function updateSatPositions() {
+      time = new Date(+time + TIME_STEP);
+      timeLogger.innerText = time.toString();
+      const gmst = satellite.gstime(time);
+
+      Object.values(satDataMap).flat().forEach(d => {
+        const eci = satellite.propagate(d.satrec, time);
+        if (eci?.position) {
+          const gdPos = satellite.eciToGeodetic(eci.position, gmst);
+          d.lat = satellite.radiansToDegrees(gdPos.latitude);
+          d.lng = satellite.radiansToDegrees(gdPos.longitude);
+          d.alt = gdPos.height / EARTH_RADIUS_KM;
+        } else {
+          d.lat = NaN; d.lng = NaN; d.alt = NaN;
+        }
+      });
+
+      let activeData = activeConstellation === "all" ? Object.values(satDataMap).flat() : satDataMap[activeConstellation] || [];
+      world.particlesData([activeData.filter(d => !isNaN(d.lat))]);
+    }
+
+    (function frameTicker() {
+      requestAnimationFrame(frameTicker);
+      updateSatPositions();
+    })();
+
+    selectEl.addEventListener("change", async (e) => {
       activeConstellation = e.target.value;
       orbitBtn.disabled = activeConstellation === "all";
-    });
 
-    // When "Orbit Analysis" is clicked
-    orbitBtn.addEventListener("click", () => {
-      if (!activeConstellation || activeConstellation === "all") return;
-
-      // Load constellation-specific index3.html inside iframe
-      sideIframe.src = `${activeConstellation}/index3.html`;
-
-      // Open the panel
-      document.body.classList.add("panel-open");
-    });
-
-    // Click outside the side panel closes it
-    document.addEventListener("click", (e) => {
-      const isClickInsidePanel = sidePanel.contains(e.target);
-      const isButton = e.target.id === "orbit-btn";
-      const isSelect = e.target.id === "constellation-select";
-      if (!isClickInsidePanel && !isButton && !isSelect) {
-        document.body.classList.remove("panel-open");
+      if (activeConstellation === "all") {
+        await fetchAllConstellations();
+      } else {
+        await fetchConstellation(activeConstellation);
       }
     });
 
-    // Example: Initialize your 3D globe here (Three.js, etc.)
-    // const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('globe') });
-    // renderer.setSize(window.innerWidth, window.innerHeight);
-    // animate();
+    // <-- Only change: navigate to constellation/index3.html on click -->
+    orbitBtn.addEventListener("click", () => {
+      if (!activeConstellation || activeConstellation === "all") return;
+      window.location.href = `${activeConstellation}/index3.html`;
+    });
+
+    fetchAllConstellations();
   </script>
 </body>
 </html>

@@ -53,7 +53,7 @@
     }
     #top-links { margin-left: 10%; display: flex; gap: 10px; }
 
-    /* Simple soft yellow glow for the dropdown */
+    /* Yellow glow for dropdown */
     #top-banner select.glow {
       box-shadow: 0 0 14px 6px rgba(255, 223, 60, 0.55);
       border-color: rgba(255, 223, 60, 0.9);
@@ -83,7 +83,7 @@
     #info-banner.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     #info-banner.hide { opacity: 0; transform: translateX(-50%) translateY(-10px); }
 
-    /* Loading overlay centered */
+    /* Loading overlay */
     #loading {
       position: fixed;
       top: 50%;
@@ -135,7 +135,7 @@
       left: 0;
     }
 
-    /* Right side panel (existing orbit analysis) */
+    /* Right panel */
     #side-panel {
       position: fixed;
       top: 50px;
@@ -153,18 +153,18 @@
     #side-panel.active { transform: translateX(0); }
     #side-panel iframe { width: 100%; height: 100%; border: none; }
 
-    /* Left side panel (new anomalous satellite) */
+    /* Left panel for anomalous satellites */
     #left-panel {
       position: fixed;
       top: 50px;
       left: 0;
-      width: 50%;
+      width: 40%;
       height: calc(100% - 50px);
-      background: rgba(20, 20, 20, 0.8);
+      background: rgba(20,20,20,0.8);
       transform: translateX(-100%);
       transition: transform 0.5s ease;
       padding: 20px;
-      box-shadow: 4px 0 12px rgba(0, 0, 0, 0.5);
+      box-shadow: 4px 0 12px rgba(0,0,0,0.5);
       z-index: 2000;
       overflow: auto;
     }
@@ -211,11 +211,12 @@
   </div>
 
   <div id="left-panel">
-    <!-- Empty content for anomalous satellite panel -->
+    <!-- Empty for now -->
   </div>
 
   <script type="module">
     import * as satellite from 'https://esm.sh/satellite.js';
+
     const infoBanner = document.getElementById('info-banner');
     const orbitBtn = document.getElementById("orbit-btn");
     const anomalousBtn = document.getElementById("anomalous-btn");
@@ -268,22 +269,126 @@
 
     setTimeout(() => world.pointOfView({ altitude: 3.5 }));
 
-    // --- Your existing satellite fetching & update code goes here (unchanged) ---
-    async function fetchConstellation(name, progressCallback) { /* ... */ }
-    async function fetchAllConstellations() { /* ... */ }
-    function setLoadingPercent(percent) { /* ... */ }
-    function showLoadingUI() { /* ... */ }
-    function hideLoadingUI() { /* ... */ }
-    function resetLoadingUI() { /* ... */ }
-    function updateParticleDataForActive() { /* ... */ }
-    function updateSatPositions() { /* ... */ }
+    async function fetchConstellation(name, progressCallback) {
+      if (!name) return false;
+      if (satDataMap[name]) return false;
+      try {
+        const res = await fetch(TLE_URLS[name]);
+        const raw = await res.text();
+        const tleData = raw.replace(/\r/g, '').split(/\n(?=[^12])/).filter(d => d).map(tle => tle.split('\n'));
+        const sats = tleData.map(([nm, ...tle]) => ({
+          satrec: satellite.twoline2satrec(...tle),
+          name: nm?.trim?.().replace(/^0 /, '') || 'unknown'
+        })).filter(d => !!satellite.propagate(d.satrec, new Date())?.position);
+        satDataMap[name] = sats;
+        if (progressCallback) progressCallback();
+        return true;
+      } catch (err) {
+        console.error('Error fetching constellation', name, err);
+        return false;
+      }
+    }
+
+    async function fetchAllConstellations() {
+      const names = Object.keys(TLE_URLS);
+      const toFetch = names.filter(n => !satDataMap[n]);
+
+      if (toFetch.length === 0) {
+        resetLoadingUI();
+        updateParticleDataForActive();
+        return;
+      }
+
+      showLoadingUI();
+      const total = toFetch.length;
+      let completed = 0;
+
+      const updateProgress = () => {
+        completed++;
+        const percent = Math.round((completed / total) * 100);
+        setLoadingPercent(percent);
+      };
+
+      await Promise.all(toFetch.map(name => fetchConstellation(name, updateProgress)));
+      setLoadingPercent(100);
+      setTimeout(() => {
+        hideLoadingUI();
+        updateParticleDataForActive();
+      }, 300);
+    }
+
+    function setLoadingPercent(percent) {
+      const clamped = Math.max(0, Math.min(100, percent));
+      loadingPercent.textContent = clamped + '%';
+      loadingProgress.style.width = clamped + '%';
+    }
+
+    function showLoadingUI() {
+      setLoadingPercent(0);
+      loading.style.display = 'block';
+      loading.setAttribute('aria-hidden', 'false');
+    }
+    function hideLoadingUI() {
+      loading.style.display = 'none';
+      loading.setAttribute('aria-hidden', 'true');
+      setLoadingPercent(0);
+    }
+    function resetLoadingUI() {
+      loading.style.display = 'none';
+      setLoadingPercent(0);
+    }
+
+    function updateParticleDataForActive() {
+      let activeData = activeConstellation === "all" ? Object.values(satDataMap).flat() : satDataMap[activeConstellation] || [];
+      world.particlesData([activeData.filter(d => !isNaN(d.lat))]);
+    }
+
+    function updateSatPositions() {
+      time = new Date(+time + TIME_STEP);
+      timeLogger.innerText = time.toString();
+      const gmst = satellite.gstime(time);
+      Object.values(satDataMap).flat().forEach(d => {
+        const eci = satellite.propagate(d.satrec, time);
+        if (eci?.position) {
+          const gdPos = satellite.eciToGeodetic(eci.position, gmst);
+          d.lat = satellite.radiansToDegrees(gdPos.latitude);
+          d.lng = satellite.radiansToDegrees(gdPos.longitude);
+          d.alt = gdPos.height / EARTH_RADIUS_KM;
+        } else { d.lat = NaN; d.lng = NaN; d.alt = NaN; }
+      });
+      updateParticleDataForActive();
+    }
+
     (function frameTicker() { requestAnimationFrame(frameTicker); updateSatPositions(); })();
 
-    selectEl.addEventListener("change", async (e) => { /* ... */ });
+    selectEl.addEventListener("change", async (e) => {
+      activeConstellation = e.target.value;
+      orbitBtn.disabled = activeConstellation === "all";
 
-    orbitBtn.addEventListener("click", (event) => { /* ... */ });
+      if (activeConstellation === "all") {
+        await fetchAllConstellations();
+      } else {
+        if (satDataMap[activeConstellation]) {
+          resetLoadingUI();
+          updateParticleDataForActive();
+        } else {
+          showLoadingUI();
+          await fetchConstellation(activeConstellation, () => setLoadingPercent(100));
+          setTimeout(() => hideLoadingUI(), 300);
+          updateParticleDataForActive();
+        }
+      }
+    });
 
-    // --- New left panel toggle ---
+    orbitBtn.addEventListener("click", (event) => {
+      if (!activeConstellation || activeConstellation === "all") return;
+      event.stopPropagation();
+      sidePanel.classList.add("active");
+      leftPanel.classList.remove("active");
+      orbitLink.src = `${activeConstellation}/index3.html`;
+      world.pointOfView({ lat: 0, lng: -20, altitude: 3.2 }, 1000);
+    });
+
     anomalousBtn.addEventListener("click", (event) => {
       event.stopPropagation();
       leftPanel.classList.add("active");
@@ -291,7 +396,6 @@
       world.pointOfView({ lat: 0, lng: 20, altitude: 3.2 }, 1000);
     });
 
-    // Click outside to close panels
     document.addEventListener("click", (event) => {
       if (!sidePanel.contains(event.target) && event.target !== orbitBtn) {
         sidePanel.classList.remove("active");
@@ -299,10 +403,10 @@
       }
       if (!leftPanel.contains(event.target) && event.target !== anomalousBtn) {
         leftPanel.classList.remove("active");
+        world.pointOfView({ lat: 0, lng: 0, altitude: 3.5 }, 1000);
       }
     });
 
-    // initial load
     fetchAllConstellations();
   </script>
 </body>

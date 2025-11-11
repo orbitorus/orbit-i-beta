@@ -51,6 +51,14 @@
       border-radius: 4px;
       cursor: pointer;
     }
+
+    /* 🔸 Simple soft yellow glow */
+    #top-banner select.glow {
+      box-shadow: 0 0 15px 5px rgba(255, 255, 0, 0.6);
+      border-color: yellow;
+      transition: box-shadow 0.3s ease;
+    }
+
     #top-links { margin-left: 10%; display: flex; gap: 10px; }
 
     #info-banner {
@@ -144,15 +152,6 @@
     }
     #side-panel.active { transform: translateX(0); }
     #side-panel iframe { width: 100%; height: 100%; border: none; }
-
-    /* 🌍 Temporary glow effect on Earth */
-    @keyframes earthGlow {
-      0%, 100% { filter: drop-shadow(0 0 20px rgba(0,150,255,0.3)); }
-      50% { filter: drop-shadow(0 0 50px rgba(0,200,255,0.6)); }
-    }
-    .earth-glow canvas {
-      animation: earthGlow 3s ease-in-out infinite;
-    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/globe.gl"></script>
 </head>
@@ -196,9 +195,44 @@
   <script type="module">
     import * as satellite from 'https://esm.sh/satellite.js';
     const infoBanner = document.getElementById('info-banner');
+    const orbitBtn = document.getElementById("orbit-btn");
+    const selectEl = document.getElementById("constellation-select");
+    const sidePanel = document.getElementById("side-panel");
+    const orbitLink = document.getElementById("orbitLink");
     const chart = document.getElementById("chart");
 
-    // === Initialize Globe ===
+    const loading = document.getElementById('loading');
+    const loadingPercent = document.getElementById('loading-percent');
+    const loadingProgress = document.getElementById('loading-progress');
+
+    // 🔸 Add glow during banner display
+    window.addEventListener("load", () => {
+      infoBanner.classList.add("show");
+      selectEl.classList.add("glow"); // start glowing
+      setTimeout(() => {
+        infoBanner.classList.add("hide");
+        selectEl.classList.remove("glow"); // remove glow
+        setTimeout(() => infoBanner.style.display = "none", 800);
+      }, 10000);
+    });
+
+    const TLE_URLS = {
+      starlink: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=tle',
+      kuiper: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=kuiper&FORMAT=tle',
+      oneweb: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=oneweb&FORMAT=tle',
+      "iridium-NEXT": 'https://celestrak.org/NORAD/elements/gp.php?GROUP=iridium-NEXT&FORMAT=tle',
+      hulianwang: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=hulianwang&FORMAT=tle',
+      qianfan: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=qianfan&FORMAT=tle',
+      planet: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=planet&FORMAT=tle'
+    };
+
+    const EARTH_RADIUS_KM = 6371;
+    const TIME_STEP = 1000;
+    const timeLogger = document.getElementById('time-log');
+    let satDataMap = {};
+    let time = new Date();
+    let activeConstellation = "all";
+
     const world = Globe()(chart)
       .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-night.jpg')
       .backgroundColor('#000')
@@ -211,18 +245,127 @@
 
     setTimeout(() => world.pointOfView({ altitude: 3.5 }));
 
-    // 🌍 Add temporary glow for the duration of info banner
-    window.addEventListener("load", () => {
-      infoBanner.classList.add("show");
-      chart.classList.add("earth-glow"); // add glow effect
+    async function fetchConstellation(name, progressCallback) {
+      if (!name) return false;
+      if (satDataMap[name]) return false;
+      try {
+        const res = await fetch(TLE_URLS[name]);
+        const raw = await res.text();
+        const tleData = raw.replace(/\r/g, '').split(/\n(?=[^12])/).filter(d => d).map(tle => tle.split('\n'));
+        const sats = tleData.map(([nm, ...tle]) => ({
+          satrec: satellite.twoline2satrec(...tle),
+          name: nm?.trim?.().replace(/^0 /, '') || 'unknown'
+        })).filter(d => !!satellite.propagate(d.satrec, new Date())?.position);
+        satDataMap[name] = sats;
+        if (progressCallback) progressCallback();
+        return true;
+      } catch (err) {
+        console.error('Error fetching constellation', name, err);
+        return false;
+      }
+    }
+
+    async function fetchAllConstellations() {
+      const names = Object.keys(TLE_URLS);
+      const toFetch = names.filter(n => !satDataMap[n]);
+      if (toFetch.length === 0) {
+        resetLoadingUI();
+        updateParticleDataForActive();
+        return;
+      }
+      showLoadingUI();
+      const total = toFetch.length;
+      let completed = 0;
+      const updateProgress = () => {
+        completed++;
+        const percent = Math.round((completed / total) * 100);
+        setLoadingPercent(percent);
+      };
+      await Promise.all(toFetch.map(name => fetchConstellation(name, updateProgress)));
+      setLoadingPercent(100);
       setTimeout(() => {
-        infoBanner.classList.add("hide");
-        chart.classList.remove("earth-glow"); // remove glow when banner fades
-        setTimeout(() => infoBanner.style.display = "none", 800);
-      }, 10000);
+        hideLoadingUI();
+        updateParticleDataForActive();
+      }, 300);
+    }
+
+    function setLoadingPercent(percent) {
+      const clamped = Math.max(0, Math.min(100, percent));
+      loadingPercent.textContent = clamped + '%';
+      loadingProgress.style.width = clamped + '%';
+    }
+    function showLoadingUI() {
+      setLoadingPercent(0);
+      loading.style.display = 'block';
+      loading.setAttribute('aria-hidden', 'false');
+    }
+    function hideLoadingUI() {
+      loading.style.display = 'none';
+      loading.setAttribute('aria-hidden', 'true');
+      setLoadingPercent(0);
+    }
+    function resetLoadingUI() {
+      loading.style.display = 'none';
+      setLoadingPercent(0);
+    }
+
+    function updateParticleDataForActive() {
+      let activeData = activeConstellation === "all" ? Object.values(satDataMap).flat() : satDataMap[activeConstellation] || [];
+      world.particlesData([activeData.filter(d => !isNaN(d.lat))]);
+    }
+
+    function updateSatPositions() {
+      time = new Date(+time + TIME_STEP);
+      timeLogger.innerText = time.toString();
+      const gmst = satellite.gstime(time);
+      Object.values(satDataMap).flat().forEach(d => {
+        const eci = satellite.propagate(d.satrec, time);
+        if (eci?.position) {
+          const gdPos = satellite.eciToGeodetic(eci.position, gmst);
+          d.lat = satellite.radiansToDegrees(gdPos.latitude);
+          d.lng = satellite.radiansToDegrees(gdPos.longitude);
+          d.alt = gdPos.height / EARTH_RADIUS_KM;
+        } else { d.lat = NaN; d.lng = NaN; d.alt = NaN; }
+      });
+      updateParticleDataForActive();
+    }
+
+    (function frameTicker() { requestAnimationFrame(frameTicker); updateSatPositions(); })();
+
+    selectEl.addEventListener("change", async (e) => {
+      activeConstellation = e.target.value;
+      orbitBtn.disabled = activeConstellation === "all";
+      if (activeConstellation === "all") {
+        await fetchAllConstellations();
+      } else {
+        if (satDataMap[activeConstellation]) {
+          resetLoadingUI();
+          updateParticleDataForActive();
+        } else {
+          showLoadingUI();
+          const fetched = await fetchConstellation(activeConstellation, () => setLoadingPercent(100));
+          setTimeout(() => hideLoadingUI(), 300);
+          updateParticleDataForActive();
+        }
+      }
     });
 
-    // (Rest of your code unchanged)
+    orbitBtn.addEventListener("click", (event) => {
+      if (!activeConstellation || activeConstellation === "all") return;
+      event.stopPropagation();
+      sidePanel.classList.add("active");
+      orbitLink.src = `${activeConstellation}/index3.html`;
+      world.pointOfView({ lat: 0, lng: -20, altitude: 3.2 }, 1000);
+    });
+
+    document.addEventListener("click", (event) => {
+      if (!sidePanel.contains(event.target) && event.target !== orbitBtn) {
+        sidePanel.classList.remove("active");
+        world.pointOfView({ lat: 0, lng: 0, altitude: 3.5 }, 1000);
+      }
+    });
+
+    fetchAllConstellations();
   </script>
 </body>
 </html>

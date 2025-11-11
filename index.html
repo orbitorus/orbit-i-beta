@@ -11,7 +11,6 @@
       color: white; 
       overflow-x: hidden;
     }
-
     /* Top banner */
     #top-banner {
       position: fixed;
@@ -51,21 +50,7 @@
       font-size: 14px;
       border-radius: 4px;
       cursor: pointer;
-      transition: box-shadow 0.5s ease, border 0.3s ease;
     }
-
-    /* 🌟 Glowing yellow highlight around the select */
-    .highlight-select {
-      animation: glowPulse 1.5s infinite alternate;
-      box-shadow: 0 0 10px 2px rgba(255, 255, 0, 0.8);
-      border-color: yellow;
-    }
-
-    @keyframes glowPulse {
-      0% { box-shadow: 0 0 10px 2px rgba(255,255,0,0.7); }
-      100% { box-shadow: 0 0 20px 4px rgba(255,255,100,1); }
-    }
-
     #top-links { margin-left: 10%; display: flex; gap: 10px; }
 
     #info-banner {
@@ -91,8 +76,85 @@
     #info-banner.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     #info-banner.hide { opacity: 0; transform: translateX(-50%) translateY(-10px); }
 
-    /* rest of your CSS unchanged... */
+    /* Loading overlay */
+    #loading {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(40,40,40,0.9);
+      padding: 15px 25px;
+      border-radius: 8px;
+      font-size: 15px;
+      text-align: center;
+      display: none;
+      z-index: 1000;
+      width: 250px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.5);
+    }
+    #loading-bar {
+      width: 100%;
+      height: 8px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+    #loading-progress {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #1e90ff, #63b3ff);
+      transition: width 0.3s ease;
+    }
+
+    #time-log {
+      position: absolute;
+      font-size: 12px;
+      padding: 5px;
+      border-radius: 3px;
+      background-color: rgba(200, 200, 200, 0.1);
+      color: lavender;
+      bottom: 10px;
+      right: 10px;
+    }
+
+    #chart { 
+      width: 100%; 
+      height: 100vh; 
+      margin-top: 50px; 
+      transition: all 0.5s ease; 
+      position: absolute;
+      top: 50px;
+      left: 0;
+    }
+
+    #side-panel {
+      position: fixed;
+      top: 50px;
+      right: 0;
+      width: 50%;
+      height: calc(100% - 50px);
+      background: rgba(20, 20, 20, 0.95);
+      transform: translateX(100%);
+      transition: transform 0.5s ease;
+      padding: 20px;
+      box-shadow: -4px 0 12px rgba(0, 0, 0, 0.5);
+      z-index: 2000;
+      overflow: auto;
+    }
+    #side-panel.active { transform: translateX(0); }
+    #side-panel iframe { width: 100%; height: 100%; border: none; }
+
+    /* 🌍 Temporary glow effect on Earth */
+    @keyframes earthGlow {
+      0%, 100% { filter: drop-shadow(0 0 20px rgba(0,150,255,0.3)); }
+      50% { filter: drop-shadow(0 0 50px rgba(0,200,255,0.6)); }
+    }
+    .earth-glow canvas {
+      animation: earthGlow 3s ease-in-out infinite;
+    }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/globe.gl"></script>
 </head>
 <body>
   <div id="top-banner">
@@ -119,26 +181,48 @@
     Select a constellation from the drop-down list.
   </div>
 
-  <!-- rest of body ... -->
+  <div id="loading" aria-hidden="true">
+    <div id="loading-text">Loading satellites... <span id="loading-percent">0%</span></div>
+    <div id="loading-bar"><div id="loading-progress"></div></div>
+  </div>
 
-  <script>
+  <div id="chart"></div>
+  <div id="time-log"></div>
+
+  <div id="side-panel">
+    <iframe id="orbitLink" src=""></iframe>
+  </div>
+
+  <script type="module">
+    import * as satellite from 'https://esm.sh/satellite.js';
     const infoBanner = document.getElementById('info-banner');
-    const selectEl = document.getElementById('constellation-select');
+    const chart = document.getElementById("chart");
 
+    // === Initialize Globe ===
+    const world = Globe()(chart)
+      .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-night.jpg')
+      .backgroundColor('#000')
+      .showAtmosphere(true)
+      .atmosphereColor('rgba(70,120,180,0.3)')
+      .particleLat('lat')
+      .particleLng('lng')
+      .particleAltitude('alt')
+      .particlesColor(() => 'rgba(255,255,200,1)');
+
+    setTimeout(() => world.pointOfView({ altitude: 3.5 }));
+
+    // 🌍 Add temporary glow for the duration of info banner
     window.addEventListener("load", () => {
-      // show banner
       infoBanner.classList.add("show");
-      // add glow to the dropdown
-      selectEl.classList.add("highlight-select");
-
-      // hide banner and remove glow after 10s
+      chart.classList.add("earth-glow"); // add glow effect
       setTimeout(() => {
         infoBanner.classList.add("hide");
-        // remove glow smoothly
-        selectEl.classList.remove("highlight-select");
+        chart.classList.remove("earth-glow"); // remove glow when banner fades
         setTimeout(() => infoBanner.style.display = "none", 800);
       }, 10000);
     });
+
+    // (Rest of your code unchanged)
   </script>
 </body>
 </html>

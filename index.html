@@ -11,6 +11,7 @@
       color: white; 
       overflow-x: hidden;
     }
+
     /* Top banner */
     #top-banner {
       position: fixed;
@@ -60,6 +61,7 @@
       transition: box-shadow 0.25s ease, border-color 0.25s ease;
     }
 
+    /* Info banner */
     #info-banner {
       position: fixed;
       top: 50px;
@@ -153,18 +155,18 @@
     #side-panel.active { transform: translateX(0); }
     #side-panel iframe { width: 100%; height: 100%; border: none; }
 
-    /* Left panel for anomalous satellites */
+    /* Left panel */
     #left-panel {
       position: fixed;
       top: 50px;
       left: 0;
-      width: 40%;
+      width: 50%;
       height: calc(100% - 50px);
-      background: rgba(20,20,20,0.8);
+      background: rgba(20, 20, 20, 0.8);
       transform: translateX(-100%);
       transition: transform 0.5s ease;
       padding: 20px;
-      box-shadow: 4px 0 12px rgba(0,0,0,0.5);
+      box-shadow: 4px 0 12px rgba(0, 0, 0, 0.5);
       z-index: 2000;
       overflow: auto;
     }
@@ -209,10 +211,7 @@
   <div id="side-panel">
     <iframe id="orbitLink" src=""></iframe>
   </div>
-
-  <div id="left-panel">
-    <!-- Empty for now -->
-  </div>
+  <div id="left-panel"></div>
 
   <script type="module">
     import * as satellite from 'https://esm.sh/satellite.js';
@@ -229,16 +228,6 @@
     const loading = document.getElementById('loading');
     const loadingPercent = document.getElementById('loading-percent');
     const loadingProgress = document.getElementById('loading-progress');
-
-    window.addEventListener("load", () => {
-      infoBanner.classList.add("show");
-      selectEl.classList.add('glow');
-      setTimeout(() => {
-        infoBanner.classList.add("hide");
-        selectEl.classList.remove('glow');
-        setTimeout(() => infoBanner.style.display = "none", 800);
-      }, 10000);
-    });
 
     const TLE_URLS = {
       starlink: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=tle',
@@ -269,6 +258,16 @@
 
     setTimeout(() => world.pointOfView({ altitude: 3.5 }));
 
+    window.addEventListener("load", () => {
+      infoBanner.classList.add("show");
+      selectEl.classList.add('glow');
+      setTimeout(() => {
+        infoBanner.classList.add("hide");
+        selectEl.classList.remove('glow');
+        setTimeout(() => infoBanner.style.display = "none", 800);
+      }, 10000);
+    });
+
     async function fetchConstellation(name, progressCallback) {
       if (!name) return false;
       if (satDataMap[name]) return false;
@@ -292,51 +291,20 @@
     async function fetchAllConstellations() {
       const names = Object.keys(TLE_URLS);
       const toFetch = names.filter(n => !satDataMap[n]);
-
-      if (toFetch.length === 0) {
-        resetLoadingUI();
-        updateParticleDataForActive();
-        return;
-      }
-
+      if (toFetch.length === 0) { resetLoadingUI(); updateParticleDataForActive(); return; }
       showLoadingUI();
       const total = toFetch.length;
       let completed = 0;
-
-      const updateProgress = () => {
-        completed++;
-        const percent = Math.round((completed / total) * 100);
-        setLoadingPercent(percent);
-      };
-
+      const updateProgress = () => { completed++; setLoadingPercent(Math.round((completed / total) * 100)); };
       await Promise.all(toFetch.map(name => fetchConstellation(name, updateProgress)));
       setLoadingPercent(100);
-      setTimeout(() => {
-        hideLoadingUI();
-        updateParticleDataForActive();
-      }, 300);
+      setTimeout(() => { hideLoadingUI(); updateParticleDataForActive(); }, 300);
     }
 
-    function setLoadingPercent(percent) {
-      const clamped = Math.max(0, Math.min(100, percent));
-      loadingPercent.textContent = clamped + '%';
-      loadingProgress.style.width = clamped + '%';
-    }
-
-    function showLoadingUI() {
-      setLoadingPercent(0);
-      loading.style.display = 'block';
-      loading.setAttribute('aria-hidden', 'false');
-    }
-    function hideLoadingUI() {
-      loading.style.display = 'none';
-      loading.setAttribute('aria-hidden', 'true');
-      setLoadingPercent(0);
-    }
-    function resetLoadingUI() {
-      loading.style.display = 'none';
-      setLoadingPercent(0);
-    }
+    function setLoadingPercent(percent) { const clamped = Math.max(0, Math.min(100, percent)); loadingPercent.textContent = clamped + '%'; loadingProgress.style.width = clamped + '%'; }
+    function showLoadingUI() { setLoadingPercent(0); loading.style.display = 'block'; loading.setAttribute('aria-hidden', 'false'); }
+    function hideLoadingUI() { loading.style.display = 'none'; loading.setAttribute('aria-hidden', 'true'); setLoadingPercent(0); }
+    function resetLoadingUI() { loading.style.display = 'none'; setLoadingPercent(0); }
 
     function updateParticleDataForActive() {
       let activeData = activeConstellation === "all" ? Object.values(satDataMap).flat() : satDataMap[activeConstellation] || [];
@@ -364,47 +332,33 @@
     selectEl.addEventListener("change", async (e) => {
       activeConstellation = e.target.value;
       orbitBtn.disabled = activeConstellation === "all";
-
-      if (activeConstellation === "all") {
-        await fetchAllConstellations();
-      } else {
-        if (satDataMap[activeConstellation]) {
-          resetLoadingUI();
-          updateParticleDataForActive();
-        } else {
-          showLoadingUI();
-          await fetchConstellation(activeConstellation, () => setLoadingPercent(100));
-          setTimeout(() => hideLoadingUI(), 300);
-          updateParticleDataForActive();
-        }
+      if (activeConstellation === "all") { await fetchAllConstellations(); } 
+      else {
+        if (satDataMap[activeConstellation]) { resetLoadingUI(); updateParticleDataForActive(); } 
+        else { showLoadingUI(); await fetchConstellation(activeConstellation, () => setLoadingPercent(100)); setTimeout(() => hideLoadingUI(), 300); updateParticleDataForActive(); }
       }
     });
 
     orbitBtn.addEventListener("click", (event) => {
-      if (!activeConstellation || activeConstellation === "all") return;
       event.stopPropagation();
-      sidePanel.classList.add("active");
-      leftPanel.classList.remove("active");
+      if (!activeConstellation || activeConstellation === "all") return;
+      sidePanel.classList.toggle("active");
       orbitLink.src = `${activeConstellation}/index3.html`;
-      world.pointOfView({ lat: 0, lng: -20, altitude: 3.2 }, 1000);
+      if (sidePanel.classList.contains("active")) world.pointOfView({ lat: 0, lng: -20, altitude: 3.2 }, 1000);
+      else if (!leftPanel.classList.contains("active")) world.pointOfView({ lat: 0, lng: 0, altitude: 3.5 }, 1000);
     });
 
     anomalousBtn.addEventListener("click", (event) => {
       event.stopPropagation();
-      leftPanel.classList.add("active");
-      sidePanel.classList.remove("active");
-      world.pointOfView({ lat: 0, lng: 20, altitude: 3.2 }, 1000);
+      leftPanel.classList.toggle("active");
+      if (leftPanel.classList.contains("active")) world.pointOfView({ lat: 0, lng: 20, altitude: 3.2 }, 1000);
+      else if (!sidePanel.classList.contains("active")) world.pointOfView({ lat: 0, lng: 0, altitude: 3.5 }, 1000);
     });
 
     document.addEventListener("click", (event) => {
-      if (!sidePanel.contains(event.target) && event.target !== orbitBtn) {
-        sidePanel.classList.remove("active");
-        world.pointOfView({ lat: 0, lng: 0, altitude: 3.5 }, 1000);
-      }
-      if (!leftPanel.contains(event.target) && event.target !== anomalousBtn) {
-        leftPanel.classList.remove("active");
-        world.pointOfView({ lat: 0, lng: 0, altitude: 3.5 }, 1000);
-      }
+      if (!sidePanel.contains(event.target) && event.target !== orbitBtn) sidePanel.classList.remove("active");
+      if (!leftPanel.contains(event.target) && event.target !== anomalousBtn) leftPanel.classList.remove("active");
+      if (!sidePanel.classList.contains("active") && !leftPanel.classList.contains("active")) world.pointOfView({ lat: 0, lng: 0, altitude: 3.5 }, 1000);
     });
 
     fetchAllConstellations();

@@ -11,7 +11,6 @@
       color: white; 
       overflow-x: hidden;
     }
-
     /* Top banner */
     #top-banner {
       position: fixed;
@@ -29,9 +28,7 @@
       font-weight: bold;
       box-shadow: 0 2px 6px rgba(0,0,0,0.5);
     }
-
     #top-banner span { flex-shrink: 0; }
-
     #top-banner button, #top-banner a {
       background-color: #1e90ff;
       border: none;
@@ -43,16 +40,8 @@
       transition: background 0.2s, opacity 0.2s;
       text-decoration: none;
     }
-
-    #top-banner button:hover:not(:disabled), #top-banner a:hover {
-      background-color: #63b3ff;
-    }
-
-    #top-banner button:disabled {
-      opacity: 0.4;
-      cursor: default;
-    }
-
+    #top-banner button:hover:not(:disabled), #top-banner a:hover { background-color: #63b3ff; }
+    #top-banner button:disabled { opacity: 0.4; cursor: default; }
     #top-banner select {
       background-color: #222;
       color: white;
@@ -62,12 +51,7 @@
       border-radius: 4px;
       cursor: pointer;
     }
-
-    #top-links {
-      margin-left: 10%;
-      display: flex;
-      gap: 10px;
-    }
+    #top-links { margin-left: 10%; display: flex; gap: 10px; }
 
     #info-banner {
       position: fixed;
@@ -89,7 +73,6 @@
       transition: opacity 0.8s ease, transform 0.8s ease;
       backdrop-filter: blur(4px);
     }
-
     #info-banner.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     #info-banner.hide { opacity: 0; transform: translateX(-50%) translateY(-10px); }
 
@@ -109,7 +92,6 @@
       width: 250px;
       box-shadow: 0 0 12px rgba(0,0,0,0.5);
     }
-
     #loading-bar {
       width: 100%;
       height: 8px;
@@ -118,7 +100,6 @@
       overflow: hidden;
       margin-top: 10px;
     }
-
     #loading-progress {
       height: 100%;
       width: 0%;
@@ -161,7 +142,6 @@
       z-index: 2000;
       overflow: auto;
     }
-
     #side-panel.active { transform: translateX(0); }
     #side-panel iframe { width: 100%; height: 100%; border: none; }
   </style>
@@ -192,7 +172,7 @@
     Select a constellation from the drop-down list.
   </div>
 
-  <div id="loading">
+  <div id="loading" aria-hidden="true">
     <div id="loading-text">Loading satellites... <span id="loading-percent">0%</span></div>
     <div id="loading-bar"><div id="loading-progress"></div></div>
   </div>
@@ -254,36 +234,85 @@
 
     setTimeout(() => world.pointOfView({ altitude: 3.5 }));
 
+    // Return value: true if we actually fetched new data, false if it was cached / skipped
     async function fetchConstellation(name, progressCallback) {
-      if (!name || satDataMap[name]) return;
-      const res = await fetch(TLE_URLS[name]);
-      const raw = await res.text();
-      const tleData = raw.replace(/\r/g, '').split(/\n(?=[^12])/).filter(d => d).map(tle => tle.split('\n'));
-      const sats = tleData.map(([name, ...tle]) => ({
-        satrec: satellite.twoline2satrec(...tle),
-        name: name.trim().replace(/^0 /, '')
-      })).filter(d => !!satellite.propagate(d.satrec, new Date())?.position);
-      satDataMap[name] = sats;
-      if (progressCallback) progressCallback();
+      if (!name) return false;
+      if (satDataMap[name]) return false; // already cached
+      try {
+        const res = await fetch(TLE_URLS[name]);
+        const raw = await res.text();
+        const tleData = raw.replace(/\r/g, '').split(/\n(?=[^12])/).filter(d => d).map(tle => tle.split('\n'));
+        const sats = tleData.map(([nm, ...tle]) => ({
+          satrec: satellite.twoline2satrec(...tle),
+          name: nm?.trim?.().replace(/^0 /, '') || 'unknown'
+        })).filter(d => !!satellite.propagate(d.satrec, new Date())?.position);
+        satDataMap[name] = sats;
+        if (progressCallback) progressCallback();
+        return true;
+      } catch (err) {
+        console.error('Error fetching constellation', name, err);
+        // if error, ensure caller can hide loader
+        return false;
+      }
     }
 
     async function fetchAllConstellations() {
-      loading.style.display = 'block';
-      loadingPercent.textContent = "0%";
-      loadingProgress.style.width = "0%";
-      const total = Object.keys(TLE_URLS).length;
+      // Always fetch all (but skip those already cached)
+      const names = Object.keys(TLE_URLS);
+      const toFetch = names.filter(n => !satDataMap[n]);
+
+      if (toFetch.length === 0) {
+        // Nothing to fetch — make sure loader hidden and particles updated
+        resetLoadingUI();
+        updateParticleDataForActive();
+        return;
+      }
+
+      showLoadingUI();
+      const total = toFetch.length;
       let completed = 0;
 
       const updateProgress = () => {
         completed++;
         const percent = Math.round((completed / total) * 100);
-        loadingPercent.textContent = percent + "%";
-        loadingProgress.style.width = percent + "%";
+        setLoadingPercent(percent);
       };
 
-      await Promise.all(Object.keys(TLE_URLS).map(name => fetchConstellation(name, updateProgress)));
+      // fetch in parallel but only for ones not cached
+      await Promise.all(toFetch.map(name => fetchConstellation(name, updateProgress)));
+      // ensure full
+      setLoadingPercent(100);
+      // small delay so users can see 100%
+      setTimeout(() => {
+        hideLoadingUI();
+        updateParticleDataForActive();
+      }, 300);
+    }
 
-      setTimeout(() => { loading.style.display = 'none'; }, 500);
+    function setLoadingPercent(percent) {
+      const clamped = Math.max(0, Math.min(100, percent));
+      loadingPercent.textContent = clamped + '%';
+      loadingProgress.style.width = clamped + '%';
+    }
+
+    function showLoadingUI() {
+      setLoadingPercent(0);
+      loading.style.display = 'block';
+      loading.setAttribute('aria-hidden', 'false');
+    }
+    function hideLoadingUI() {
+      loading.style.display = 'none';
+      loading.setAttribute('aria-hidden', 'true');
+      setLoadingPercent(0);
+    }
+    function resetLoadingUI() {
+      loading.style.display = 'none';
+      setLoadingPercent(0);
+    }
+
+    function updateParticleDataForActive() {
+      let activeData = activeConstellation === "all" ? Object.values(satDataMap).flat() : satDataMap[activeConstellation] || [];
+      world.particlesData([activeData.filter(d => !isNaN(d.lat))]);
     }
 
     function updateSatPositions() {
@@ -299,8 +328,7 @@
           d.alt = gdPos.height / EARTH_RADIUS_KM;
         } else { d.lat = NaN; d.lng = NaN; d.alt = NaN; }
       });
-      let activeData = activeConstellation === "all" ? Object.values(satDataMap).flat() : satDataMap[activeConstellation] || [];
-      world.particlesData([activeData.filter(d => !isNaN(d.lat))]);
+      updateParticleDataForActive();
     }
 
     (function frameTicker() { requestAnimationFrame(frameTicker); updateSatPositions(); })();
@@ -308,14 +336,26 @@
     selectEl.addEventListener("change", async (e) => {
       activeConstellation = e.target.value;
       orbitBtn.disabled = activeConstellation === "all";
-      if (activeConstellation === "all") { await fetchAllConstellations(); } 
-      else { 
-        loading.style.display = 'block';
-        await fetchConstellation(activeConstellation, () => {
-          loadingPercent.textContent = "100%";
-          loadingProgress.style.width = "100%";
-          setTimeout(() => loading.style.display = 'none', 400);
-        }); 
+
+      if (activeConstellation === "all") {
+        // fetch all missing constellations
+        await fetchAllConstellations();
+      } else {
+        // single constellation: only show loader if we actually need to fetch
+        if (satDataMap[activeConstellation]) {
+          // already have it cached — reset/hide loader and update particles immediately
+          resetLoadingUI();
+          updateParticleDataForActive();
+        } else {
+          showLoadingUI();
+          // fetch this constellation; progress callback will set 100% when complete
+          const fetched = await fetchConstellation(activeConstellation, () => {
+            setLoadingPercent(100);
+          });
+          // hide loader regardless of success or failure after small delay
+          setTimeout(() => hideLoadingUI(), 300);
+          updateParticleDataForActive();
+        }
       }
     });
 
@@ -334,6 +374,7 @@
       }
     });
 
+    // initial load
     fetchAllConstellations();
   </script>
 </body>

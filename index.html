@@ -361,15 +361,36 @@
       event.stopPropagation();
       leftPanel.classList.toggle("active");
 
-      if (leftPanel.classList.contains("active")) {
-        try {
-          const response = await fetch("left_panel.html");
-          if (!response.ok) throw new Error("Failed to load left_panel.html");
-          leftPanelContent.innerHTML = await response.text();
-        } catch (err) {
-          leftPanelContent.innerHTML = `<p style='color:red;'>⚠️ Could not load left_panel.html</p>`;
-          console.error(err);
-        }
+    if (leftPanel.classList.contains("active")) {
+      try {
+        const response = await fetch("left_panel.html");
+        if (!response.ok) throw new Error("Failed to load left_panel.html");
+        const htmlText = await response.text();
+        leftPanelContent.innerHTML = htmlText;
+    
+        // ✅ Re-run any <script> tags so Tabulator initializes
+        const scripts = leftPanelContent.querySelectorAll("script");
+        scripts.forEach(oldScript => {
+          const newScript = document.createElement("script");
+          if (oldScript.src) {
+            // If script has a src, reload it properly
+            newScript.src = oldScript.src;
+          } else {
+            // Otherwise, copy inline script text
+            newScript.text = oldScript.textContent;
+          }
+          document.body.appendChild(newScript);
+          oldScript.remove();
+        });
+    
+      } catch (err) {
+        leftPanelContent.innerHTML = `<p style='color:red;'>⚠️ Could not load left_panel.html</p>`;
+        console.error(err);
+      }
+} else {
+  leftPanelContent.innerHTML = "";
+}
+
       } else {
         leftPanelContent.innerHTML = "";
       }

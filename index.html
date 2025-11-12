@@ -145,7 +145,7 @@
       right: 0;
       width: 50%;
       height: calc(100% - 50px);
-      background: rgba(20, 20, 20, 0.8); /* right panel transparency 80% */
+      background: rgba(20, 20, 20, 0.8);
       transform: translateX(100%);
       transition: transform 0.5s ease;
       padding: 20px;
@@ -160,7 +160,7 @@
       position: fixed;
       top: 50px;
       left: 0;
-      width: 35%; /* slightly smaller so it does not overlap */
+      width: 35%;
       height: calc(100% - 50px);
       background: rgba(20, 20, 20, 0.8);
       transform: translateX(-100%);
@@ -190,8 +190,10 @@
     </select>
     <button id="orbit-btn" disabled>Orbit Analysis</button>
     <div id="top-links">
-      <a href="https://orbitorus.grafana.net/public-dashboards/b8a8e84a4de84bb2b02b57b866dd158d" target="_blank" rel="noopener noreferrer" title="Opens a new tab when clicked">Dynamic Tracking of Constellation</a>
-      <a href="https://orbitorus.grafana.net/public-dashboards/a983503e27b34b19a1efc0f8f5f4dd9c" target="_blank" rel="noopener noreferrer" title="Opens a new tab when clicked">Starlink Stats</a>
+      <a href="https://orbitorus.grafana.net/public-dashboards/b8a8e84a4de84bb2b02b57b866dd158d" 
+         target="_blank" rel="noopener noreferrer" title="Opens a new tab when clicked">Dynamic Tracking of Constellation</a>
+      <a href="https://orbitorus.grafana.net/public-dashboards/a983503e27b34b19a1efc0f8f5f4dd9c" 
+         target="_blank" rel="noopener noreferrer" title="Opens a new tab when clicked">Starlink Stats</a>
     </div>
   </div>
 
@@ -213,7 +215,7 @@
   </div>
 
   <div id="left-panel">
-    <!-- empty for now -->
+    <div id="left-panel-content"></div>
   </div>
 
   <script type="module">
@@ -224,6 +226,7 @@
     const selectEl = document.getElementById("constellation-select");
     const sidePanel = document.getElementById("side-panel");
     const leftPanel = document.getElementById("left-panel");
+    const leftPanelContent = document.getElementById("left-panel-content");
     const orbitLink = document.getElementById("orbitLink");
     const chart = document.getElementById("chart");
 
@@ -349,19 +352,35 @@
     orbitBtn.addEventListener("click", (event) => {
       if (!activeConstellation || activeConstellation === "all") return;
       event.stopPropagation();
-      sidePanel.classList.add("active");
+      sidePanel.classList.toggle("active");
       orbitLink.src = `${activeConstellation}/index3.html`;
       world.pointOfView({ lat: 0, lng: -20, altitude: 3.2 }, 1000);
     });
 
-    anomalousBtn.addEventListener("click", (event) => {
+    anomalousBtn.addEventListener("click", async (event) => {
       event.stopPropagation();
-      leftPanel.classList.add("active");
+      leftPanel.classList.toggle("active");
+
+      if (leftPanel.classList.contains("active")) {
+        try {
+          const response = await fetch("left_panel.html");
+          if (!response.ok) throw new Error("Failed to load left_panel.html");
+          leftPanelContent.innerHTML = await response.text();
+        } catch (err) {
+          leftPanelContent.innerHTML = `<p style='color:red;'>⚠️ Could not load left_panel.html</p>`;
+          console.error(err);
+        }
+      } else {
+        leftPanelContent.innerHTML = "";
+      }
     });
 
     document.addEventListener("click", (event) => {
       if (!sidePanel.contains(event.target) && event.target !== orbitBtn) sidePanel.classList.remove("active");
       if (!leftPanel.contains(event.target) && event.target !== anomalousBtn) leftPanel.classList.remove("active");
+      if (!sidePanel.classList.contains("active") && !leftPanel.classList.contains("active")) {
+        world.pointOfView({ lat: 0, lng: 0, altitude: 3.5 }, 1000);
+      }
     });
 
     fetchAllConstellations();

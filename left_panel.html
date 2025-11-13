@@ -2,136 +2,98 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Constellation Size Table</title>
-
-  <!-- Tabulator library -->
-  <link href="https://unpkg.com/tabulator-tables@5.5.2/dist/css/tabulator.min.css" rel="stylesheet">
-  <script src="https://unpkg.com/tabulator-tables@5.5.2/dist/js/tabulator.min.js"></script>
-
   <style>
     body {
-      background: #0b0b0b;
+      font-family: "Segoe UI", sans-serif;
       color: white;
-      font-family: 'Segoe UI', sans-serif;
       margin: 0;
       padding: 0;
+      background: transparent;
     }
 
-    h1 {
+    h2 {
       text-align: center;
-      padding: 20px;
       color: #ffd700;
-      text-shadow: 0 0 15px #ffd700;
-      font-weight: 600;
+      text-shadow: 0 0 10px #ffd700, 0 0 20px #ffcc00;
+      margin-bottom: 15px;
     }
 
     #table-container {
-      width: 90%;
-      margin: 0 auto 50px auto;
-      background: #111;
-      border-radius: 10px;
-      padding: 15px;
-      box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+      width: 95%;
+      margin: 0 auto;
+      overflow-x: auto;
     }
 
-    /* === TABLE OVERRIDES === */
-    .tabulator {
-      background-color: #121212 !important;
-      border: 1px solid #333 !important;
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      background-color: #111; /* solid dark background */
+      color: cyan; /* readable data text */
+      border: 1px solid #00ffff55;
     }
 
-    /* Force table cell text white */
-    .tabulator .tabulator-tableHolder .tabulator-table .tabulator-row .tabulator-cell {
-      color: #ffffff !important;
-      background-color: #181818 !important;
-      font-weight: 500;
+    th {
+      background-color: #111;
+      color: #ffd700; /* gold header */
+      border-bottom: 2px solid #00ffff55;
+      padding: 8px;
+      text-align: left;
+      text-transform: capitalize;
     }
 
-    /* Alternate row color */
-    .tabulator .tabulator-row:nth-child(even) .tabulator-cell {
-      background-color: #151515 !important;
+    td {
+      padding: 8px;
+      border-bottom: 1px solid #00ffff33;
     }
 
-    /* Hover effect */
-    .tabulator .tabulator-row:hover .tabulator-cell {
-      background-color: rgba(0, 255, 255, 0.1) !important;
-    }
-
-    /* Header cyan + glow */
-    .tabulator .tabulator-header .tabulator-col,
-    .tabulator .tabulator-header .tabulator-col .tabulator-col-title {
-      background-color: #002a2a !important;
-      color: #00ffff !important;
-      text-shadow: 0 0 10px #00ffff;
-      font-weight: bold;
-      border-right: 1px solid #004d4d !important;
-    }
-
-    /* Filter input color fix */
-    .tabulator .tabulator-header-filter input {
-      background: #222 !important;
-      color: #fff !important;
-      border: 1px solid #00cccc !important;
-    }
-
-    /* Pagination footer styling */
-    .tabulator-footer {
-      background-color: #0f0f0f !important;
-      color: white !important;
-      border-top: 1px solid #00cccc !important;
-    }
-
-    /* Pagination buttons */
-    .tabulator-footer .tabulator-page {
-      background: #222 !important;
-      color: white !important;
-      border: 1px solid #00cccc !important;
-    }
-
-    .tabulator-footer .tabulator-page.active {
-      background: #00cccc !important;
-      color: black !important;
+    tr:hover {
+      background-color: #222;
     }
   </style>
 </head>
 <body>
-  <h1>Constellation Size Sample</h1>
+  <h2>Constellation Size Sample</h2>
   <div id="table-container"></div>
 
   <script>
-    async function loadCSV(url) {
-      const response = await fetch(url);
-      const csv = await response.text();
+    const csvUrl = "https://raw.githubusercontent.com/orbitorus/orbit-i-beta/refs/heads/main/dataset/constellation_size_sample.csv";
 
-      const rows = csv.trim().split('\n');
-      const headers = rows[0].split(',');
-      const data = rows.slice(1).map(row => {
-        const values = row.split(',');
-        const obj = {};
-        headers.forEach((header, i) => obj[header.trim()] = values[i]?.trim());
-        return obj;
+    fetch(csvUrl)
+      .then(res => res.text())
+      .then(data => {
+        const rows = data.trim().split("\n").map(r => r.split(","));
+        const headers = rows[0];
+        const table = document.createElement("table");
+
+        const thead = document.createElement("thead");
+        const headerRow = document.createElement("tr");
+        headers.forEach(h => {
+          const th = document.createElement("th");
+          th.textContent = h;
+          headerRow.appendChild(th);
+        });
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+
+        const tbody = document.createElement("tbody");
+        for (let i = 1; i < rows.length; i++) {
+          const row = document.createElement("tr");
+          rows[i].forEach(cell => {
+            const td = document.createElement("td");
+            td.textContent = cell;
+            row.appendChild(td);
+          });
+          tbody.appendChild(row);
+        }
+        table.appendChild(tbody);
+
+        document.getElementById("table-container").appendChild(table);
+      })
+      .catch(err => {
+        document.getElementById("table-container").innerHTML = `<p style='color:red;'>⚠️ Failed to load CSV data</p>`;
+        console.error(err);
       });
-
-      new Tabulator("#table-container", {
-        data: data,
-        layout: "fitColumns",
-        columns: headers.map(header => ({
-          title: header.replace(/"/g, ""),
-          field: header.replace(/"/g, ""),
-          headerFilter: "input",
-          sorter: "string"
-        })),
-        pagination: "local",
-        paginationSize: 10,
-        paginationSizeSelector: [10, 20, 50, 100],
-        movableColumns: true,
-        resizableColumns: true,
-        selectable: true,
-        placeholder: "Loading data...",
-      });
-    }
-
-    loadCSV("https://raw.githubusercontent.com/orbitorus/orbit-i-beta/refs/heads/main/dataset/constellation_size_sample.csv");
   </script>
 </body>
 </html>

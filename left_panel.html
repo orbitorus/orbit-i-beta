@@ -34,63 +34,67 @@
       box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
     }
 
-    .tabulator {
-      background-color: #1a1a1a !important;
+    /* Ensure all table text is white */
+    .tabulator,
+    .tabulator * {
       color: #ffffff !important;
-      border: 1px solid #333;
     }
 
+    /* Header background + cyan text */
     .tabulator .tabulator-header {
-      background-color: #0f2027 !important;
-      border-bottom: 1px solid #00ffff;
-      box-shadow: 0 0 10px rgba(0, 255, 255, 0.4);
+      background-color: #0d1b1e !important;
+      border-bottom: 1px solid #00ffff !important;
     }
 
-    .tabulator .tabulator-col {
-      background-color: #0b3d3d !important;
+    .tabulator .tabulator-col,
+    .tabulator .tabulator-col .tabulator-col-title {
       color: cyan !important;
       font-weight: bold;
-      border-right: 1px solid #004d4d;
-      text-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
+      text-shadow: 0 0 8px rgba(0, 255, 255, 0.8);
+      background-color: #0b3d3d !important;
+      border-right: 1px solid #004d4d !important;
     }
 
+    /* Rows */
     .tabulator .tabulator-row {
-      background-color: #1a1a1a;
-      color: #fff;
+      background-color: #1a1a1a !important;
+      color: #fff !important;
     }
 
     .tabulator .tabulator-row:nth-child(even) {
-      background-color: #141414;
+      background-color: #141414 !important;
     }
 
     .tabulator .tabulator-row:hover {
-      background-color: rgba(0, 255, 255, 0.1);
+      background-color: rgba(0, 255, 255, 0.1) !important;
     }
 
     .tabulator .tabulator-row.tabulator-selected {
-      background-color: rgba(0, 255, 255, 0.2) !important;
+      background-color: rgba(0, 255, 255, 0.25) !important;
     }
 
+    /* Cell borders */
     .tabulator .tabulator-cell {
-      border-right: 1px solid #333;
+      border-right: 1px solid #333 !important;
     }
 
+    /* Header filters */
     .tabulator .tabulator-header-filter input {
-      background: #222;
-      color: #fff;
-      border: 1px solid #00cccc;
+      background: #222 !important;
+      color: #fff !important;
+      border: 1px solid #00cccc !important;
       padding: 3px;
     }
 
     .tabulator-footer {
-      background-color: #0f0f0f;
-      color: white;
-      border-top: 1px solid #00cccc;
+      background-color: #0f0f0f !important;
+      color: white !important;
+      border-top: 1px solid #00cccc !important;
     }
   </style>
 </head>
 <body>
-  <h1>Constellation Size Sample</h1>
+  <h1>Constellation Size Table</h1>
   <div id="table-container"></div>
 
   <script>
@@ -123,13 +127,9 @@
         resizableColumns: true,
         selectable: true,
         placeholder: "Loading data...",
-        rowClick: function(e, row) {
-          console.log("Clicked Row:", row.getData());
-        },
       });
     }
 
-    // Load your raw CSV file
     loadCSV("https://raw.githubusercontent.com/orbitorus/orbit-i-beta/refs/heads/main/dataset/constellation_size_sample.csv");
   </script>
 </body>

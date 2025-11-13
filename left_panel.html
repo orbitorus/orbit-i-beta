@@ -2,98 +2,139 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <title>Constellation Size Sample</title>
   <style>
-    body {
-      font-family: "Segoe UI", sans-serif;
-      color: white;
+    html, body {
+      height: 100%;
       margin: 0;
       padding: 0;
       background: transparent;
+      font-family: "Segoe UI", "Roboto", Arial, sans-serif;
+    }
+
+    body {
+      color: #e0e0e0;
+    }
+
+    #main-content {
+      background: #181818;
+      border-radius: 10px;
+      box-shadow: 0 2px 18px rgba(0,0,0,0.25);
+      margin: 0;
+      padding: 18px 8px 12px 8px;
+      min-height: 90vh;
     }
 
     h2 {
       text-align: center;
       color: #ffd700;
       text-shadow: 0 0 10px #ffd700, 0 0 20px #ffcc00;
-      margin-bottom: 15px;
+      margin-bottom: 18px;
     }
 
     #table-container {
-      width: 95%;
+      width: 98%;
       margin: 0 auto;
       overflow-x: auto;
+      background: none;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 14px;
-      background-color: #111; /* solid dark background */
-      color: cyan; /* readable data text */
-      border: 1px solid #00ffff55;
+      background-color: #10121B;
+      color: #1de9b6;
+      box-shadow: 0 1px 10px rgba(0,0,0,0.13);
+      font-size: 15px;
+      border: 1px solid #027e6b70;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 8px 10px;
     }
 
     th {
-      background-color: #111;
-      color: #ffd700; /* gold header */
-      border-bottom: 2px solid #00ffff55;
-      padding: 8px;
+      background-color: #181818;
+      color: #ffd700;
+      border-bottom: 2px solid #11e8bb99;
+      font-weight: 600;
       text-align: left;
-      text-transform: capitalize;
+      letter-spacing: 0.5px;
     }
 
     td {
-      padding: 8px;
-      border-bottom: 1px solid #00ffff33;
+      border-bottom: 1px solid #11e8bb30;
     }
 
-    tr:hover {
-      background-color: #222;
+    tr:hover td {
+      background-color: #27313f;
+    }
+
+    .error-msg {
+      color: #ff4e4e;
+      margin: 2em 0;
+      text-align: center;
     }
   </style>
 </head>
 <body>
-  <h2>Constellation Size Sample</h2>
-  <div id="table-container"></div>
-
+  <div id="main-content">
+    <h2>Constellation Size Sample</h2>
+    <div id="table-container"></div>
+  </div>
   <script>
-    const csvUrl = "https://raw.githubusercontent.com/orbitorus/orbit-i-beta/refs/heads/main/dataset/constellation_size_sample.csv";
+    function loadConstellationTable() {
+      const csvUrl = "https://raw.githubusercontent.com/orbitorus/orbit-i-beta/refs/heads/main/dataset/constellation_size_sample.csv";
+      const container = document.getElementById("table-container");
+      container.innerHTML = ""; // Clear previous table or error
 
-    fetch(csvUrl)
-      .then(res => res.text())
-      .then(data => {
-        const rows = data.trim().split("\n").map(r => r.split(","));
-        const headers = rows[0];
-        const table = document.createElement("table");
+      fetch(csvUrl)
+        .then(res => {
+          if (!res.ok) throw new Error("Could not fetch CSV");
+          return res.text();
+        })
+        .then(data => {
+          // Parse CSV
+          const rows = data.trim().split("\n").map(line => line.split(","));
+          if (rows.length < 2) throw new Error("CSV contains no data");
 
-        const thead = document.createElement("thead");
-        const headerRow = document.createElement("tr");
-        headers.forEach(h => {
-          const th = document.createElement("th");
-          th.textContent = h;
-          headerRow.appendChild(th);
-        });
-        thead.appendChild(headerRow);
-        table.appendChild(thead);
-
-        const tbody = document.createElement("tbody");
-        for (let i = 1; i < rows.length; i++) {
-          const row = document.createElement("tr");
-          rows[i].forEach(cell => {
-            const td = document.createElement("td");
-            td.textContent = cell;
-            row.appendChild(td);
+          const table = document.createElement("table");
+          // Header
+          const thead = document.createElement("thead");
+          const headRow = document.createElement("tr");
+          rows[0].forEach(header => {
+            const th = document.createElement("th");
+            th.textContent = header;
+            headRow.appendChild(th);
           });
-          tbody.appendChild(row);
-        }
-        table.appendChild(tbody);
+          thead.appendChild(headRow);
+          table.appendChild(thead);
 
-        document.getElementById("table-container").appendChild(table);
-      })
-      .catch(err => {
-        document.getElementById("table-container").innerHTML = `<p style='color:red;'>⚠️ Failed to load CSV data</p>`;
-        console.error(err);
-      });
+          // Body
+          const tbody = document.createElement("tbody");
+          for (let i = 1; i < rows.length; i++) {
+            const row = document.createElement("tr");
+            rows[i].forEach(cell => {
+              const td = document.createElement("td");
+              td.textContent = cell;
+              row.appendChild(td);
+            });
+            tbody.appendChild(row);
+          }
+          table.appendChild(tbody);
+
+          container.appendChild(table);
+        })
+        .catch(err => {
+          container.innerHTML = `<div class="error-msg">⚠️ Failed to load data.</div>`;
+          console.error(err);
+        });
+    }
+
+    // Always load table if this panel is rendered.
+    loadConstellationTable();
   </script>
 </body>
 </html>

@@ -20,8 +20,8 @@
     h1 {
       text-align: center;
       padding: 20px;
-      color: cyan;
-      text-shadow: 0 0 15px cyan;
+      color: #ffd700;
+      text-shadow: 0 0 15px #ffd700;
       font-weight: 600;
     }
 
@@ -31,54 +31,36 @@
       background: #111;
       border-radius: 10px;
       padding: 15px;
-      box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
     }
 
-    /* Ensure all table text is white */
-    .tabulator,
-    .tabulator * {
-      color: #ffffff !important;
-    }
-
-    /* Header background + cyan text */
-    .tabulator .tabulator-header {
-      background-color: #0d1b1e !important;
-      border-bottom: 1px solid #00ffff !important;
-    }
-
-    .tabulator .tabulator-col,
-    .tabulator .tabulator-col .tabulator-col-title {
+    /* Header styling */
+    .tabulator .tabulator-header .tabulator-col {
+      background-color: #002f2f !important;
       color: cyan !important;
       font-weight: bold;
       text-shadow: 0 0 8px rgba(0, 255, 255, 0.8);
-      background-color: #0b3d3d !important;
       border-right: 1px solid #004d4d !important;
     }
 
-    /* Rows */
-    .tabulator .tabulator-row {
+    /* Fix for invisible text: force white text in rows */
+    .tabulator .tabulator-row .tabulator-cell {
+      color: #ffffff !important;
       background-color: #1a1a1a !important;
-      color: #fff !important;
     }
 
-    .tabulator .tabulator-row:nth-child(even) {
+    .tabulator .tabulator-row:nth-child(even) .tabulator-cell {
       background-color: #141414 !important;
     }
 
-    .tabulator .tabulator-row:hover {
+    .tabulator .tabulator-row:hover .tabulator-cell {
       background-color: rgba(0, 255, 255, 0.1) !important;
     }
 
-    .tabulator .tabulator-row.tabulator-selected {
+    .tabulator .tabulator-row.tabulator-selected .tabulator-cell {
       background-color: rgba(0, 255, 255, 0.25) !important;
     }
 
-    /* Cell borders */
-    .tabulator .tabulator-cell {
-      border-right: 1px solid #333 !important;
-    }
-
-    /* Header filters */
     .tabulator .tabulator-header-filter input {
       background: #222 !important;
       color: #fff !important;
@@ -94,7 +76,7 @@
   </style>
 </head>
 <body>
-  <h1>Constellation Size Table</h1>
+  <h1>Constellation Size Sample</h1>
   <div id="table-container"></div>
 
   <script>
@@ -115,8 +97,8 @@
         data: data,
         layout: "fitColumns",
         columns: headers.map(header => ({
-          title: header,
-          field: header,
+          title: header.replace(/"/g, ""),  // removes quotes
+          field: header.replace(/"/g, ""),
           headerFilter: "input",
           sorter: "string"
         })),

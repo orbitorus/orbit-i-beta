@@ -34,44 +34,63 @@
       box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
     }
 
-    /* Header styling */
-    .tabulator .tabulator-header .tabulator-col {
-      background-color: #002f2f !important;
-      color: cyan !important;
-      font-weight: bold;
-      text-shadow: 0 0 8px rgba(0, 255, 255, 0.8);
-      border-right: 1px solid #004d4d !important;
+    /* === TABLE OVERRIDES === */
+    .tabulator {
+      background-color: #121212 !important;
+      border: 1px solid #333 !important;
     }
 
-    /* Fix for invisible text: force white text in rows */
-    .tabulator .tabulator-row .tabulator-cell {
+    /* Force table cell text white */
+    .tabulator .tabulator-tableHolder .tabulator-table .tabulator-row .tabulator-cell {
       color: #ffffff !important;
-      background-color: #1a1a1a !important;
+      background-color: #181818 !important;
+      font-weight: 500;
     }
 
+    /* Alternate row color */
     .tabulator .tabulator-row:nth-child(even) .tabulator-cell {
-      background-color: #141414 !important;
+      background-color: #151515 !important;
     }
 
+    /* Hover effect */
     .tabulator .tabulator-row:hover .tabulator-cell {
       background-color: rgba(0, 255, 255, 0.1) !important;
     }
 
-    .tabulator .tabulator-row.tabulator-selected .tabulator-cell {
-      background-color: rgba(0, 255, 255, 0.25) !important;
+    /* Header cyan + glow */
+    .tabulator .tabulator-header .tabulator-col,
+    .tabulator .tabulator-header .tabulator-col .tabulator-col-title {
+      background-color: #002a2a !important;
+      color: #00ffff !important;
+      text-shadow: 0 0 10px #00ffff;
+      font-weight: bold;
+      border-right: 1px solid #004d4d !important;
     }
 
+    /* Filter input color fix */
     .tabulator .tabulator-header-filter input {
       background: #222 !important;
       color: #fff !important;
       border: 1px solid #00cccc !important;
-      padding: 3px;
     }
 
+    /* Pagination footer styling */
     .tabulator-footer {
       background-color: #0f0f0f !important;
       color: white !important;
       border-top: 1px solid #00cccc !important;
+    }
+
+    /* Pagination buttons */
+    .tabulator-footer .tabulator-page {
+      background: #222 !important;
+      color: white !important;
+      border: 1px solid #00cccc !important;
+    }
+
+    .tabulator-footer .tabulator-page.active {
+      background: #00cccc !important;
+      color: black !important;
     }
   </style>
 </head>
@@ -97,7 +116,7 @@
         data: data,
         layout: "fitColumns",
         columns: headers.map(header => ({
-          title: header.replace(/"/g, ""),  // removes quotes
+          title: header.replace(/"/g, ""),
           field: header.replace(/"/g, ""),
           headerFilter: "input",
           sorter: "string"

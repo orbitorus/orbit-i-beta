@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Constellation Size Sample Table</title>
+  <title>Constellation Size Table</title>
 
   <!-- Tabulator library -->
   <link href="https://unpkg.com/tabulator-tables@5.5.2/dist/css/tabulator.min.css" rel="stylesheet">
@@ -20,8 +20,8 @@
     h1 {
       text-align: center;
       padding: 20px;
-      color: #ffd700;
-      text-shadow: 0 0 15px #ffd700;
+      color: cyan;
+      text-shadow: 0 0 15px cyan;
       font-weight: 600;
     }
 
@@ -31,26 +31,44 @@
       background: #111;
       border-radius: 10px;
       padding: 15px;
-      box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+      box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
     }
 
     .tabulator {
       background-color: #1a1a1a !important;
-      color: #eee;
-      border: 1px solid #444;
+      color: #ffffff !important;
+      border: 1px solid #333;
     }
 
     .tabulator .tabulator-header {
-      background-color: #222 !important;
-      border-bottom: 1px solid #555;
+      background-color: #0f2027 !important;
+      border-bottom: 1px solid #00ffff;
+      box-shadow: 0 0 10px rgba(0, 255, 255, 0.4);
+    }
+
+    .tabulator .tabulator-col {
+      background-color: #0b3d3d !important;
+      color: cyan !important;
+      font-weight: bold;
+      border-right: 1px solid #004d4d;
+      text-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
     }
 
     .tabulator .tabulator-row {
       background-color: #1a1a1a;
+      color: #fff;
+    }
+
+    .tabulator .tabulator-row:nth-child(even) {
+      background-color: #141414;
+    }
+
+    .tabulator .tabulator-row:hover {
+      background-color: rgba(0, 255, 255, 0.1);
     }
 
     .tabulator .tabulator-row.tabulator-selected {
-      background-color: #333 !important;
+      background-color: rgba(0, 255, 255, 0.2) !important;
     }
 
     .tabulator .tabulator-cell {
@@ -60,8 +78,14 @@
     .tabulator .tabulator-header-filter input {
       background: #222;
       color: #fff;
-      border: 1px solid #444;
+      border: 1px solid #00cccc;
       padding: 3px;
+    }
+
+    .tabulator-footer {
+      background-color: #0f0f0f;
+      color: white;
+      border-top: 1px solid #00cccc;
     }
   </style>
 </head>

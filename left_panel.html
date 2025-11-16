@@ -102,7 +102,7 @@
             .split("\n")
             .map(line =>
               line.split(",").map(cell =>
-                cell.trim().replace(/^"(.*)"$/, "$1")
+                cell.trim().replace(/^"+|"+$/g, "")   // <-- remove all wrapping quotes
               )
             );
       

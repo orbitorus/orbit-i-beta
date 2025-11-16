@@ -96,22 +96,33 @@
           return res.text();
         })
         .then(data => {
-          // Parse CSV
-          const rows = data.trim().split("\n").map(line => line.split(","));
+          // Parse CSV with quote removal
+          const rows = data
+            .trim()
+            .split("\n")
+            .map(line =>
+              line.split(",").map(cell =>
+                cell.trim().replace(/^"(.*)"$/, "$1")
+              )
+            );
+      
           if (rows.length < 2) throw new Error("CSV contains no data");
-
+      
           const table = document.createElement("table");
+      
           // Header
           const thead = document.createElement("thead");
           const headRow = document.createElement("tr");
+      
           rows[0].forEach(header => {
             const th = document.createElement("th");
             th.textContent = header;
             headRow.appendChild(th);
           });
+      
           thead.appendChild(headRow);
           table.appendChild(thead);
-
+                
           // Body
           const tbody = document.createElement("tbody");
           for (let i = 1; i < rows.length; i++) {

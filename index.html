@@ -276,9 +276,9 @@
       .particlesColor(() => 'rgba(255,255,200,1)')
       .globeMaterial(material => {
         const loader = new THREE.TextureLoader();
-        const day = loader.load('earth-day.jpg');
-        const night = loader.load('earth-night.jpg');
-        const stars = loader.load('stars.jpg');
+        const day = loader.load('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-day.jpg');
+        const night = loader.load('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-night.jpg');
+        const stars = loader.load('//cdn.jsdelivr.net/npm/three-globe/example/img/night-sky.png');
     
         chart.scene().background = stars;
     

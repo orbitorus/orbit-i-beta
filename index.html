@@ -268,48 +268,14 @@
     let activeConstellation = "all";
 
     const world = Globe()(chart)
+      .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-night.jpg')
+      .backgroundColor('#000')
       .showAtmosphere(true)
       .atmosphereColor('rgba(70,120,180,0.3)')
       .particleLat('lat')
       .particleLng('lng')
       .particleAltitude('alt')
-      .particlesColor(() => 'rgba(255,255,200,1)')
-      .globeMaterial(material => {
-        const loader = new THREE.TextureLoader();
-        const day = loader.load('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-day.jpg');
-        const night = loader.load('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-night.jpg');
-        const stars = loader.load('//cdn.jsdelivr.net/npm/three-globe/example/img/night-sky.png');
-    
-        chart.scene().background = stars;
-    
-        // Sun illumination direction
-        const now = new Date();
-        const minutes = now.getUTCHours() * 60 + now.getUTCMinutes();
-        const subSolarLng = (minutes / 1440) * 360 - 180;
-    
-        // Rotate Earth so correct area faces sun
-        chart.rotation.y = THREE.MathUtils.degToRad(subSolarLng);
-    
-        material.onBeforeCompile = shader => {
-          shader.uniforms.dayTexture = { value: day };
-          shader.uniforms.nightTexture = { value: night };
-          shader.uniforms.lightDirection = { value: new THREE.Vector3(1, 0, 0) };
-    
-          shader.fragmentShader = shader.fragmentShader.replace(
-            '#include <map_fragment>',
-            `
-              vec3 normal = normalize(vNormal);
-              float i = dot(normal, lightDirection);
-    
-              vec4 dayColor = texture2D(dayTexture, vUv);
-              vec4 nightColor = texture2D(nightTexture, vUv);
-    
-              diffuseColor = i > 0.0 ? dayColor : nightColor;
-            `
-          );
-        };
-      });
-
+      .particlesColor(() => 'rgba(255,255,200,1)');
 
     setTimeout(() => world.pointOfView({ altitude: 3.5 }));
 

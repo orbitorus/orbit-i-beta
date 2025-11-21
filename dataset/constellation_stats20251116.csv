@@ -1,6 +1,6 @@
 satellite_group,sat_count,outlier_count,outlier_index
 STARLINK,8844,TBD,TBD
-ONEWEB,651,2,"[50:0.1], [618,0.1]"
+ONEWEB,651,2,[50:0.1][618:0.1]
 KUIPER,153,TBD,TBD
 QIANFAN,108,TBD,TBD
 HULIANWANG,104,TBD,TBD

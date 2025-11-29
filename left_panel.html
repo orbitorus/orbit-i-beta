@@ -224,21 +224,17 @@
     }
 
     /* ========= SORT BUTTON ========= */
-    document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("sortButton").addEventListener("click", () => {
         const header = filteredData[0];
         const body = filteredData.slice(1);
-
-        // sort by column 5
+      
         body.sort((a, b) => {
-          const valA = parseFloat(a[5]) || 0;
-          const valB = parseFloat(b[5]) || 0;
+          const valA = parseFloat(a[5].replace(/,/g, '').trim()) || 0;
+          const valB = parseFloat(b[5].replace(/,/g, '').trim()) || 0;
           return sortAscending ? valA - valB : valB - valA;
         });
-
+      
         sortAscending = !sortAscending;
-        document.getElementById("sortButton").textContent = "Index Sort";
-
         filteredData = [header, ...body];
         renderTable("filtered-container", filteredData);
       });

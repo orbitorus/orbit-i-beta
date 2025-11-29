@@ -18,17 +18,17 @@
       background: #181818;
       border-radius: 10px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.25);
-      margin: 0;
       padding: 18px 8px 12px 8px;
       min-height: 90vh;
     }
 
+    /* Titles with minimal glow */
     h2 {
       text-align: center;
-      color: #ffd700;
-      text-shadow: 0 0 5px #ffd70080;
+      color: #e6c400;           /* softer gold */
+      text-shadow: none;         /* remove glow completely */
       margin-bottom: 10px;
-      font-weight: 600;
+      font-weight: 500;
     }
 
     #table-container, #filtered-container {
@@ -76,7 +76,7 @@
       align-items: center;
     }
 
-    select, input, button {
+    select, button {
       padding: 6px;
       background: #222;
       border: 1px solid #555;
@@ -84,8 +84,8 @@
       color: white;
     }
 
-    #searchInput {
-      flex: 1;
+    select[multiple] {
+      height: 120px;
     }
 
     .error-msg {
@@ -95,6 +95,7 @@
     }
   </style>
 </head>
+
 <body>
 
   <div id="main-content">
@@ -106,75 +107,58 @@
     <!-- SECOND TABLE TITLE -->
     <h2>Detailed Outliers Summary</h2>
 
-    <!-- FILTER + SEARCH + SORT CONTROLS -->
+    <!-- FILTER + SORT -->
     <div class="controls">
-      <label>Filter by Column 1:</label>
-      <select id="filterDropdown"></select>
-
-      <label>Search:</label>
-      <input id="searchInput" placeholder="type satellite name" />
+      <label>Filter by Group Name:</label>
+      <select id="filterDropdown" multiple></select>
 
       <button id="sortButton">Sort ASC</button>
     </div>
 
-    <!-- FILTERED TABLE -->
     <div id="filtered-container"></div>
-
   </div>
 
   <script>
-    /* ========= LOAD FIRST TABLE (group summary) ========= */
-
+    /* ========= LOAD MAIN TABLE ========= */
     function loadConstellationTable() {
-      const csvUrl = "https://raw.githubusercontent.com/orbitorus/orbit-i-beta/refs/heads/main/dataset/combined_group_summary.csv";
+      const url = "https://raw.githubusercontent.com/orbitorus/orbit-i-beta/refs/heads/main/dataset/combined_group_summary.csv";
       const container = document.getElementById("table-container");
-      container.innerHTML = "";
 
-      fetch(csvUrl)
+      fetch(url)
         .then(res => res.text())
         .then(data => {
           const rows = data.trim().split("\n").map(line =>
             line.split(",").map(c => c.replace(/^"+|"+$/g, "").trim())
           );
-
           renderTable(container, rows);
         })
-        .catch(err => {
-          container.innerHTML = `<div class="error-msg">⚠️ Failed to load main table.</div>`;
-        });
+        .catch(() => container.innerHTML = `<div class="error-msg">⚠️ Failed to load main table.</div>`);
     }
 
-
-
-    /* ========= SECOND TABLE (FILTERABLE + SEARCHABLE + SORTABLE) ========= */
-
-    const dataUrl = "https://raw.githubusercontent.com/orbitorus/orbit-i-beta/refs/heads/main/dataset/detailed_outliers_summary.csv";
+    /* ========= LOAD OUTLIERS TABLE ========= */
+    const url2 = "https://raw.githubusercontent.com/orbitorus/orbit-i-beta/refs/heads/main/dataset/detailed_outliers_summary.csv";
 
     let originalData = [];
     let filteredData = [];
     let sortAscending = true;
-    let searchQuery = "";
 
     function loadFilteredTable() {
-      fetch(dataUrl)
+      fetch(url2)
         .then(res => res.text())
         .then(text => {
           originalData = text.trim().split("\n").map(line =>
             line.split(",").map(c => c.replace(/^"+|"+$/g, "").trim())
           );
-
           populateDropdown();
-          resetFilters();
+          applyFilter(); // initial
         })
-        .catch(err => {
+        .catch(() => {
           document.getElementById("filtered-container").innerHTML =
-            `<div class="error-msg">⚠️ Failed to load detailed outliers table.</div>`;
+            `<div class="error-msg">⚠️ Failed to load detailed table.</div>`;
         });
     }
 
-
     /* ========= RENDER TABLE ========= */
-
     function renderTable(containerOrId, rows) {
       const container = typeof containerOrId === "string"
         ? document.getElementById(containerOrId)
@@ -197,13 +181,13 @@
 
       // Body
       for (let i = 1; i < rows.length; i++) {
-        const row = document.createElement("tr");
+        const tr = document.createElement("tr");
         rows[i].forEach(cell => {
           const td = document.createElement("td");
           td.textContent = cell;
-          row.appendChild(td);
+          tr.appendChild(td);
         });
-        tbody.appendChild(row);
+        tbody.appendChild(tr);
       }
 
       table.appendChild(thead);
@@ -211,100 +195,64 @@
       container.appendChild(table);
     }
 
-
-
-    /* ========= FILTERING ========= */
-
+    /* ========= MULTI-SELECTION FILTERING ========= */
     function populateDropdown() {
       const dropdown = document.getElementById("filterDropdown");
       dropdown.innerHTML = "";
 
-      const uniqueValues = [...new Set(originalData.slice(1).map(r => r[1]))];
-      uniqueValues.forEach(val => {
+      const uniqueVals = [...new Set(originalData.slice(1).map(r => r[1]))];
+
+      uniqueVals.forEach(val => {
         const opt = document.createElement("option");
         opt.value = val;
         opt.textContent = val;
         dropdown.appendChild(opt);
       });
 
-      dropdown.addEventListener("change", resetSearchAndFilter);
+      dropdown.addEventListener("change", applyFilter);
     }
-
-
-    function resetFilters() {
-      filteredData = originalData.slice();
-      renderTable("filtered-container", filteredData);
-    }
-
-
-    function resetSearchAndFilter() {
-      searchQuery = "";
-      document.getElementById("searchInput").value = "";
-
-      applyFilter();
-    }
-
 
     function applyFilter() {
-      const dropdownValue = document.getElementById("filterDropdown").value;
+      const dropdown = document.getElementById("filterDropdown");
+      const selected = [...dropdown.selectedOptions].map(o => o.value);
 
-      // Filter column 1
-      filteredData = originalData.slice(1).filter(row => row[1] === dropdownValue);
-
-      // Apply search
-      if (searchQuery.trim() !== "") {
-        filteredData = filteredData.filter(row =>
-          row.some(cell =>
-            cell.toLowerCase().includes(searchQuery.toLowerCase())
-          )
-        );
+      if (selected.length === 0) {
+        filteredData = originalData.slice();
+      } else {
+        filteredData = [
+          originalData[0],
+          ...originalData.slice(1).filter(row => selected.includes(row[1]))
+        ];
       }
-
-      filteredData = [originalData[0], ...filteredData];
 
       renderTable("filtered-container", filteredData);
     }
 
-
-    /* ========= SEARCH BAR ========= */
-
-    document.addEventListener("DOMContentLoaded", () => {
-      document.getElementById("searchInput").addEventListener("input", (e) => {
-        searchQuery = e.target.value;
-        applyFilter();
-      });
-    });
-
-
     /* ========= SORT BUTTON ========= */
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("sortButton").addEventListener("click", () => {
+        const header = filteredData[0];
+        const body = filteredData.slice(1);
 
-    document.getElementById("sortButton").addEventListener("click", () => {
-      const header = filteredData[0];
-      const body = filteredData.slice(1);
+        body.sort((a, b) =>
+          sortAscending
+            ? a[0].localeCompare(b[0])
+            : b[0].localeCompare(a[0])
+        );
 
-      body.sort((a, b) => {
-        const colA = a[0];
-        const colB = b[0];
-        return sortAscending
-          ? colA.localeCompare(colB)
-          : colB.localeCompare(colA);
+        sortAscending = !sortAscending;
+        document.getElementById("sortButton").textContent =
+          sortAscending ? "Sort ASC" : "Sort DESC";
+
+        filteredData = [header, ...body];
+        renderTable("filtered-container", filteredData);
       });
-
-      sortAscending = !sortAscending;
-      document.getElementById("sortButton").textContent =
-        sortAscending ? "Sort ASC" : "Sort DESC";
-
-      filteredData = [header, ...body];
-      renderTable("filtered-container", filteredData);
     });
-
 
     /* ========= INITIAL LOAD ========= */
-
     loadConstellationTable();
     loadFilteredTable();
 
   </script>
-
 </body>
 </html>

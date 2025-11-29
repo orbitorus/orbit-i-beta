@@ -85,10 +85,11 @@
   function loadFilteredTable() {
     fetch("https://raw.githubusercontent.com/orbitorus/orbit-i-beta/refs/heads/main/dataset/detailed_outliers_summary.csv")
       .then(res => res.text())
-      .then(text=>{
+      .then(text => {
         originalData = parseCSV(text);
         populateDropdown();
         applyFilter();
+        attachSortButton();
       })
       .catch(()=>document.getElementById("filtered-container").innerHTML="<div class='error-msg'>Failed to load detailed table.</div>");
   }
@@ -126,17 +127,20 @@
     renderTable("filtered-container", filteredData);
   }
 
-  // Update button label
+  // Update sort button label
   function updateSortButtonLabel(){
     const btn = document.getElementById("sortButton");
     btn.textContent = `Index Sort (${sortAscending ? 'ASC':'DESC'})`;
   }
 
-  // Ensure button works after page loads
-  window.onload = function() {
+  // Attach sort button after CSV loaded
+  function attachSortButton(){
     const sortBtn = document.getElementById("sortButton");
+    // Remove previous listener if any
+    const newBtn = sortBtn.cloneNode(true);
+    sortBtn.parentNode.replaceChild(newBtn, sortBtn);
 
-    sortBtn.addEventListener("click", ()=>{
+    newBtn.addEventListener("click", ()=>{
       if(filteredData.length<2) return;
       const header = filteredData[0];
       const body = filteredData.slice(1);
@@ -155,7 +159,7 @@
     });
 
     updateSortButtonLabel();
-  };
+  }
 
   // Initial load
   loadMainTable();

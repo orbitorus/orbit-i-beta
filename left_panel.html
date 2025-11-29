@@ -35,7 +35,7 @@
 </div>
 
 <script>
-  // Robust CSV parser
+  // CSV parser
   function parseCSV(text) {
     return text.trim().split("\n").map(line =>
       line.split(",").map(c => c.replace(/^"+|"+$/g, "").trim())
@@ -79,7 +79,7 @@
       .catch(()=>document.getElementById("table-container").innerHTML="<div class='error-msg'>Failed to load main table.</div>");
   }
 
-  // Load second table
+  // Load filtered table
   let originalData=[], filteredData=[], sortAscending=true;
 
   function loadFilteredTable() {
@@ -93,22 +93,34 @@
       .catch(()=>document.getElementById("filtered-container").innerHTML="<div class='error-msg'>Failed to load detailed table.</div>");
   }
 
-  // Populate dropdown
+  // Populate dropdown with "All"
   function populateDropdown(){
-    const dropdown=document.getElementById("filterDropdown");
-    dropdown.innerHTML="";
-    const uniqueVals=[...new Set(originalData.slice(1).map(r=>r[1]))];
-    uniqueVals.forEach(val=>{const opt=document.createElement("option"); opt.value=val; opt.textContent=val; dropdown.appendChild(opt);});
+    const dropdown = document.getElementById("filterDropdown");
+    dropdown.innerHTML = "";
+
+    const allOption = document.createElement("option");
+    allOption.value = "";
+    allOption.textContent = "All";
+    dropdown.appendChild(allOption);
+
+    const uniqueVals = [...new Set(originalData.slice(1).map(r=>r[1]))]; // group_name column
+    uniqueVals.forEach(val => {
+      const opt = document.createElement("option");
+      opt.value = val;
+      opt.textContent = val;
+      dropdown.appendChild(opt);
+    });
+
     dropdown.addEventListener("change", ()=>{
-      sortAscending = true; // reset sort when filter changes
+      sortAscending = true; // reset sort
       applyFilter();
       updateSortButtonLabel();
     });
   }
 
-  // Apply dropdown filter
+  // Apply filter
   function applyFilter(){
-    const selected=document.getElementById("filterDropdown").value;
+    const selected = document.getElementById("filterDropdown").value;
     if(!selected) filteredData = originalData.slice();
     else filteredData = [originalData[0], ...originalData.slice(1).filter(row=>row[1]===selected)];
     renderTable("filtered-container", filteredData);
@@ -116,23 +128,24 @@
 
   // Update button label
   function updateSortButtonLabel(){
-    const btn=document.getElementById("sortButton");
+    const btn = document.getElementById("sortButton");
     btn.textContent = `Index Sort (${sortAscending ? 'ASC':'DESC'})`;
   }
 
   // Sort button
   document.addEventListener("DOMContentLoaded", ()=>{
-    const sortBtn=document.getElementById("sortButton");
+    const sortBtn = document.getElementById("sortButton");
     updateSortButtonLabel();
     sortBtn.addEventListener("click", ()=>{
       if(filteredData.length<2) return;
       const header = filteredData[0];
       const body = filteredData.slice(1);
 
+      // Sort column 5 = normalized_index
       body.sort((a,b)=>{
-        const valA = parseFloat(a[5].replace(/,/g,'').trim()) || 0;
-        const valB = parseFloat(b[5].replace(/,/g,'').trim()) || 0;
-        return sortAscending ? valA-valB : valB-valA;
+        const valA = a[5] && !isNaN(parseFloat(a[5])) ? parseFloat(a[5]) : 0;
+        const valB = b[5] && !isNaN(parseFloat(b[5])) ? parseFloat(b[5]) : 0;
+        return sortAscending ? valA - valB : valB - valA;
       });
 
       sortAscending = !sortAscending;

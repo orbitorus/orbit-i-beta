@@ -13,8 +13,8 @@
     th { background-color:#181818; color:#ffd700; border-bottom:2px solid #11e8bb99; font-weight:600; }
     td { border-bottom:1px solid #11e8bb30; }
     tr:hover td { background-color:#27313f; }
-    .controls { width:98%; margin:0 auto 15px auto; display:flex; gap:10px; align-items:center; }
-    select, button { padding:6px; background:#222; border:1px solid #555; border-radius:4px; color:white; cursor:pointer; }
+    .controls { width:98%; margin:0 auto 15px auto; display:flex; gap:10px; align-items:center; z-index:1; }
+    select, button { padding:6px; background:#222; border:1px solid #555; border-radius:4px; color:white; cursor:pointer; z-index:2; }
     .error-msg { color:#ff4e4e; text-align:center; margin-top:10px; }
   </style>
 </head>
@@ -26,7 +26,7 @@
 
   <h2>Detailed Outliers Summary</h2>
   <div class="controls">
-    <label>Filter by Column 1:</label>
+    <label>Filter by Group Name:</label>
     <select id="filterDropdown"></select>
     <button id="sortButton">Index Sort</button>
   </div>
@@ -132,10 +132,10 @@
     btn.textContent = `Index Sort (${sortAscending ? 'ASC':'DESC'})`;
   }
 
-  // Sort button
-  document.addEventListener("DOMContentLoaded", ()=>{
+  // Ensure button works after page loads
+  window.onload = function() {
     const sortBtn = document.getElementById("sortButton");
-    updateSortButtonLabel();
+
     sortBtn.addEventListener("click", ()=>{
       if(filteredData.length<2) return;
       const header = filteredData[0];
@@ -153,7 +153,9 @@
       renderTable("filtered-container", filteredData);
       updateSortButtonLabel();
     });
-  });
+
+    updateSortButtonLabel();
+  };
 
   // Initial load
   loadMainTable();

@@ -22,7 +22,6 @@
       min-height: 90vh;
     }
 
-    /* Titles with minimal glow */
     h2 {
       text-align: center;
       color: #e6c400;           /* softer gold */
@@ -84,10 +83,6 @@
       color: white;
     }
 
-    select[multiple] {
-      height: 120px;
-    }
-
     .error-msg {
       color: #ff4e4e;
       text-align: center;
@@ -109,10 +104,10 @@
 
     <!-- FILTER + SORT -->
     <div class="controls">
-      <label>Filter by Group Name:</label>
-      <select id="filterDropdown" multiple></select>
+      <label>Filter by Column 1:</label>
+      <select id="filterDropdown"></select>
 
-      <button id="sortButton">Sort ASC</button>
+      <button id="sortButton">Index Sort</button>
     </div>
 
     <div id="filtered-container"></div>
@@ -195,7 +190,7 @@
       container.appendChild(table);
     }
 
-    /* ========= MULTI-SELECTION FILTERING ========= */
+    /* ========= SINGLE-SELECTION FILTERING ========= */
     function populateDropdown() {
       const dropdown = document.getElementById("filterDropdown");
       dropdown.innerHTML = "";
@@ -214,14 +209,14 @@
 
     function applyFilter() {
       const dropdown = document.getElementById("filterDropdown");
-      const selected = [...dropdown.selectedOptions].map(o => o.value);
+      const selected = dropdown.value;
 
-      if (selected.length === 0) {
+      if (!selected) {
         filteredData = originalData.slice();
       } else {
         filteredData = [
           originalData[0],
-          ...originalData.slice(1).filter(row => selected.includes(row[1]))
+          ...originalData.slice(1).filter(row => row[1] === selected)
         ];
       }
 
@@ -234,15 +229,15 @@
         const header = filteredData[0];
         const body = filteredData.slice(1);
 
-        body.sort((a, b) =>
-          sortAscending
-            ? a[0].localeCompare(b[0])
-            : b[0].localeCompare(a[0])
-        );
+        // sort by column 5
+        body.sort((a, b) => {
+          const valA = parseFloat(a[5]) || 0;
+          const valB = parseFloat(b[5]) || 0;
+          return sortAscending ? valA - valB : valB - valA;
+        });
 
         sortAscending = !sortAscending;
-        document.getElementById("sortButton").textContent =
-          sortAscending ? "Sort ASC" : "Sort DESC";
+        document.getElementById("sortButton").textContent = "Index Sort";
 
         filteredData = [header, ...body];
         renderTable("filtered-container", filteredData);

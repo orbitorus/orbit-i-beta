@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Constellation Size ans Stats</title>
+  <title>Constellation Size and Stats</title>
   <style>
     html, body {
       height: 100%;
@@ -32,12 +32,12 @@
       margin-bottom: 18px;
     }
 
-    #table-container,
-    #table-container-2 {
+    #table-container, #table-container-2 {
       width: 98%;
-      margin: 20px auto;
+      margin: 0 auto;
       overflow-x: auto;
       background: none;
+      margin-bottom: 40px;
     }
 
     table {
@@ -78,90 +78,226 @@
       margin: 2em 0;
       text-align: center;
     }
+
+    /* Dropdown + Sort button color */
+    select, button {
+      background: #10121B;
+      border: 1px solid #11e8bb70;
+      color: #ffd700;
+    }
   </style>
 </head>
+
 <body>
   <div id="main-content">
-    <h2>Constellation Size and Stats</h2>
 
-    <!-- first table -->
+    <!-- Table 1 -->
+    <h2>Constellation Size and Stats</h2>
     <div id="table-container"></div>
 
-    <!-- second table -->
-    <h2 style="margin-top:40px;">Detailed Outliers Summary</h2>
+    <!-- Table 2 -->
+    <h2>Detailed Outliers Summary</h2>
+
+    <div style="width:98%; margin:0 auto 15px auto; color:#ffd700;">
+      <label>Filter by Group:</label>
+      <select id="filterDropdown" onchange="applyFilter()"></select>
+
+      <button id="sortButton" onclick="toggleSort()"
+        style="margin-left:20px; padding:4px 10px; border-radius:6px; cursor:pointer;">
+        Sort: Asc ▲
+      </button>
+    </div>
+
     <div id="table-container-2"></div>
 
   </div>
 
-  <script>
-    // Generic CSV loader + table renderer (reusable)
-    function loadCSVtoTable(csvUrl, containerId) {
-      const container = document.getElementById(containerId);
-      container.innerHTML = ""; // Clear previous table or error
+<script>
+/* -------------------------
+   TABLE 1 (unchanged)
+-------------------------- */
+function loadConstellationTable() {
+  const csvUrl = "https://raw.githubusercontent.com/orbitorus/orbit-i-beta/refs/heads/main/dataset/combined_group_summary.csv";
+  const container = document.getElementById("table-container");
+  container.innerHTML = "";
 
-      fetch(csvUrl)
-        .then(res => {
-          if (!res.ok) throw new Error("Could not fetch CSV");
-          return res.text();
-        })
-        .then(data => {
-          const rows = data
-            .trim()
-            .split("\n")
-            .map(line =>
-              line.split(",").map(cell =>
-                cell.trim().replace(/^"+|"+$/g, "")
-              )
-            );
+  fetch(csvUrl)
+    .then(res => {
+      if (!res.ok) throw new Error("Could not fetch CSV");
+      return res.text();
+    })
+    .then(data => {
+      const rows = data
+        .trim()
+        .split("\n")
+        .map(line =>
+          line.split(",").map(cell =>
+            cell.trim().replace(/^\"+|\"+$/g, "")
+          )
+        );
 
-          if (rows.length < 2) throw new Error("CSV contains no data");
+      if (rows.length < 2) throw new Error("CSV contains no data");
 
-          const table = document.createElement("table");
+      const table = document.createElement("table");
 
-          // Header
-          const thead = document.createElement("thead");
-          const headRow = document.createElement("tr");
+      // header
+      const thead = document.createElement("thead");
+      const headRow = document.createElement("tr");
+      rows[0].forEach(header => {
+        const th = document.createElement("th");
+        th.textContent = header;
+        headRow.appendChild(th);
+      });
+      thead.appendChild(headRow);
+      table.appendChild(thead);
 
-          rows[0].forEach(header => {
-            const th = document.createElement("th");
-            th.textContent = header;
-            headRow.appendChild(th);
-          });
-
-          thead.appendChild(headRow);
-          table.appendChild(thead);
-
-          // Body
-          const tbody = document.createElement("tbody");
-          for (let i = 1; i < rows.length; i++) {
-            const row = document.createElement("tr");
-            rows[i].forEach(cell => {
-              const td = document.createElement("td");
-              td.textContent = cell;
-              row.appendChild(td);
-            });
-            tbody.appendChild(row);
-          }
-
-          table.appendChild(tbody);
-          container.appendChild(table);
-        })
-        .catch(err => {
-          container.innerHTML = `<div class="error-msg">⚠️ Failed to load data.</div>`;
-          console.error(err);
+      // body
+      const tbody = document.createElement("tbody");
+      for (let i = 1; i < rows.length; i++) {
+        const tr = document.createElement("tr");
+        rows[i].forEach(c => {
+          const td = document.createElement("td");
+          td.textContent = c;
+          tr.appendChild(td);
         });
-    }
+        tbody.appendChild(tr);
+      }
+      table.appendChild(tbody);
 
-    // Load both tables
-    loadCSVtoTable(
-      "https://raw.githubusercontent.com/orbitorus/orbit-i-beta/refs/heads/main/dataset/combined_group_summary.csv",
-      "table-container"
-    );
+      container.appendChild(table);
+    })
+    .catch(err => {
+      container.innerHTML = `<div class="error-msg">⚠️ Failed to load data.</div>`;
+      console.error(err);
+    });
+}
 
-    loadCSVtoTable(
-      "https://raw.githubusercontent.com/orbitorus/orbit-i-beta/refs/heads/main/dataset/detailed_outliers_summary.csv",
-      "table-container-2"
-    );
-  </script>
+
+
+/* -------------------------
+   TABLE 2 WITH FILTER + SORT
+-------------------------- */
+
+let rawRows2 = [];          // original CSV data
+let filterColumnIndex = 0;  // filter by first column (change if needed)
+let sortAscending = true;   // sorting state
+
+
+function loadDetailedTable() {
+  const csvUrl =
+    "https://raw.githubusercontent.com/orbitorus/orbit-i-beta/refs/heads/main/dataset/detailed_outliers_summary.csv";
+
+  fetch(csvUrl)
+    .then(res => res.text())
+    .then(text => {
+      rawRows2 = text
+        .trim()
+        .split("\n")
+        .map(line =>
+          line.split(",").map(cell =>
+            cell.trim().replace(/^\"+|\"+$/g, "")
+          )
+        );
+
+      buildDropdown(rawRows2);
+      renderDetailedTable(rawRows2.slice(1)); // show all initially
+    });
+}
+
+
+function buildDropdown(rows) {
+  const dropdown = document.getElementById("filterDropdown");
+  filterColumnIndex = 0; // using first column for filtering
+
+  const uniqueValues = [...new Set(rows.slice(1).map(r => r[filterColumnIndex]))];
+
+  dropdown.innerHTML =
+    `<option value="">All</option>` +
+    uniqueValues.map(v => `<option value="${v}">${v}</option>`).join("");
+
+  // reset sort state
+  sortAscending = true;
+  document.getElementById("sortButton").innerHTML = "Sort: Asc ▲";
+}
+
+
+function renderDetailedTable(dataRows) {
+  const container = document.getElementById("table-container-2");
+  container.innerHTML = "";
+
+  const table = document.createElement("table");
+
+  // header
+  const thead = document.createElement("thead");
+  const headRow = document.createElement("tr");
+
+  rawRows2[0].forEach(h => {
+    const th = document.createElement("th");
+    th.textContent = h;
+    headRow.appendChild(th);
+  });
+
+  thead.appendChild(headRow);
+  table.appendChild(thead);
+
+  // body
+  const tbody = document.createElement("tbody");
+  dataRows.forEach(row => {
+    const tr = document.createElement("tr");
+    row.forEach(c => {
+      const td = document.createElement("td");
+      td.textContent = c;
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+
+  table.appendChild(tbody);
+  container.appendChild(table);
+}
+
+
+function applyFilter() {
+  const selected = document.getElementById("filterDropdown").value;
+
+  sortAscending = true;
+  document.getElementById("sortButton").innerHTML = "Sort: Asc ▲";
+
+  let filtered =
+    selected === ""
+      ? rawRows2.slice(1)
+      : rawRows2.slice(1).filter(row => row[filterColumnIndex] === selected);
+
+  renderDetailedTable(filtered);
+}
+
+
+function toggleSort() {
+  const selected = document.getElementById("filterDropdown").value;
+
+  let filtered =
+    selected === ""
+      ? rawRows2.slice(1)
+      : rawRows2.slice(1).filter(row => row[filterColumnIndex] === selected);
+
+  filtered.sort((a, b) => {
+    if (a[filterColumnIndex] < b[filterColumnIndex]) return sortAscending ? -1 : 1;
+    if (a[filterColumnIndex] > b[filterColumnIndex]) return sortAscending ? 1 : -1;
+    return 0;
+  });
+
+  sortAscending = !sortAscending;
+  document.getElementById("sortButton").innerHTML =
+    sortAscending ? "Sort: Asc ▲" : "Sort: Desc ▼";
+
+  renderDetailedTable(filtered);
+}
+
+
+/* Load tables */
+loadConstellationTable();
+loadDetailedTable();
+</script>
+
 </body>
 </html>

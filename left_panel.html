@@ -3,247 +3,148 @@
 <head>
   <meta charset="UTF-8">
   <title>Constellation Size and Stats</title>
-
   <style>
-    html, body {
-      height: 100%;
-      margin: 0;
-      padding: 0;
-      background: black !important;
-      font-family: "Segoe UI", "Roboto", Arial, sans-serif;
-      color: #e0e0e0;
-    }
-
-    #main-content {
-      background: #181818;
-      border-radius: 10px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.25);
-      padding: 18px 8px 12px 8px;
-      min-height: 90vh;
-    }
-
-    h2 {
-      text-align: center;
-      color: #e6c400;           /* softer gold */
-      text-shadow: none;         /* remove glow completely */
-      margin-bottom: 10px;
-      font-weight: 500;
-    }
-
-    #table-container, #filtered-container {
-      width: 98%;
-      margin: 0 auto 40px auto;
-      overflow-x: auto;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background-color: #10121B;
-      color: #1de9b6;
-      box-shadow: 0 1px 10px rgba(0,0,0,0.13);
-      font-size: 15px;
-      border: 1px solid #027e6b70;
-      border-radius: 6px;
-      overflow: hidden;
-    }
-
-    th, td {
-      padding: 8px 10px;
-    }
-
-    th {
-      background-color: #181818;
-      color: #ffd700;
-      border-bottom: 2px solid #11e8bb99;
-      font-weight: 600;
-    }
-
-    td {
-      border-bottom: 1px solid #11e8bb30;
-    }
-
-    tr:hover td {
-      background-color: #27313f;
-    }
-
-    .controls {
-      width: 98%;
-      margin: 0 auto 15px auto;
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-
-    select, button {
-      padding: 6px;
-      background: #222;
-      border: 1px solid #555;
-      border-radius: 4px;
-      color: white;
-    }
-
-    .error-msg {
-      color: #ff4e4e;
-      text-align: center;
-      margin-top: 10px;
-    }
+    html, body { height:100%; margin:0; padding:0; background:black; font-family:"Segoe UI","Roboto",Arial,sans-serif; color:#e0e0e0; }
+    #main-content { background:#181818; border-radius:10px; padding:18px 8px 12px 8px; min-height:90vh; box-shadow:0 2px 10px rgba(0,0,0,0.25); }
+    h2 { text-align:center; color:#e6c400; text-shadow:none; margin-bottom:10px; font-weight:500; }
+    #table-container, #filtered-container { width:98%; margin:0 auto 40px auto; overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; background-color:#10121B; color:#1de9b6; font-size:15px; border:1px solid #027e6b70; border-radius:6px; }
+    th, td { padding:8px 10px; }
+    th { background-color:#181818; color:#ffd700; border-bottom:2px solid #11e8bb99; font-weight:600; }
+    td { border-bottom:1px solid #11e8bb30; }
+    tr:hover td { background-color:#27313f; }
+    .controls { width:98%; margin:0 auto 15px auto; display:flex; gap:10px; align-items:center; }
+    select, button { padding:6px; background:#222; border:1px solid #555; border-radius:4px; color:white; cursor:pointer; }
+    .error-msg { color:#ff4e4e; text-align:center; margin-top:10px; }
   </style>
 </head>
-
 <body>
+<div id="main-content">
 
-  <div id="main-content">
+  <h2>Constellation Size and Stats</h2>
+  <div id="table-container"></div>
 
-    <!-- MAIN TABLE TITLE -->
-    <h2>Constellation Size and Stats</h2>
-    <div id="table-container"></div>
-
-    <!-- SECOND TABLE TITLE -->
-    <h2>Detailed Outliers Summary</h2>
-
-    <!-- FILTER + SORT -->
-    <div class="controls">
-      <label>Filter by Column 1:</label>
-      <select id="filterDropdown"></select>
-
-      <button id="sortButton">Index Sort</button>
-    </div>
-
-    <div id="filtered-container"></div>
+  <h2>Detailed Outliers Summary</h2>
+  <div class="controls">
+    <label>Filter by Column 1:</label>
+    <select id="filterDropdown"></select>
+    <button id="sortButton">Index Sort</button>
   </div>
+  <div id="filtered-container"></div>
 
-  <script>
-    /* ========= LOAD MAIN TABLE ========= */
-    function loadConstellationTable() {
-      const url = "https://raw.githubusercontent.com/orbitorus/orbit-i-beta/refs/heads/main/dataset/combined_group_summary.csv";
-      const container = document.getElementById("table-container");
+</div>
 
-      fetch(url)
-        .then(res => res.text())
-        .then(data => {
-          const rows = data.trim().split("\n").map(line =>
-            line.split(",").map(c => c.replace(/^"+|"+$/g, "").trim())
-          );
-          renderTable(container, rows);
-        })
-        .catch(() => container.innerHTML = `<div class="error-msg">⚠️ Failed to load main table.</div>`);
+<script>
+  // Robust CSV parser
+  function parseCSV(text) {
+    return text.trim().split("\n").map(line =>
+      line.split(",").map(c => c.replace(/^"+|"+$/g, "").trim())
+    );
+  }
+
+  // Render table
+  function renderTable(containerOrId, rows) {
+    const container = typeof containerOrId === "string" ? document.getElementById(containerOrId) : containerOrId;
+    if (!rows || rows.length === 0) {
+      container.innerHTML = "<div class='error-msg'>No data to display.</div>";
+      return;
+    }
+    container.innerHTML = "";
+    const table = document.createElement("table");
+    const thead = document.createElement("thead");
+    const tbody = document.createElement("tbody");
+
+    // Header
+    const headRow = document.createElement("tr");
+    rows[0].forEach(h => { const th=document.createElement("th"); th.textContent=h; headRow.appendChild(th); });
+    thead.appendChild(headRow);
+
+    // Body
+    for (let i=1; i<rows.length; i++){
+      const tr=document.createElement("tr");
+      rows[i].forEach(cell => { const td=document.createElement("td"); td.textContent=cell; tr.appendChild(td); });
+      tbody.appendChild(tr);
     }
 
-    /* ========= LOAD OUTLIERS TABLE ========= */
-    const url2 = "https://raw.githubusercontent.com/orbitorus/orbit-i-beta/refs/heads/main/dataset/detailed_outliers_summary.csv";
+    table.appendChild(thead);
+    table.appendChild(tbody);
+    container.appendChild(table);
+  }
 
-    let originalData = [];
-    let filteredData = [];
-    let sortAscending = true;
+  // Load main table
+  function loadMainTable() {
+    fetch("https://raw.githubusercontent.com/orbitorus/orbit-i-beta/refs/heads/main/dataset/combined_group_summary.csv")
+      .then(res => res.text())
+      .then(data => renderTable("table-container", parseCSV(data)))
+      .catch(()=>document.getElementById("table-container").innerHTML="<div class='error-msg'>Failed to load main table.</div>");
+  }
 
-    function loadFilteredTable() {
-      fetch(url2)
-        .then(res => res.text())
-        .then(text => {
-          originalData = text.trim().split("\n").map(line =>
-            line.split(",").map(c => c.replace(/^"+|"+$/g, "").trim())
-          );
-          populateDropdown();
-          applyFilter(); // initial
-        })
-        .catch(() => {
-          document.getElementById("filtered-container").innerHTML =
-            `<div class="error-msg">⚠️ Failed to load detailed table.</div>`;
-        });
-    }
+  // Load second table
+  let originalData=[], filteredData=[], sortAscending=true;
 
-    /* ========= RENDER TABLE ========= */
-    function renderTable(containerOrId, rows) {
-      const container = typeof containerOrId === "string"
-        ? document.getElementById(containerOrId)
-        : containerOrId;
+  function loadFilteredTable() {
+    fetch("https://raw.githubusercontent.com/orbitorus/orbit-i-beta/refs/heads/main/dataset/detailed_outliers_summary.csv")
+      .then(res => res.text())
+      .then(text=>{
+        originalData = parseCSV(text);
+        populateDropdown();
+        applyFilter();
+      })
+      .catch(()=>document.getElementById("filtered-container").innerHTML="<div class='error-msg'>Failed to load detailed table.</div>");
+  }
 
-      container.innerHTML = "";
-
-      const table = document.createElement("table");
-      const thead = document.createElement("thead");
-      const tbody = document.createElement("tbody");
-
-      // Header
-      const headRow = document.createElement("tr");
-      rows[0].forEach(h => {
-        const th = document.createElement("th");
-        th.textContent = h;
-        headRow.appendChild(th);
-      });
-      thead.appendChild(headRow);
-
-      // Body
-      for (let i = 1; i < rows.length; i++) {
-        const tr = document.createElement("tr");
-        rows[i].forEach(cell => {
-          const td = document.createElement("td");
-          td.textContent = cell;
-          tr.appendChild(td);
-        });
-        tbody.appendChild(tr);
-      }
-
-      table.appendChild(thead);
-      table.appendChild(tbody);
-      container.appendChild(table);
-    }
-
-    /* ========= SINGLE-SELECTION FILTERING ========= */
-    function populateDropdown() {
-      const dropdown = document.getElementById("filterDropdown");
-      dropdown.innerHTML = "";
-
-      const uniqueVals = [...new Set(originalData.slice(1).map(r => r[1]))];
-
-      uniqueVals.forEach(val => {
-        const opt = document.createElement("option");
-        opt.value = val;
-        opt.textContent = val;
-        dropdown.appendChild(opt);
-      });
-
-      dropdown.addEventListener("change", applyFilter);
-    }
-
-    function applyFilter() {
-      const dropdown = document.getElementById("filterDropdown");
-      const selected = dropdown.value;
-
-      if (!selected) {
-        filteredData = originalData.slice();
-      } else {
-        filteredData = [
-          originalData[0],
-          ...originalData.slice(1).filter(row => row[1] === selected)
-        ];
-      }
-
-      renderTable("filtered-container", filteredData);
-    }
-
-    /* ========= SORT BUTTON ========= */
-      document.getElementById("sortButton").addEventListener("click", () => {
-        const header = filteredData[0];
-        const body = filteredData.slice(1);
-      
-        body.sort((a, b) => {
-          const valA = parseFloat(a[5].replace(/,/g, '').trim()) || 0;
-          const valB = parseFloat(b[5].replace(/,/g, '').trim()) || 0;
-          return sortAscending ? valA - valB : valB - valA;
-        });
-      
-        sortAscending = !sortAscending;
-        filteredData = [header, ...body];
-        renderTable("filtered-container", filteredData);
-      });
+  // Populate dropdown
+  function populateDropdown(){
+    const dropdown=document.getElementById("filterDropdown");
+    dropdown.innerHTML="";
+    const uniqueVals=[...new Set(originalData.slice(1).map(r=>r[1]))];
+    uniqueVals.forEach(val=>{const opt=document.createElement("option"); opt.value=val; opt.textContent=val; dropdown.appendChild(opt);});
+    dropdown.addEventListener("change", ()=>{
+      sortAscending = true; // reset sort when filter changes
+      applyFilter();
+      updateSortButtonLabel();
     });
+  }
 
-    /* ========= INITIAL LOAD ========= */
-    loadConstellationTable();
-    loadFilteredTable();
+  // Apply dropdown filter
+  function applyFilter(){
+    const selected=document.getElementById("filterDropdown").value;
+    if(!selected) filteredData = originalData.slice();
+    else filteredData = [originalData[0], ...originalData.slice(1).filter(row=>row[1]===selected)];
+    renderTable("filtered-container", filteredData);
+  }
 
-  </script>
+  // Update button label
+  function updateSortButtonLabel(){
+    const btn=document.getElementById("sortButton");
+    btn.textContent = `Index Sort (${sortAscending ? 'ASC':'DESC'})`;
+  }
+
+  // Sort button
+  document.addEventListener("DOMContentLoaded", ()=>{
+    const sortBtn=document.getElementById("sortButton");
+    updateSortButtonLabel();
+    sortBtn.addEventListener("click", ()=>{
+      if(filteredData.length<2) return;
+      const header = filteredData[0];
+      const body = filteredData.slice(1);
+
+      body.sort((a,b)=>{
+        const valA = parseFloat(a[5].replace(/,/g,'').trim()) || 0;
+        const valB = parseFloat(b[5].replace(/,/g,'').trim()) || 0;
+        return sortAscending ? valA-valB : valB-valA;
+      });
+
+      sortAscending = !sortAscending;
+      filteredData = [header,...body];
+      renderTable("filtered-container", filteredData);
+      updateSortButtonLabel();
+    });
+  });
+
+  // Initial load
+  loadMainTable();
+  loadFilteredTable();
+</script>
 </body>
 </html>

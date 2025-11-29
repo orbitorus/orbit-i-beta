@@ -32,9 +32,10 @@
       margin-bottom: 18px;
     }
 
-    #table-container {
+    #table-container,
+    #table-container-2 {
       width: 98%;
-      margin: 0 auto;
+      margin: 20px auto;
       overflow-x: auto;
       background: none;
     }
@@ -82,12 +83,20 @@
 <body>
   <div id="main-content">
     <h2>Constellation Size and Stats</h2>
+
+    <!-- first table -->
     <div id="table-container"></div>
+
+    <!-- second table -->
+    <h2 style="margin-top:40px;">Detailed Outliers Summary</h2>
+    <div id="table-container-2"></div>
+
   </div>
+
   <script>
-    function loadConstellationTable() {
-      const csvUrl = "https://raw.githubusercontent.com/orbitorus/orbit-i-beta/refs/heads/main/dataset/combined_group_summary.csv";
-      const container = document.getElementById("table-container");
+    // Generic CSV loader + table renderer (reusable)
+    function loadCSVtoTable(csvUrl, containerId) {
+      const container = document.getElementById(containerId);
       container.innerHTML = ""; // Clear previous table or error
 
       fetch(csvUrl)
@@ -96,33 +105,32 @@
           return res.text();
         })
         .then(data => {
-          // Parse CSV with quote removal
           const rows = data
             .trim()
             .split("\n")
             .map(line =>
               line.split(",").map(cell =>
-                cell.trim().replace(/^"+|"+$/g, "")   // <-- remove all wrapping quotes
+                cell.trim().replace(/^"+|"+$/g, "")
               )
             );
-      
+
           if (rows.length < 2) throw new Error("CSV contains no data");
-      
+
           const table = document.createElement("table");
-      
+
           // Header
           const thead = document.createElement("thead");
           const headRow = document.createElement("tr");
-      
+
           rows[0].forEach(header => {
             const th = document.createElement("th");
             th.textContent = header;
             headRow.appendChild(th);
           });
-      
+
           thead.appendChild(headRow);
           table.appendChild(thead);
-                
+
           // Body
           const tbody = document.createElement("tbody");
           for (let i = 1; i < rows.length; i++) {
@@ -134,8 +142,8 @@
             });
             tbody.appendChild(row);
           }
-          table.appendChild(tbody);
 
+          table.appendChild(tbody);
           container.appendChild(table);
         })
         .catch(err => {
@@ -144,8 +152,16 @@
         });
     }
 
-    // Always load table if this panel is rendered.
-    loadConstellationTable();
+    // Load both tables
+    loadCSVtoTable(
+      "https://raw.githubusercontent.com/orbitorus/orbit-i-beta/refs/heads/main/dataset/combined_group_summary.csv",
+      "table-container"
+    );
+
+    loadCSVtoTable(
+      "https://raw.githubusercontent.com/orbitorus/orbit-i-beta/refs/heads/main/dataset/detailed_outliers_summary.csv",
+      "table-container-2"
+    );
   </script>
 </body>
 </html>

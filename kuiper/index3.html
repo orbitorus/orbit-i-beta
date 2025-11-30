@@ -1,8 +1,9 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Amazon LEO (formerly Kuiper) Satellite Dashboard – Accordion View</title>
+  <title>Amazon Leo "Kuiper" Satellite Dashboard – Accordion View</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -97,7 +98,7 @@
     }
 
     .accordion-content.active {
-      max-height: 2000px; /* large enough */
+      max-height: 2000px;
       opacity: 1;
     }
 
@@ -107,6 +108,17 @@
       border: none;
       border-radius: 0 0 8px 8px;
       background: #000;
+    }
+
+    .image-container {
+      padding: 20px;
+      text-align: center;
+    }
+
+    .image-container img {
+      width: 95%;
+      max-width: 1400px;
+      border-radius: 8px;
     }
 
     @media (max-width: 600px) {
@@ -126,10 +138,9 @@
 <body>
 
 <header>
-  <h1>Amazon LEO Satellite Dashboard – Accordion View</h1>
+  <h1>Amazon Leo "Kuiper" Satellite Dashboard – Accordion View</h1>
   <div class="top-buttons">
     <a href="index2.html">🗂 Tab View</a>
-    <!-- <a href="https://orbitorus.github.io/orbit-i-beta/index.html">📊 Overview</a> -->
   </div>
 </header>
 
@@ -160,9 +171,28 @@
   </div>
 
   <div class="accordion-item">
-    <div class="accordion-header">⭐ Interactive Kuiper Plot <span>▶</span></div>
+    <div class="accordion-header">⭐ Interactive GW Plot <span>▶</span></div>
     <div class="accordion-content"><iframe src="interactive_satellite_plot.html"></iframe></div>
   </div>
+
+  <!-- NEW VIEW 1 -->
+  <div class="accordion-item">
+    <div class="accordion-header">📊 2D LISA Multivariate Plots <span>▶</span></div>
+    <div class="accordion-content">
+      <div class="image-container">
+        <img src="2d_lisa_plots_dark.png" alt="2D LISA Multivariate Plots">
+      </div>
+    </div>
+  </div>
+
+  <!-- NEW VIEW 2 -->
+  <div class="accordion-item">
+    <div class="accordion-header">🧊 3D LISA Spatial Analysis <span>▶</span></div>
+    <div class="accordion-content">
+      <iframe src="3d_lisa_plot_plotly_dark.html"></iframe>
+    </div>
+  </div>
+
 </main>
 
 <script>
@@ -173,13 +203,9 @@
       const content = header.nextElementSibling;
       const isActive = header.classList.contains('active');
 
-      // Close all
       document.querySelectorAll('.accordion-header').forEach(h => h.classList.remove('active'));
-      document.querySelectorAll('.accordion-content').forEach(c => {
-        c.classList.remove('active');
-      });
+      document.querySelectorAll('.accordion-content').forEach(c => c.classList.remove('active'));
 
-      // Toggle this one
       if (!isActive) {
         header.classList.add('active');
         content.classList.add('active');

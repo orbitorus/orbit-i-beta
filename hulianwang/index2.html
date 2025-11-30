@@ -90,7 +90,7 @@
 
     .tab-content.active {
       opacity: 1;
-      max-height: 3000px; /* large enough for tall plots */
+      max-height: 3000px;
     }
 
     .card {
@@ -150,6 +150,8 @@
 </header>
 
 <main>
+
+  <!-- ADD NEW 2D + 3D LISA BUTTONS -->
   <div class="tabs">
     <button onclick="showTab('globe', this)">🌍 Globe View</button>
     <button onclick="showTab('ground', this)">🛰 Ground Tracks</button>
@@ -157,7 +159,12 @@
     <button onclick="showTab('category', this)">🗂 Satellite Category</button>
     <button onclick="showTab('distribution', this)">🌌 Orbital Distribution</button>
     <button onclick="showTab('satellite', this)">⭐ Satellite Plot</button>
+
+    <!-- NEW -->
+    <button onclick="showTab('lisa2d', this)">📉 2D LISA Analysis</button>
+    <button onclick="showTab('lisa3d', this)">🧊 3D LISA Spatial Analysis</button>
   </div>
+
 
   <div id="globe" class="tab-content">
     <div class="card"><h3>🌍 Globe View</h3><iframe src="globe_tracks.html"></iframe></div>
@@ -177,6 +184,23 @@
   <div id="satellite" class="tab-content">
     <div class="card"><h3>⭐ Interactive GW Plot</h3><iframe src="interactive_satellite_plot.html"></iframe></div>
   </div>
+
+  <!-- NEW 2D LISA TAB -->
+  <div id="lisa2d" class="tab-content">
+    <div class="card">
+      <h3>📉 2D LISA Spatial Analysis</h3>
+      <iframe src="lisa_2d.html"></iframe>
+    </div>
+  </div>
+
+  <!-- NEW 3D LISA TAB -->
+  <div id="lisa3d" class="tab-content">
+    <div class="card">
+      <h3>🧊 3D LISA Spatial Analysis</h3>
+      <iframe src="lisa_3d.html"></iframe>
+    </div>
+  </div>
+
 </main>
 
 <script>
@@ -190,11 +214,9 @@ function showTab(tabId, btn) {
   document.getElementById(tabId).classList.add('active');
   btn.classList.add('active');
 
-  // Store active tab in localStorage
   localStorage.setItem('activeTab', tabId);
 }
 
-// On page load, restore last active tab
 document.addEventListener('DOMContentLoaded', () => {
   const lastTab = localStorage.getItem('activeTab') || 'globe';
   const buttons = document.querySelectorAll('.tabs button');

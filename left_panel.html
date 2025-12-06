@@ -6,13 +6,24 @@
   <style>
     html, body { height:100%; margin:0; padding:0; background:black; font-family:"Segoe UI","Roboto",Arial,sans-serif; color:#e0e0e0; }
     #main-content { background:#181818; border-radius:10px; padding:18px 8px 12px 8px; min-height:90vh; box-shadow:0 2px 10px rgba(0,0,0,0.25); }
+
     h2 { text-align:center; color:#e6c400; text-shadow:none; margin-bottom:10px; font-weight:500; }
-    #table-container, #filtered-container { width:98%; margin:0 auto 40px auto; overflow-x:auto; }
+    h3 { text-align:center; color:#6bc2ff; margin-top:40px; font-weight:400; }
+
+    #plot-container, #table-container, #second-table-container, #filtered-container {
+      width:98%; margin:0 auto 40px auto; overflow-x:auto;
+    }
+
+    img.plot-img {
+      width:100%; border-radius:10px; margin-bottom:20px; box-shadow:0 0 15px rgba(0,0,0,0.5);
+    }
+
     table { width:100%; border-collapse:collapse; background-color:#10121B; color:#1de9b6; font-size:15px; border:1px solid #027e6b70; border-radius:6px; }
     th, td { padding:8px 10px; }
     th { background-color:#181818; color:#ffd700; border-bottom:2px solid #11e8bb99; font-weight:600; }
     td { border-bottom:1px solid #11e8bb30; }
     tr:hover td { background-color:#27313f; }
+
     .controls { width:98%; margin:0 auto 15px auto; display:flex; gap:10px; align-items:center; z-index:1; }
     select, button { padding:6px; background:#222; border:1px solid #555; border-radius:4px; color:white; cursor:pointer; z-index:2; }
     .error-msg { color:#ff4e4e; text-align:center; margin-top:10px; }
@@ -21,9 +32,21 @@
 <body>
 <div id="main-content">
 
+  <!-- Plot -->
+  <h2>Constellation Altitude Violin Plot</h2>
+  <div id="plot-container">
+    <img class="plot-img" src="https://raw.githubusercontent.com/orbitorus/orbit-i-beta/refs/heads/main/dataset/altitude_violin_plot_dark.png">
+  </div>
+
+  <!-- Main Table -->
   <h2>Constellation Size and Stats</h2>
   <div id="table-container"></div>
 
+  <!-- Second Table -->
+  <h2>Constellation Statistics (Ordered Subset)</h2>
+  <div id="second-table-container"></div>
+
+  <!-- Filtered Outliers Table -->
   <h2>Detailed Outliers Summary</h2>
   <div class="controls">
     <label>Filter by Group Name:</label>
@@ -54,12 +77,10 @@
     const thead = document.createElement("thead");
     const tbody = document.createElement("tbody");
 
-    // Header
     const headRow = document.createElement("tr");
     rows[0].forEach(h => { const th=document.createElement("th"); th.textContent=h; headRow.appendChild(th); });
     thead.appendChild(headRow);
 
-    // Body
     for (let i=1; i<rows.length; i++){
       const tr=document.createElement("tr");
       rows[i].forEach(cell => { const td=document.createElement("td"); td.textContent=cell; tr.appendChild(td); });
@@ -73,97 +94,4 @@
 
   // Load main table
   function loadMainTable() {
-    fetch("https://raw.githubusercontent.com/orbitorus/orbit-i-beta/refs/heads/main/dataset/combined_group_summary.csv")
-      .then(res => res.text())
-      .then(data => renderTable("table-container", parseCSV(data)))
-      .catch(()=>document.getElementById("table-container").innerHTML="<div class='error-msg'>Failed to load main table.</div>");
-  }
-
-  // Load filtered table
-  let originalData=[], filteredData=[], sortAscending=true;
-
-  function loadFilteredTable() {
-    fetch("https://raw.githubusercontent.com/orbitorus/orbit-i-beta/refs/heads/main/dataset/detailed_outliers_summary.csv")
-      .then(res => res.text())
-      .then(text => {
-        originalData = parseCSV(text);
-        populateDropdown();
-        applyFilter();
-        attachSortButton();
-      })
-      .catch(()=>document.getElementById("filtered-container").innerHTML="<div class='error-msg'>Failed to load detailed table.</div>");
-  }
-
-  // Populate dropdown with "All"
-  function populateDropdown(){
-    const dropdown = document.getElementById("filterDropdown");
-    dropdown.innerHTML = "";
-
-    const allOption = document.createElement("option");
-    allOption.value = "";
-    allOption.textContent = "All";
-    dropdown.appendChild(allOption);
-
-    const uniqueVals = [...new Set(originalData.slice(1).map(r=>r[1]))]; // group_name column
-    uniqueVals.forEach(val => {
-      const opt = document.createElement("option");
-      opt.value = val;
-      opt.textContent = val;
-      dropdown.appendChild(opt);
-    });
-
-    dropdown.addEventListener("change", ()=>{
-      sortAscending = true; // reset sort
-      applyFilter();
-      updateSortButtonLabel();
-    });
-  }
-
-  // Apply filter
-  function applyFilter(){
-    const selected = document.getElementById("filterDropdown").value;
-    if(!selected) filteredData = originalData.slice();
-    else filteredData = [originalData[0], ...originalData.slice(1).filter(row=>row[1]===selected)];
-    renderTable("filtered-container", filteredData);
-  }
-
-  // Update sort button label
-  function updateSortButtonLabel(){
-    const btn = document.getElementById("sortButton");
-    btn.textContent = `Index Sort (${sortAscending ? 'ASC':'DESC'})`;
-  }
-
-  // Attach sort button after CSV loaded
-  function attachSortButton(){
-    const sortBtn = document.getElementById("sortButton");
-    // Remove previous listener if any
-    const newBtn = sortBtn.cloneNode(true);
-    sortBtn.parentNode.replaceChild(newBtn, sortBtn);
-
-    newBtn.addEventListener("click", ()=>{
-      if(filteredData.length<2) return;
-      const header = filteredData[0];
-      const body = filteredData.slice(1);
-
-      // Sort column 5 = normalized_index
-      body.sort((a,b)=>{
-        const valA = a[5] && !isNaN(parseFloat(a[5])) ? parseFloat(a[5]) : 0;
-        const valB = b[5] && !isNaN(parseFloat(b[5])) ? parseFloat(b[5]) : 0;
-        return sortAscending ? valA - valB : valB - valA;
-      });
-
-      sortAscending = !sortAscending;
-      filteredData = [header,...body];
-      renderTable("filtered-container", filteredData);
-      updateSortButtonLabel();
-    });
-
-    updateSortButtonLabel();
-  }
-
-  // Initial load
-  loadMainTable();
-  loadFilteredTable();
-</script>
-</body>
-</html>
+    fetch(

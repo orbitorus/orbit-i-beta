@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Satellite Maneuver Fuel & Cost Estimator — Space Theme</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#02030a;
+    --panel:#071020;
+    --muted:#9aa7b2;
+    --accent:#00f0ff;
+    --accent2:#9b5cff;
+    --glass: rgba(255,255,255,0.04);
+    --card-shadow: 0 6px 30px rgba(0,0,0,0.7);
+    --glass-2: linear-gradient(135deg, rgba(0,240,255,0.04), rgba(155,92,255,0.03));
+  }
+  html,body{height:100%;margin:0;background: radial-gradient(ellipse at bottom, #001122 0%, #000010 40%), var(--bg); color:#dbeef2; font-family:Inter,system-ui,Arial; -webkit-font-smoothing:antialiased;}
+  /* starfield */
+  body::before{
+    content:""; position:fixed; inset:0; z-index:-2;
+    background-image:
+      radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,0.08) 0, transparent 50%),
+      radial-gradient(1px 1px at 25% 80%, rgba(255,255,255,0.06) 0, transparent 50%),
+      radial-gradient(1px 1px at 70% 15%, rgba(255,255,255,0.05) 0, transparent 50%),
+      radial-gradient(1px 1px at 80% 60%, rgba(255,255,255,0.04) 0, transparent 50%);
+    background-size: cover;
+    opacity:0.9;
+    filter:blur(.2px);
+  }
+
+  .wrap{max-width:980px;margin:36px auto;padding:28px;border-radius:14px;background:var(--glass-2); box-shadow:var(--card-shadow); border:1px solid rgba(255,255,255,0.03);}
+  header{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+  .logo{width:56px;height:56px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2)); display:flex;align-items:center;justify-content:center;color:#001; font-weight:700; font-size:18px; box-shadow:0 6px 18px rgba(0,240,255,0.06) inset}
+  h1{margin:0;font-size:20px}
+  p.lead{margin:6px 0 0;color:var(--muted);font-size:13px}
+
+  .grid{display:grid;grid-template-columns:1fr 360px;gap:18px;margin-top:18px}
+  .card{background:var(--panel);padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.02)}
+  .card h3{margin:0 0 8px;font-size:14px}
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+  input[type="number"], input[type="text"], select{width:100%;padding:10px;border-radius:8px;background:#06121a;border:1px solid rgba(255,255,255,0.03);color:#e6fbff;font-size:13px;box-sizing:border-box}
+  .row{display:flex;gap:10px}
+  .col{flex:1}
+  .muted{color:var(--muted);font-size:12px}
+  .btn{display:inline-block;padding:10px 14px;border-radius:10px;background:linear-gradient(90deg,var(--accent),var(--accent2));color:#001;font-weight:600;border:none;cursor:pointer}
+  .btn.secondary{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--accent)}
+  .result{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.02); font-size:13px}
+  pre{white-space:pre-wrap;font-size:13px;color:#cfeef0;background:transparent;border:none;padding:0;margin:0}
+  .small{font-size:12px;color:var(--muted)}
+  footer{margin-top:16px;color:var(--muted);font-size:12px;display:flex;justify-content:space-between;align-items:center}
+  .kpi{display:flex;gap:8px;flex-direction:column}
+  .kpilabel{font-size:12px;color:var(--muted)}
+  .kpivalue{font-weight:700;font-size:16px;color:#eaffff}
+  .copybtn{background:transparent;border:1px dashed rgba(255,255,255,0.04);padding:6px 8px;border-radius:8px;color:var(--muted);cursor:pointer}
+  .switch{display:inline-flex;align-items:center;gap:8px}
+  .note{margin-top:10px;color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">STM</div>
+      <div>
+        <h1>Satellite Maneuver Fuel & Cost Estimator</h1>
+        <p class="lead">Dark space theme — Hohmann ΔV, rocket equation, per-event & lifetime totals. No server — runs in browser.</p>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- Left: Inputs & results -->
+      <div>
+        <div class="card">
+          <h3>Inputs</h3>
+          <div style="display:grid;gap:8px">
+            <div class="row">
+              <div class="col">
+                <label>Base orbit altitude (km)</label>
+                <input id="baseOrbit" type="number" value="500" step="1" />
+              </div>
+              <div class="col">
+                <label>Altitude change (meters, one way)</label>
+                <input id="deltaH" type="number" value="100" step="1" />
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col">
+                <label>Satellite mass before maneuvers (kg)</label>
+                <input id="satMass" type="number" value="500" step="0.1" />
+              </div>
+              <div class="col">
+                <label>Isp (s)</label>
+                <input id="isp" type="number" value="1500" step="1" />
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col">
+                <label>Number of identical maneuvers</label>
+                <input id="times" type="number" value="10" step="1" />
+              </div>
+              <div class="col">
+                <label>Cost per kg (orbital value) USD/kg</label>
+                <input id="valuePerKg" type="number" value="120000" step="1000" />
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col">
+                <label>Fuel procurement cost USD/kg (xenon/hydrazine)</label>
+                <input id="fuelPrice" type="number" value="120" step="1" />
+              </div>
+              <div class="col">
+                <label>Allow mass bookkeeping (reduce mass after each maneuver)?</label>
+                <div class="switch">
+                  <input id="bookkeeping" type="checkbox" />
+                  <span class="small muted">If checked, each maneuver reduces vehicle mass for subsequent burns</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:10px;margin-top:10px;">
+              <button id="computeBtn" class="btn">Compute</button>
+              <button id="resetBtn" class="btn secondary">Reset</button>
+              <button id="exportBtn" class="btn secondary">Export CSV</button>
+            </div>
+            <div class="note">Thrust suggestion is approximate; change the Isp to pick chemical vs electric. This tool assumes circular orbits and Hohmann transfers (no drag or attitude margins).</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px;">
+          <h3>Per-maneuver & Totals</h3>
+          <div id="results" class="result">
+            <pre id="resultsText">No calculation yet. Click Compute.</pre>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:10px;align-items:center">
+            <div class="kpi">
+              <div class="kpilabel">ΔV total (m/s)</div>
+              <div id="kpiDV" class="kpivalue">—</div>
+            </div>
+            <div class="kpi">
+              <div class="kpilabel">Propellant total (kg)</div>
+              <div id="kpiMP" class="kpivalue">—</div>
+            </div>
+            <div class="kpi">
+              <div class="kpilabel">Estimated cost (USD)</div>
+              <div id="kpiCost" class="kpivalue">—</div>
+            </div>
+            <div style="margin-left:auto;">
+              <button id="copyBtn" class="copybtn">Copy results</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right: Explanation & thruster info -->
+      <div>
+        <div class="card">
+          <h3>How it works</h3>
+          <p class="small">We compute the classical Hohmann two-burn transfer between two circular orbits (one-way). ΔV per event = ΔV_up + ΔV_down (round-trip double). Propellant uses Tsiolkovsky rocket equation:<br><code>m_p = m0 * (1 - exp(-Δv/(Isp*g0)))</code></p>
+          <p class="small">You can optionally enable mass bookkeeping to subtract consumed propellant after each maneuver and recompute the subsequent maneuvers with the new mass (precise if many maneuvers).</p>
+        </div>
+
+        <div class="card" style="margin-top:12px;">
+          <h3>Thruster suggestions</h3>
+          <div id="thrusterInfo" class="small">
+            <p><strong>Common picks (rough):</strong></p>
+            <ul>
+              <li>Isp 300 s — small chemical monoprop (typical thrust: ~0.03 N for cubesat RCS)</li>
+              <li>Isp 1500 s — Hall/EP (typical nominal thrust: ~0.1–1 N depending on device)</li>
+              <li>Isp 2000–2500 s — advanced EP/ion (low thrust: 0.05–0.5 N)</li>
+            </ul>
+            <p class="muted">These are suggestions. For accurate timing & pointing, consult thruster datasheets.</p>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px;">
+          <h3>Notes & tips</h3>
+          <p class="small">• For very small Δh (meters), ΔV is tiny (fractions of m/s) and propellant is grams — the linear approximation m≈m0 Δv/(Isp g0) is close. <br>
+          • Low-thrust continuous spirals (electric propulsion) change time & losses but not the ideal ΔV significantly in this simplified model. <br>
+          • To include drag, attitude-control margins, or station-keeping, add margin factors to ΔV or cost.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <footer>
+      <div>Built for you — dark space theme 🚀</div>
+      <div class="small">Constants: μ=398600.4418 km³/s², R⊕=6378.1363 km, g0=9.80665 m/s²</div>
+    </footer>
+  </div>
+
+<script>
+(() => {
+  // Constants
+  const MU = 398600.4418; // km^3/s^2
+  const RE = 6378.1363;   // km
+  const G0 = 9.80665;     // m/s^2
+
+  // default thruster suggestions (for display)
+  const THRUST_SUGGEST = {
+    300: 0.03,   // N (example)
+    1500: 0.5,
+    2000: 0.2,
+    2500: 0.06
+  };
+
+  // Elements
+  const baseOrbitEl = document.getElementById('baseOrbit');
+  const deltaHEl = document.getElementById('deltaH');
+  const satMassEl = document.getElementById('satMass');
+  const ispEl = document.getElementById('isp');
+  const timesEl = document.getElementById('times');
+  const valuePerKgEl = document.getElementById('valuePerKg');
+  const fuelPriceEl = document.getElementById('fuelPrice');
+  const bookkeepingEl = document.getElementById('bookkeeping');
+
+  const computeBtn = document.getElementById('computeBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const exportBtn = document.getElementById('exportBtn');
+  const resultsText = document.getElementById('resultsText');
+  const kpiDV = document.getElementById('kpiDV');
+  const kpiMP = document.getElementById('kpiMP');
+  const kpiCost = document.getElementById('kpiCost');
+  const copyBtn = document.getElementById('copyBtn');
+
+  // helpers: Hohmann ΔV (returns m/s)
+  function hohmannDeltaV(h1_km, h2_km){
+    const r1 = RE + Number(h1_km);
+    const r2 = RE + Number(h2_km);
+    const a = (r1 + r2)/2.0;
+    const v1 = Math.sqrt(MU / r1);
+    const v2 = Math.sqrt(MU / r2);
+    const vp = Math.sqrt(MU * (2/r1 - 1/a));
+    const va = Math.sqrt(MU * (2/r2 - 1/a));
+    const dv1 = Math.abs(vp - v1);
+    const dv2 = Math.abs(v2 - va);
+    return (dv1 + dv2) * 1000.0; // m/s
+  }
+
+  function propellantMass(m0, isp, deltaV){
+    // rocket eq: mp = m0 * (1 - exp(-Δv/(Isp*g0)))
+    // m0 in kg, Δv in m/s, Isp in s
+    const exponent = - deltaV / (isp * G0);
+    // guard for extreme values
+    if (exponent < -700) return m0; // very large Δv, numerical guard
+    return m0 * (1 - Math.exp(exponent));
+  }
+
+  function formatNum(x, digits=6){
+    if (!isFinite(x)) return '—';
+    if (Math.abs(x) >= 1000) return x.toLocaleString(undefined, {maximumFractionDigits: 2});
+    return Number(x).toFixed(digits);
+  }
+
+  function computeAll(){
+    // read inputs
+    const baseOrbit = Number(baseOrbitEl.value);
+    const deltaH_m = Number(deltaHEl.value);
+    const dh_km = deltaH_m / 1000.0;
+    const satMass0 = Number(satMassEl.value);
+    const isp = Number(ispEl.value);
+    const times = Math.max(1, Math.floor(Number(timesEl.value) || 1));
+    const valuePerKg = Number(valuePerKgEl.value);
+    const fuelPrice = Number(fuelPriceEl.value);
+    const bookkeeping = bookkeepingEl.checked;
+
+    // compute one-way hohmann (from base to base+dh)
+    const dv_one_way = hohmannDeltaV(baseOrbit, baseOrbit + dh_km);
+    const dv_round = dv_one_way * 2.0; // go up and come back
+
+    // if bookkeeping: iterate times times with mass update
+    let perMprop = null;
+    let perMprops = [];
+    let mass = satMass0;
+    let cumulativeMp = 0.0;
+    let cumulativeDV = 0.0;
+    for (let i = 0; i < times; i++){
+      // compute mp for current mass
+      const mp = propellantMass(mass, isp, dv_round);
+      perMprops.push(mp);
+      cumulativeMp += mp;
+      cumulativeDV += dv_round;
+      // reduce mass if bookkeeping
+      if (bookkeeping){
+        mass = Math.max(0.0, mass - mp);
+      }
+    }
+    if (!bookkeeping){
+      // simple: each event uses same mp computed with initial mass
+      perMprop = propellantMass(satMass0, isp, dv_round);
+      cumulativeMp = perMprop * times;
+      cumulativeDV = dv_round * times;
+    } else {
+      perMprop = perMprops[0];
+    }
+
+    // costs
+    const totalCost = cumulativeMp * (fuelPrice + valuePerKg);
+
+    // thrust suggestion (nearest known)
+    let thrustSuggestion = 'N/A';
+    const keys = Object.keys(THRUST_SUGGEST).map(k => Number(k));
+    if (keys.includes(Math.round(isp))){
+      thrustSuggestion = THRUST_SUGGEST[Math.round(isp)] + ' N (approx)';
+    } else {
+      // pick nearest by Isp
+      let nearest = keys.reduce((a,b) => (Math.abs(a-isp) < Math.abs(b-isp) ? a : b));
+      thrustSuggestion = THRUST_SUGGEST[nearest] + ' N (approx, nearest Isp='+nearest+')';
+    }
+
+    // populate results text
+    let text = '';
+    text += `Base orbit: ${baseOrbit} km\n`;
+    text += `Δh (one-way): ${deltaH_m} m (${dh_km} km)\n`;
+    text += `Isp: ${isp} s\n`;
+    text += `Per-event ΔV (one-way): ${formatNum(dv_one_way,6)} m/s\n`;
+    text += `Per-event ΔV (round-trip): ${formatNum(dv_round,6)} m/s\n\n`;
+
+    if (bookkeeping){
+      text += `Mass bookkeeping: ENABLED — mass updates after each maneuver.\n`;
+      text += `Initial satellite mass: ${satMass0.toLocaleString()} kg\n`;
+      text += `Propellant per maneuver (sequence):\n`;
+      perMprops.forEach((mp,idx)=> {
+        text += `  #${idx+1}: ${formatNum(mp,6)} kg\n`;
+      });
+      text += `\n`;
+    } else {
+      text += `Mass bookkeeping: disabled (same per-maneuver mass used)\n`;
+      text += `Propellant per maneuver: ${formatNum(perMprop,6)} kg\n\n`;
+    }
+
+    text += `Total maneuvers: ${times}\n`;
+    text += `Total ΔV (all maneuvers): ${formatNum(cumulativeDV,6)} m/s\n`;
+    text += `Total propellant consumed: ${formatNum(cumulativeMp,6)} kg\n`;
+    text += `Estimated total cost: $${formatNum(totalCost,2)} (fuel price + orbital value per kg)\n\n`;
+    text += `Thruster suggestion: ${thrustSuggestion}\n`;
+    text += `\n(Assumptions: circular orbits, Hohmann two-burn transfer per leg, no drag losses or safety margins.)\n`;
+
+    // set UI
+    resultsText.textContent = text;
+    kpiDV.textContent = formatNum(cumulativeDV,6);
+    kpiMP.textContent = formatNum(cumulativeMp,6);
+    kpiCost.textContent = '$' + formatNum(totalCost,2);
+
+    return {
+      baseOrbit, deltaH_m, dh_km, satMass0, isp, times,
+      dv_one_way, dv_round, perMprop, perMprops, cumulativeMp, cumulativeDV, totalCost
+    };
+  }
+
+  computeBtn.addEventListener('click', computeAll);
+  resetBtn.addEventListener('click', ()=> {
+    baseOrbitEl.value = 500;
+    deltaHEl.value = 100;
+    satMassEl.value = 500;
+    ispEl.value = 1500;
+    timesEl.value = 10;
+    valuePerKgEl.value = 120000;
+    fuelPriceEl.value = 120;
+    bookkeepingEl.checked = false;
+    resultsText.textContent = 'No calculation yet. Click Compute.';
+    kpiDV.textContent = '—';
+    kpiMP.textContent = '—';
+    kpiCost.textContent = '—';
+  });
+
+  // copy results to clipboard
+  copyBtn.addEventListener('click', () => {
+    const text = resultsText.textContent;
+    navigator.clipboard?.writeText(text).then(()=> {
+      copyBtn.textContent = 'Copied ✓';
+      setTimeout(()=> copyBtn.textContent = 'Copy results', 1200);
+    },()=> {
+      copyBtn.textContent = 'Copy failed';
+      setTimeout(()=> copyBtn.textContent = 'Copy results', 1200);
+    });
+  });
+
+  // export CSV
+  exportBtn.addEventListener('click', () => {
+    const out = computeAll();
+    // build CSV lines (simple)
+    let csv = 'item,value\n';
+    csv += `base_orbit_km,${out.baseOrbit}\n`;
+    csv += `delta_h_m,${out.deltaH_m}\n`;
+    csv += `isp_s,${out.isp}\n`;
+    csv += `per_event_dv_m_s,${out.dv_round}\n`;
+    csv += `per_event_propellant_kg,${out.perMprop}\n`;
+    if (out.perMprops && out.perMprops.length>1){
+      out.perMprops.forEach((v,i)=> csv += `propellant_event_${i+1}_kg,${v}\n`);
+    }
+    csv += `total_maneuvers,${out.times}\n`;
+    csv += `total_dv_m_s,${out.cumulativeDV}\n`;
+    csv += `total_propellant_kg,${out.cumulativeMp}\n`;
+    csv += `estimated_cost_usd,${out.totalCost}\n`;
+
+    const blob = new Blob([csv], {type:'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'maneuver_results.csv';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  });
+
+})();
+</script>
+</body>
+</html>

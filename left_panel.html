@@ -2,51 +2,85 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Constellation Size and Stats</title>
+  <title>Constellation Dashboard</title>
   <style>
-    html, body { height:100%; margin:0; padding:0; background:black; font-family:"Segoe UI","Roboto",Arial,sans-serif; color:#e0e0e0; }
-    #main-content { background:#181818; border-radius:10px; padding:18px 8px 12px 8px; min-height:90vh; box-shadow:0 2px 10px rgba(0,0,0,0.25); }
-
-    h2 { text-align:center; color:#e6c400; text-shadow:none; margin-bottom:10px; font-weight:500; }
-    h3 { text-align:center; color:#6bc2ff; margin-top:40px; font-weight:400; }
-
-    #plot-container, #table-container, #second-table-container, #filtered-container {
-      width:98%; margin:0 auto 40px auto; overflow-x:auto;
+    html, body {
+      height: 100%; margin: 0; padding: 0;
+      background: black;
+      font-family: "Segoe UI","Roboto",Arial,sans-serif;
+      color: #e0e0e0;
     }
-
-    img.plot-img {
-      width:100%; border-radius:10px; margin-bottom:20px; box-shadow:0 0 15px rgba(0,0,0,0.5);
+    #main-content {
+      background: #181818;
+      border-radius: 10px;
+      padding: 18px 8px 12px 8px;
+      min-height: 90vh;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.25);
     }
-
-    table { width:100%; border-collapse:collapse; background-color:#10121B; color:#1de9b6; font-size:15px; border:1px solid #027e6b70; border-radius:6px; }
-    th, td { padding:8px 10px; }
-    th { background-color:#181818; color:#ffd700; border-bottom:2px solid #11e8bb99; font-weight:600; }
-    td { border-bottom:1px solid #11e8bb30; }
-    tr:hover td { background-color:#27313f; }
-
-    .controls { width:98%; margin:0 auto 15px auto; display:flex; gap:10px; align-items:center; z-index:1; }
-    select, button { padding:6px; background:#222; border:1px solid #555; border-radius:4px; color:white; cursor:pointer; z-index:2; }
-    .error-msg { color:#ff4e4e; text-align:center; margin-top:10px; }
+    h2 {
+      text-align: center;
+      color: #e6c400;
+      margin-bottom: 10px;
+      font-weight: 500;
+    }
+    #table-container, #filtered-container, #summary-table-container {
+      width: 98%; margin: 0 auto 40px auto; overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: #10121B;
+      color: #1de9b6;
+      font-size: 15px;
+      border: 1px solid #027e6b70;
+      border-radius: 6px;
+    }
+    th, td { padding: 8px 10px; }
+    th {
+      background-color: #181818;
+      color: #ffd700;
+      border-bottom: 2px solid #11e8bb99;
+      font-weight: 600;
+    }
+    td { border-bottom: 1px solid #11e8bb30; }
+    tr:hover td { background-color: #27313f; }
+    .controls {
+      width: 98%; margin: 0 auto 15px auto;
+      display: flex; gap: 10px; align-items: center;
+    }
+    select, button {
+      padding: 6px;
+      background: #222;
+      border: 1px solid #555;
+      border-radius: 4px;
+      color: white;
+      cursor: pointer;
+    }
+    .error-msg {
+      color: #ff4e4e;
+      text-align: center;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
 <div id="main-content">
 
-  <!-- Plot -->
-  <h2>Constellation Altitude Violin Plot</h2>
-  <div id="plot-container">
-    <img class="plot-img" src="https://raw.githubusercontent.com/orbitorus/orbit-i-beta/refs/heads/main/dataset/altitude_violin_plot_dark.png">
+  <!-- TOP PLOT -->
+  <div style="text-align:center; margin-bottom:25px;">
+    <img src="https://raw.githubusercontent.com/orbitorus/orbit-i-beta/refs/heads/main/dataset/altitude_violin_plot_dark.png"
+         style="max-width:95%; border-radius:8px;">
   </div>
 
-  <!-- Main Table -->
+  <!-- FIRST TABLE -->
+  <h2>Constellation Statistics (Ordered Subset)</h2>
+  <div id="summary-table-container"></div>
+
+  <!-- SECOND TABLE -->
   <h2>Constellation Size and Stats</h2>
   <div id="table-container"></div>
 
-  <!-- Second Table -->
-  <h2>Constellation Statistics (Ordered Subset)</h2>
-  <div id="second-table-container"></div>
-
-  <!-- Filtered Outliers Table -->
+  <!-- FILTERED OUTLIERS SUMMARY -->
   <h2>Detailed Outliers Summary</h2>
   <div class="controls">
     <label>Filter by Group Name:</label>
@@ -67,23 +101,35 @@
 
   // Render table
   function renderTable(containerOrId, rows) {
-    const container = typeof containerOrId === "string" ? document.getElementById(containerOrId) : containerOrId;
+    const container = typeof containerOrId === "string"
+      ? document.getElementById(containerOrId)
+      : containerOrId;
+
     if (!rows || rows.length === 0) {
       container.innerHTML = "<div class='error-msg'>No data to display.</div>";
       return;
     }
+
     container.innerHTML = "";
     const table = document.createElement("table");
     const thead = document.createElement("thead");
     const tbody = document.createElement("tbody");
 
     const headRow = document.createElement("tr");
-    rows[0].forEach(h => { const th=document.createElement("th"); th.textContent=h; headRow.appendChild(th); });
+    rows[0].forEach(h => {
+      const th = document.createElement("th");
+      th.textContent = h;
+      headRow.appendChild(th);
+    });
     thead.appendChild(headRow);
 
-    for (let i=1; i<rows.length; i++){
-      const tr=document.createElement("tr");
-      rows[i].forEach(cell => { const td=document.createElement("td"); td.textContent=cell; tr.appendChild(td); });
+    for (let i = 1; i < rows.length; i++) {
+      const tr = document.createElement("tr");
+      rows[i].forEach(cell => {
+        const td = document.createElement("td");
+        td.textContent = cell;
+        tr.appendChild(td);
+      });
       tbody.appendChild(tr);
     }
 
@@ -92,6 +138,113 @@
     container.appendChild(table);
   }
 
+  // Load second table (summary statistics)
+  function loadSummaryStatsTable() {
+    fetch("https://raw.githubusercontent.com/orbitorus/orbit-i-beta/refs/heads/main/dataset/constellation_summary_statistics_ordered_subset.csv")
+      .then(res => res.text())
+      .then(data => renderTable("summary-table-container", parseCSV(data)))
+      .catch(() => {
+        document.getElementById("summary-table-container").innerHTML =
+          "<div class='error-msg'>Failed to load summary statistics table.</div>";
+      });
+  }
+
   // Load main table
   function loadMainTable() {
-    fetch(
+    fetch("https://raw.githubusercontent.com/orbitorus/orbit-i-beta/refs/heads/main/dataset/combined_group_summary.csv")
+      .then(res => res.text())
+      .then(data => renderTable("table-container", parseCSV(data)))
+      .catch(() => {
+        document.getElementById("table-container").innerHTML =
+          "<div class='error-msg'>Failed to load main table.</div>";
+      });
+  }
+
+  // FILTERED TABLE
+  let originalData = [], filteredData = [], sortAscending = true;
+
+  function loadFilteredTable() {
+    fetch("https://raw.githubusercontent.com/orbitorus/orbit-i-beta/refs/heads/main/dataset/detailed_outliers_summary.csv")
+      .then(res => res.text())
+      .then(text => {
+        originalData = parseCSV(text);
+        populateDropdown();
+        applyFilter();
+        attachSortButton();
+      })
+      .catch(() => {
+        document.getElementById("filtered-container").innerHTML =
+          "<div class='error-msg'>Failed to load detailed table.</div>";
+      });
+  }
+
+  function populateDropdown() {
+    const dropdown = document.getElementById("filterDropdown");
+    dropdown.innerHTML = "";
+
+    const allOption = document.createElement("option");
+    allOption.value = "";
+    allOption.textContent = "All";
+    dropdown.appendChild(allOption);
+
+    const uniqueVals = [...new Set(originalData.slice(1).map(r => r[1]))];
+    uniqueVals.forEach(val => {
+      const opt = document.createElement("option");
+      opt.value = val;
+      opt.textContent = val;
+      dropdown.appendChild(opt);
+    });
+
+    dropdown.addEventListener("change", () => {
+      sortAscending = true;
+      applyFilter();
+      updateSortButtonLabel();
+    });
+  }
+
+  function applyFilter() {
+    const selected = document.getElementById("filterDropdown").value;
+    if (!selected) filteredData = originalData.slice();
+    else filteredData = [originalData[0], ...originalData.slice(1).filter(row => row[1] === selected)];
+    renderTable("filtered-container", filteredData);
+  }
+
+  function updateSortButtonLabel() {
+    const btn = document.getElementById("sortButton");
+    btn.textContent = `Index Sort (${sortAscending ? 'ASC' : 'DESC'})`;
+  }
+
+  function attachSortButton() {
+    const sortBtn = document.getElementById("sortButton");
+    const newBtn = sortBtn.cloneNode(true);
+    sortBtn.parentNode.replaceChild(newBtn, sortBtn);
+
+    newBtn.addEventListener("click", () => {
+      if (filteredData.length < 2) return;
+
+      const header = filteredData[0];
+      const body = filteredData.slice(1);
+
+      body.sort((a, b) => {
+        const valA = parseFloat(a[5]) || 0;
+        const valB = parseFloat(b[5]) || 0;
+        return sortAscending ? valA - valB : valB - valA;
+      });
+
+      sortAscending = !sortAscending;
+      filteredData = [header, ...body];
+      renderTable("filtered-container", filteredData);
+      updateSortButtonLabel();
+    });
+
+    updateSortButtonLabel();
+  }
+
+  // INITIAL LOAD
+  loadSummaryStatsTable();
+  loadMainTable();
+  loadFilteredTable();
+</script>
+
+</body>
+</html>

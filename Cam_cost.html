@@ -103,14 +103,14 @@
               </div>
               <div class="col">
                 <label>Cost per kg (orbital value) USD/kg</label>
-                <input id="valuePerKg" type="number" value="120000" step="1000" />
+                <input id="valuePerKg" type="number" value="20000" step="1000" />
               </div>
             </div>
 
             <div class="row">
               <div class="col">
-                <label>Fuel procurement cost USD/kg (xenon/hydrazine)</label>
-                <input id="fuelPrice" type="number" value="120" step="1" />
+                <label>Fuel procurement cost USD/kg (krypton/hydrazine)</label>
+                <input id="fuelPrice" type="number" value="1200" step="1" />
               </div>
               <div class="col">
                 <label>Allow mass bookkeeping (reduce mass after each maneuver)?</label>
@@ -359,8 +359,8 @@
     satMassEl.value = 500;
     ispEl.value = 1500;
     timesEl.value = 10;
-    valuePerKgEl.value = 120000;
-    fuelPriceEl.value = 120;
+    valuePerKgEl.value = 20000;
+    fuelPriceEl.value = 1200;
     bookkeepingEl.checked = false;
     resultsText.textContent = 'No calculation yet. Click Compute.';
     kpiDV.textContent = '—';

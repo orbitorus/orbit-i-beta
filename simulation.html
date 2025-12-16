@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CSV Name Inspector – Space Theme</title>
+
+  <style>
+    :root {
+      --bg-main: #0b1020;
+      --bg-panel: #121a33;
+      --bg-table-header: #1b254b;
+      --border-soft: #26346b;
+      --text-main: #e6ebff;
+      --text-muted: #9aa4d6;
+      --accent: #6ea8ff;
+      --accent-glow: rgba(110, 168, 255, 0.45);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 32px;
+      font-family: "Inter", "Segoe UI", Arial, sans-serif;
+      background:
+        radial-gradient(circle at 20% 15%, #1a2458 0%, transparent 40%),
+        radial-gradient(circle at 80% 10%, #101a40 0%, transparent 45%),
+        linear-gradient(180deg, #050816 0%, var(--bg-main) 100%);
+      color: var(--text-main);
+      min-height: 100vh;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+      font-size: 26px;
+      letter-spacing: 0.5px;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      font-size: 14px;
+    }
+
+    .panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-soft);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 0 25px rgba(0,0,0,0.4);
+    }
+
+    input {
+      width: 360px;
+      max-width: 100%;
+      padding: 10px 14px;
+      font-size: 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border-soft);
+      background: #0c1330;
+      color: var(--text-main);
+      outline: none;
+      transition: border 0.2s, box-shadow 0.2s;
+    }
+
+    input::placeholder {
+      color: var(--text-muted);
+    }
+
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-glow);
+    }
+
+    .status {
+      margin-top: 12px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      font-size: 13px;
+    }
+
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border-soft);
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    th {
+      background: var(--bg-table-header);
+      color: var(--accent);
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    tbody tr {
+      transition: background 0.15s;
+    }
+
+    tbody tr:hover {
+      background: rgba(110,168,255,0.06);
+    }
+
+    tr.hidden {
+      display: none;
+    }
+
+    .footer-note {
+      margin-top: 18px;
+      font-size: 12px;
+      color: #7f88c7;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>CSV Name Inspector</h1>
+  <div class="subtitle">
+    Space-themed client-side inspection of GitHub-hosted datasets
+  </div>
+
+  <div class="panel">
+    <input
+      type="text"
+      id="searchInput"
+      placeholder="Search by name (case-insensitive)…"
+      disabled
+    />
+
+    <div class="status" id="status">Loading CSV from orbit…</div>
+
+    <table id="dataTable"></table>
+
+    <div class="footer-note">
+      Data is fetched directly from a public GitHub repository.
+    </div>
+  </div>
+
+  <script>
+    // 🔽 Replace with your raw GitHub CSV URL
+    const CSV_URL = "https://raw.githubusercontent.com/USERNAME/REPO/main/data.csv";
+
+    const table = document.getElementById("dataTable");
+    const searchInput = document.getElementById("searchInput");
+    const status = document.getElementById("status");
+
+    let nameColumnIndex = -1;
+
+    fetch(CSV_URL)
+      .then(res => {
+        if (!res.ok) throw new Error("Failed to load CSV");
+        return res.text();
+      })
+      .then(csvText => {
+        const rows = csvText
+          .trim()
+          .split("\n")
+          .map(r => r.split(","));
+
+        const headers = rows[0].map(h => h.trim());
+        nameColumnIndex = headers.findIndex(
+          h => h.toLowerCase() === "name"
+        );
+
+        if (nameColumnIndex === -1) {
+          status.textContent = "Error: No 'name' column found.";
+          return;
+        }
+
+        // Header
+        const thead = document.createElement("thead");
+        const headerRow = document.createElement("tr");
+        headers.forEach(h => {
+          const th = document.createElement("th");
+          th.textContent = h;
+          headerRow.appendChild(th);
+        });
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+
+        // Body
+        const tbody = document.createElement("tbody");
+        rows.slice(1).forEach(row => {
+          const tr = document.createElement("tr");
+          row.forEach(cell => {
+            const td = document.createElement("td");
+            td.textContent = cell;
+            tr.appendChild(td);
+          });
+          tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+
+        status.textContent = `Loaded ${rows.length - 1} rows`;
+        searchInput.disabled = false;
+
+        searchInput.addEventListener("input", () => {
+          const query = searchInput.value.toLowerCase().trim();
+          Array.from(tbody.rows).forEach(row => {
+            const cellText =
+              row.cells[nameColumnIndex].textContent.toLowerCase();
+            row.classList.toggle(
+              "hidden",
+              query && !cellText.includes(query)
+            );
+          });
+        });
+      })
+      .catch(err => {
+        status.textContent = "Error loading CSV.";
+        console.error(err);
+      });
+  </script>
+
+</body>
+</html>

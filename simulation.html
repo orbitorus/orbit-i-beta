@@ -312,13 +312,33 @@ function renderHeader() {
   thead.appendChild(tr);
 }
 
+
+function formatValue(column, value) {
+  const num = Number(value);
+  if (Number.isNaN(num)) return value;
+
+  if (column === "miss_distance") {
+    return num.toFixed(2);
+  }
+
+  if (column === "relative_speed") {
+    return num.toFixed(2);
+  }
+
+  if (column === "collision_probability") {
+    return num.toExponential(2);
+  }
+
+  return value;
+}
+
 function renderRows(rows) {
   tbody.innerHTML = "";
   rows.forEach(row => {
     const tr = document.createElement("tr");
     DISPLAY_COLUMNS.forEach(col => {
       const td = document.createElement("td");
-      td.textContent = row[col] ?? "";
+      td.textContent = formatValue(col, row[col]);
       tr.appendChild(td);
     });
     tbody.appendChild(tr);

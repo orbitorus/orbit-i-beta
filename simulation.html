@@ -1,238 +1,197 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Conjunction Assessment</title>
+<meta charset="UTF-8" />
+<title>Conjunction Assessment</title>
 
-  <style>
-    :root {
-      --bg-main: #0b1020;
-      --bg-panel: #121a33;
-      --bg-table-header: #1b254b;
-      --border-soft: #26346b;
-      --text-main: #e6ebff;
-      --text-muted: #9aa4d6;
-      --accent: #6ea8ff;
-      --accent-glow: rgba(110, 168, 255, 0.45);
-    }
+<style>
+:root {
+  --bg-main: #0b1020;
+  --bg-panel: #121a33;
+  --bg-table-header: #1b254b;
+  --border-soft: #26346b;
+  --text-main: #e6ebff;
+  --text-muted: #9aa4d6;
+  --accent: #6ea8ff;
+  --accent-glow: rgba(110, 168, 255, 0.45);
+}
 
-    body {
-      margin: 0;
-      padding: 32px;
-      font-family: "Inter", "Segoe UI", Arial, sans-serif;
-      background:
-        radial-gradient(circle at 20% 15%, #1a2458 0%, transparent 40%),
-        radial-gradient(circle at 80% 10%, #101a40 0%, transparent 45%),
-        linear-gradient(180deg, #050816 0%, var(--bg-main) 100%);
-      color: var(--text-main);
-      min-height: 100vh;
-    }
+body {
+  margin: 0;
+  padding: 32px;
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
+  background:
+    radial-gradient(circle at 20% 15%, #1a2458 0%, transparent 40%),
+    radial-gradient(circle at 80% 10%, #101a40 0%, transparent 45%),
+    linear-gradient(180deg, #050816 0%, var(--bg-main) 100%);
+  color: var(--text-main);
+}
 
-    h1 {
-      margin-bottom: 6px;
-      font-size: 26px;
-    }
+.panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 20px;
+}
 
-    .subtitle {
-      color: var(--text-muted);
-      margin-bottom: 22px;
-      font-size: 14px;
-    }
+input {
+  width: 420px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border-soft);
+  background: #0c1330;
+  color: var(--text-main);
+}
 
-    .panel {
-      background: var(--bg-panel);
-      border: 1px solid var(--border-soft);
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 0 25px rgba(0,0,0,0.4);
-    }
+.table-container {
+  margin-top: 16px;
+  height: 420px;
+  overflow: auto;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+}
 
-    input {
-      width: 420px;
-      max-width: 100%;
-      padding: 10px 14px;
-      font-size: 14px;
-      border-radius: 8px;
-      border: 1px solid var(--border-soft);
-      background: #0c1330;
-      color: var(--text-main);
-      outline: none;
-    }
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13px;
+}
 
-    input::placeholder {
-      color: var(--text-muted);
-    }
+th, td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-soft);
+  white-space: nowrap;
+}
 
-    input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 2px var(--accent-glow);
-    }
+th {
+  background: var(--bg-table-header);
+  color: var(--accent);
+  position: sticky;
+  top: 0;
+}
 
-    .status {
-      margin-top: 12px;
-      font-size: 13px;
-      color: var(--text-muted);
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 18px;
-      font-size: 13px;
-    }
-
-    th, td {
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--border-soft);
-      text-align: left;
-      white-space: nowrap;
-    }
-
-    th {
-      background: var(--bg-table-header);
-      color: var(--accent);
-      position: sticky;
-      top: 0;
-      z-index: 1;
-    }
-
-    tbody tr:hover {
-      background: rgba(110,168,255,0.06);
-    }
-
-    tr.hidden {
-      display: none;
-    }
-  </style>
+.status {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+</style>
 </head>
 
 <body>
 
-<h1>Conjunction Assessment</h1>
-<div class="subtitle">
-  Multi-column search across CDM / conjunction attributes
-</div>
-
+<h1>Conjunction CSV Inspector</h1>
 <div class="panel">
-  <input
-    type="text"
-    id="searchInput"
-    placeholder="Search conjunction ID, object name, probability, miss distance…"
-    disabled
-  />
-
+  <input id="searchInput" placeholder="Search conjunctions…" disabled />
   <div class="status" id="status">Loading CSV…</div>
 
-  <table id="dataTable"></table>
+  <div class="table-container" id="scrollContainer">
+    <table id="dataTable">
+      <thead></thead>
+      <tbody></tbody>
+    </table>
+  </div>
 </div>
 
 <script>
-  const CSV_URL =
-    "https://raw.githubusercontent.com/orbitorus/orbit-i-beta/refs/heads/main/sim_dataset/selected_conjunction_data.csv";
+const CSV_URL =
+  "https://raw.githubusercontent.com/orbitorus/orbit-i-beta/refs/heads/main/sim_dataset/selected_conjunction_data.csv";
 
-  const SEARCH_COLUMNS = [
-    'conjunction_id',
-    'creation_date',
-    'tca',
-    'miss_distance',
-    'relative_speed',
-    'collision_probability',
-    'object1_object_designator',
-    'object1_object_name',
-    'object1_international_designator',
-    'object1_object_type',
-    'object2_object_designator',
-    'object2_object_name',
-    'object2_international_designator',
-    'object2_object_type'
-  ];
+const ROW_HEIGHT = 38;
+const ROWS_VISIBLE = 10;
 
-  // Columns to hide from display
-  const HIDDEN_COLUMNS = [
-    'object1_catalog_name',
-    'object2_catalog_name'
-  ];
+const SEARCH_COLUMNS = [
+  'conjunction_id','creation_date','tca','miss_distance',
+  'relative_speed','collision_probability',
+  'object1_object_designator','object1_object_name',
+  'object1_international_designator','object1_object_type',
+  'object2_object_designator','object2_object_name',
+  'object2_international_designator','object2_object_type'
+];
 
-  const table = document.getElementById("dataTable");
-  const searchInput = document.getElementById("searchInput");
-  const status = document.getElementById("status");
+const HIDDEN_COLUMNS = [
+  'object1_catalog_name','object2_catalog_name'
+];
 
-  let searchColumnIndexes = [];
-  let visibleColumnIndexes = [];
+const table = document.getElementById("dataTable");
+const thead = table.querySelector("thead");
+const tbody = table.querySelector("tbody");
+const searchInput = document.getElementById("searchInput");
+const status = document.getElementById("status");
+const scrollContainer = document.getElementById("scrollContainer");
 
-  fetch(CSV_URL)
-    .then(res => {
-      if (!res.ok) throw new Error("CSV load failed");
-      return res.text();
-    })
-    .then(csvText => {
-      const rows = csvText
-        .trim()
-        .split("\n")
-        .map(r => r.split(","));
+let headers = [];
+let allRows = [];
+let visibleColumnIndexes = [];
+let searchColumnIndexes = [];
+let filteredIndexes = [];
 
-      const headers = rows[0].map(h => h.trim());
+function render(startIndex) {
+  tbody.innerHTML = "";
+  const end = Math.min(startIndex + ROWS_VISIBLE, filteredIndexes.length);
 
-      // Resolve visible columns (exclude hidden)
-      visibleColumnIndexes = headers
-        .map((h, i) => ({ h, i }))
-        .filter(col => !HIDDEN_COLUMNS.includes(col.h))
-        .map(col => col.i);
+  for (let i = startIndex; i < end; i++) {
+    const row = allRows[filteredIndexes[i]];
+    const tr = document.createElement("tr");
 
-      // Resolve searchable columns
-      searchColumnIndexes = SEARCH_COLUMNS
-        .map(col => headers.indexOf(col))
-        .filter(idx => idx !== -1);
-
-      if (searchColumnIndexes.length === 0) {
-        status.textContent = "Error: none of the search columns found.";
-        return;
-      }
-
-      // Build table header
-      const thead = document.createElement("thead");
-      const headerRow = document.createElement("tr");
-      visibleColumnIndexes.forEach(idx => {
-        const th = document.createElement("th");
-        th.textContent = headers[idx];
-        headerRow.appendChild(th);
-      });
-      thead.appendChild(headerRow);
-      table.appendChild(thead);
-
-      // Build table body
-      const tbody = document.createElement("tbody");
-      rows.slice(1).forEach(row => {
-        const tr = document.createElement("tr");
-        visibleColumnIndexes.forEach(idx => {
-          const td = document.createElement("td");
-          td.textContent = row[idx];
-          tr.appendChild(td);
-        });
-        tbody.appendChild(tr);
-      });
-      table.appendChild(tbody);
-
-      status.textContent = `Loaded ${rows.length - 1} conjunctions`;
-      searchInput.disabled = false;
-
-      // Multi-column search (searches full row, not just visible columns)
-      searchInput.addEventListener("input", () => {
-        const query = searchInput.value.toLowerCase().trim();
-
-        Array.from(tbody.rows).forEach((row, rowIdx) => {
-          const originalRow = rows[rowIdx + 1];
-          const match = searchColumnIndexes.some(idx =>
-            originalRow[idx]?.toLowerCase().includes(query)
-          );
-          row.classList.toggle("hidden", query && !match);
-        });
-      });
-    })
-    .catch(err => {
-      status.textContent = "Error loading CSV.";
-      console.error(err);
+    visibleColumnIndexes.forEach(idx => {
+      const td = document.createElement("td");
+      td.textContent = row[idx];
+      tr.appendChild(td);
     });
+    tbody.appendChild(tr);
+  }
+
+  tbody.style.transform = `translateY(${startIndex * ROW_HEIGHT}px)`;
+}
+
+fetch(CSV_URL)
+  .then(r => r.text())
+  .then(text => {
+    const rows = text.trim().split("\n").map(r => r.split(","));
+    headers = rows[0];
+    allRows = rows.slice(1);
+
+    visibleColumnIndexes = headers
+      .map((h,i)=>({h,i}))
+      .filter(c=>!HIDDEN_COLUMNS.includes(c.h))
+      .map(c=>c.i);
+
+    searchColumnIndexes = SEARCH_COLUMNS
+      .map(c=>headers.indexOf(c))
+      .filter(i=>i>=0);
+
+    const hr = document.createElement("tr");
+    visibleColumnIndexes.forEach(i=>{
+      const th = document.createElement("th");
+      th.textContent = headers[i];
+      hr.appendChild(th);
+    });
+    thead.appendChild(hr);
+
+    filteredIndexes = allRows.map((_,i)=>i);
+    tbody.style.height = `${filteredIndexes.length * ROW_HEIGHT}px`;
+
+    render(0);
+    status.textContent = `Loaded ${allRows.length} conjunctions`;
+    searchInput.disabled = false;
+  });
+
+scrollContainer.addEventListener("scroll", () => {
+  const start = Math.floor(scrollContainer.scrollTop / ROW_HEIGHT);
+  render(start);
+});
+
+searchInput.addEventListener("input", () => {
+  const q = searchInput.value.toLowerCase().trim();
+  filteredIndexes = allRows
+    .map((r,i)=>searchColumnIndexes.some(idx=>r[idx]?.toLowerCase().includes(q))?i:-1)
+    .filter(i=>i>=0);
+
+  tbody.style.height = `${filteredIndexes.length * ROW_HEIGHT}px`;
+  scrollContainer.scrollTop = 0;
+  render(0);
+});
 </script>
 
 </body>

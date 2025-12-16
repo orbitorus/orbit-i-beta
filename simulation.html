@@ -16,10 +16,6 @@
       --accent-glow: rgba(110, 168, 255, 0.45);
     }
 
-    * {
-      box-sizing: border-box;
-    }
-
     body {
       margin: 0;
       padding: 32px;
@@ -33,14 +29,13 @@
     }
 
     h1 {
-      margin-bottom: 10px;
+      margin-bottom: 6px;
       font-size: 26px;
-      letter-spacing: 0.5px;
     }
 
     .subtitle {
       color: var(--text-muted);
-      margin-bottom: 24px;
+      margin-bottom: 22px;
       font-size: 14px;
     }
 
@@ -53,7 +48,7 @@
     }
 
     input {
-      width: 360px;
+      width: 420px;
       max-width: 100%;
       padding: 10px 14px;
       font-size: 14px;
@@ -62,7 +57,6 @@
       background: #0c1330;
       color: var(--text-main);
       outline: none;
-      transition: border 0.2s, box-shadow 0.2s;
     }
 
     input::placeholder {
@@ -83,7 +77,7 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 20px;
+      margin-top: 18px;
       font-size: 13px;
     }
 
@@ -97,14 +91,9 @@
     th {
       background: var(--bg-table-header);
       color: var(--accent);
-      font-weight: 600;
       position: sticky;
       top: 0;
       z-index: 1;
-    }
-
-    tbody tr {
-      transition: background 0.15s;
     }
 
     tbody tr:hover {
@@ -114,114 +103,126 @@
     tr.hidden {
       display: none;
     }
-
-    .footer-note {
-      margin-top: 18px;
-      font-size: 12px;
-      color: #7f88c7;
-    }
   </style>
 </head>
 
 <body>
 
-  <h1>CSV Name Inspector</h1>
-  <div class="subtitle">
-    Space-themed client-side inspection of GitHub-hosted datasets
-  </div>
+<h1>Conjunction CSV Inspector</h1>
+<div class="subtitle">
+  Multi-column search across CDM / conjunction attributes
+</div>
 
-  <div class="panel">
-    <input
-      type="text"
-      id="searchInput"
-      placeholder="Search by name (case-insensitive)…"
-      disabled
-    />
+<div class="panel">
+  <input
+    type="text"
+    id="searchInput"
+    placeholder="Search conjunction ID, object name, probability, miss distance…"
+    disabled
+  />
 
-    <div class="status" id="status">Loading CSV from orbit…</div>
+  <div class="status" id="status">Loading CSV…</div>
 
-    <table id="dataTable"></table>
+  <table id="dataTable"></table>
+</div>
 
-    <div class="footer-note">
-      Data is fetched directly from a public GitHub repository.
-    </div>
-  </div>
+<script>
+  // 🔽 Replace with your RAW GitHub CSV URL
+  const CSV_URL =
+    "https://raw.githubusercontent.com/orbitorus/orbit-i-beta/refs/heads/main/sim_dataset/selected_conjunction_data.csv";
 
-  <script>
-    // Replace with raw GitHub CSV URL
-    const CSV_URL = "https://raw.githubusercontent.com/orbitorus/orbit-i-beta/refs/heads/main/sim_dataset/selected_conjunction_data.csv";
+  const SEARCH_COLUMNS = [
+    'conjunction_id',
+    'creation_date',
+    'tca',
+    'miss_distance',
+    'relative_speed',
+    'collision_probability',
+    'object1_object_designator',
+    'object1_catalog_name',
+    'object1_object_name',
+    'object1_international_designator',
+    'object1_object_type',
+    'object2_object_designator',
+    'object2_catalog_name',
+    'object2_object_name',
+    'object2_international_designator',
+    'object2_object_type'
+  ];
 
-    const table = document.getElementById("dataTable");
-    const searchInput = document.getElementById("searchInput");
-    const status = document.getElementById("status");
+  const table = document.getElementById("dataTable");
+  const searchInput = document.getElementById("searchInput");
+  const status = document.getElementById("status");
 
-    let nameColumnIndex = -1;
+  let searchColumnIndexes = [];
 
-    fetch(CSV_URL)
-      .then(res => {
-        if (!res.ok) throw new Error("Failed to load CSV");
-        return res.text();
-      })
-      .then(csvText => {
-        const rows = csvText
-          .trim()
-          .split("\n")
-          .map(r => r.split(","));
+  fetch(CSV_URL)
+    .then(res => {
+      if (!res.ok) throw new Error("CSV load failed");
+      return res.text();
+    })
+    .then(csvText => {
+      const rows = csvText
+        .trim()
+        .split("\n")
+        .map(r => r.split(","));
 
-        const headers = rows[0].map(h => h.trim());
-        nameColumnIndex = headers.findIndex(
-          h => h.toLowerCase() === "name"
-        );
+      const headers = rows[0].map(h => h.trim());
 
-        if (nameColumnIndex === -1) {
-          status.textContent = "Error: No 'name' column found.";
-          return;
-        }
+      // Resolve column indexes dynamically
+      searchColumnIndexes = SEARCH_COLUMNS
+        .map(col => headers.indexOf(col))
+        .filter(idx => idx !== -1);
 
-        // Header
-        const thead = document.createElement("thead");
-        const headerRow = document.createElement("tr");
-        headers.forEach(h => {
-          const th = document.createElement("th");
-          th.textContent = h;
-          headerRow.appendChild(th);
-        });
-        thead.appendChild(headerRow);
-        table.appendChild(thead);
+      if (searchColumnIndexes.length === 0) {
+        status.textContent = "Error: none of the search columns found.";
+        return;
+      }
 
-        // Body
-        const tbody = document.createElement("tbody");
-        rows.slice(1).forEach(row => {
-          const tr = document.createElement("tr");
-          row.forEach(cell => {
-            const td = document.createElement("td");
-            td.textContent = cell;
-            tr.appendChild(td);
-          });
-          tbody.appendChild(tr);
-        });
-        table.appendChild(tbody);
-
-        status.textContent = `Loaded ${rows.length - 1} rows`;
-        searchInput.disabled = false;
-
-        searchInput.addEventListener("input", () => {
-          const query = searchInput.value.toLowerCase().trim();
-          Array.from(tbody.rows).forEach(row => {
-            const cellText =
-              row.cells[nameColumnIndex].textContent.toLowerCase();
-            row.classList.toggle(
-              "hidden",
-              query && !cellText.includes(query)
-            );
-          });
-        });
-      })
-      .catch(err => {
-        status.textContent = "Error loading CSV.";
-        console.error(err);
+      // Build table header
+      const thead = document.createElement("thead");
+      const headerRow = document.createElement("tr");
+      headers.forEach(h => {
+        const th = document.createElement("th");
+        th.textContent = h;
+        headerRow.appendChild(th);
       });
-  </script>
+      thead.appendChild(headerRow);
+      table.appendChild(thead);
+
+      // Build table body
+      const tbody = document.createElement("tbody");
+      rows.slice(1).forEach(row => {
+        const tr = document.createElement("tr");
+        row.forEach(cell => {
+          const td = document.createElement("td");
+          td.textContent = cell;
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+
+      status.textContent = `Loaded ${rows.length - 1} conjunctions`;
+      searchInput.disabled = false;
+
+      // Multi-column search
+      searchInput.addEventListener("input", () => {
+        const query = searchInput.value.toLowerCase().trim();
+
+        Array.from(tbody.rows).forEach(row => {
+          const match = searchColumnIndexes.some(idx =>
+            row.cells[idx]?.textContent.toLowerCase().includes(query)
+          );
+          row.classList.toggle("hidden", query && !match);
+        });
+      });
+    })
+    .catch(err => {
+      status.textContent = "Error loading CSV.";
+      console.error(err);
+    });
+</script>
 
 </body>
 </html>

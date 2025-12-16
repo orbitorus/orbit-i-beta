@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <title>Conjunction CSV Inspector</title>
 
+  <!-- PapaParse (for worker-based streaming CSV parsing) -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
   <style>
     :root {
       --bg-main: #0b1020;
@@ -13,7 +16,7 @@
       --text-main: #e6ebff;
       --text-muted: #9aa4d6;
       --accent: #6ea8ff;
-      --accent-glow: rgba(110, 168, 255, 0.45);
+      --accent-glow: rgba(110,168,255,0.45);
     }
 
     body {
@@ -39,19 +42,9 @@
       margin-bottom: 22px;
     }
 
-    /* ===== Section Layout ===== */
-
     .section {
       margin-bottom: 36px;
     }
-
-    .section-title {
-      font-size: 18px;
-      margin-bottom: 10px;
-      color: var(--accent);
-    }
-
-    /* ===== Panel ===== */
 
     .panel {
       background: var(--bg-panel);
@@ -71,10 +64,6 @@
       background: #0c1330;
       color: var(--text-main);
       outline: none;
-    }
-
-    input::placeholder {
-      color: var(--text-muted);
     }
 
     input:focus {
@@ -121,8 +110,6 @@
       background: rgba(110,168,255,0.06);
     }
 
-    /* ===== Image Section ===== */
-
     .image-section {
       text-align: center;
     }
@@ -149,21 +136,19 @@
 
 <h1>Conjunction CSV Inspector</h1>
 <div class="subtitle">
-  Virtualized rendering · Multi-column filter · Analyst-ready
+  Worker-based CSV streaming · Virtualized rendering · Analyst-ready
 </div>
-
-<!-- ================= Section 1: CSV Inspector ================= -->
 
 <div class="section">
   <div class="panel">
     <input
       id="searchInput"
       type="text"
-      placeholder="Search conjunction ID, object name, probability, miss distance…"
+      placeholder="Search across conjunction ID, object names, probability…"
       disabled
     />
 
-    <div class="status" id="status">Loading CSV…</div>
+    <div class="status" id="status">Streaming CSV in background…</div>
 
     <div class="table-wrapper" id="tableWrapper">
       <table>
@@ -173,8 +158,6 @@
     </div>
   </div>
 </div>
-
-<!-- ================= Section 2: Visual Context ================= -->
 
 <div class="section image-section">
   <div class="section-title">Dataset Visualization</div>
@@ -189,17 +172,104 @@
   </div>
 </div>
 
-<!-- ================= Section 3: Future Expansion ================= -->
-<!--
-<div class="section">
-  <div class="section-title">Risk Analytics</div>
-  <div class="panel">
-    Future plots, summaries, decision logic
-  </div>
-</div>
--->
+<script>
+  const CSV_URL =
+    "https://raw.githubusercontent.com/orbitorus/orbit-i-beta/main/sim_dataset/selected_conjunction_data.csv";
 
-<!-- JavaScript remains unchanged from your current working version -->
+  const searchColumns = [
+    "conjunction_id",
+    "object1_object_name",
+    "object2_object_name",
+    "object1_catalog_name",
+    "object2_catalog_name",
+    "object1_object_designator",
+    "object2_object_designator"
+  ];
+
+  const floatCols = [
+    "miss_distance",
+    "relative_speed",
+    "collision_probability"
+  ];
+
+  let rows = [];
+  let filtered = [];
+  let columns = [];
+  const ROW_HEIGHT = 34;
+  const tbody = document.getElementById("tbody");
+  const thead = document.getElementById("thead");
+  const wrapper = document.getElementById("tableWrapper");
+  const status = document.getElementById("status");
+  const searchInput = document.getElementById("searchInput");
+
+  function renderHeader() {
+    thead.innerHTML =
+      "<tr>" + columns.map(c => `<th>${c}</th>`).join("") + "</tr>";
+  }
+
+  function renderVisibleRows() {
+    const scrollTop = wrapper.scrollTop;
+    const height = wrapper.clientHeight;
+    const start = Math.floor(scrollTop / ROW_HEIGHT);
+    const end = Math.min(start + Math.ceil(height / ROW_HEIGHT) + 5, filtered.length);
+
+    tbody.innerHTML = "";
+    tbody.style.height = filtered.length * ROW_HEIGHT + "px";
+
+    for (let i = start; i < end; i++) {
+      const tr = document.createElement("tr");
+      tr.style.position = "absolute";
+      tr.style.top = i * ROW_HEIGHT + "px";
+
+      columns.forEach(col => {
+        let val = filtered[i][col] ?? "";
+        if (floatCols.includes(col) && val !== "") {
+          val = Number(val).toPrecision(4);
+        }
+        tr.innerHTML += `<td>${val}</td>`;
+      });
+
+      tbody.appendChild(tr);
+    }
+  }
+
+  function applyFilter(term) {
+    const q = term.toLowerCase();
+    filtered = rows.filter(r =>
+      searchColumns.some(c => (r[c] || "").toLowerCase().includes(q))
+    );
+    status.textContent = `Matches: ${filtered.length}`;
+    wrapper.scrollTop = 0;
+    renderVisibleRows();
+  }
+
+  // ===== FIX 1: Worker-based streaming parse =====
+  Papa.parse(CSV_URL, {
+    download: true,
+    header: true,
+    worker: true,
+    skipEmptyLines: true,
+    step: function (result) {
+      rows.push(result.data);
+    },
+    complete: function () {
+      columns = Object.keys(rows[0] || {});
+      filtered = rows;
+
+      renderHeader();
+      renderVisibleRows();
+
+      searchInput.disabled = false;
+      status.textContent = `Loaded ${rows.length} conjunctions`;
+    }
+  });
+
+  wrapper.addEventListener("scroll", renderVisibleRows);
+
+  searchInput.addEventListener("input", e => {
+    applyFilter(e.target.value);
+  });
+</script>
 
 </body>
 </html>

@@ -55,6 +55,14 @@
       box-shadow: 0 0 30px rgba(0,0,0,0.45);
     }
 
+    .table-wrapper {
+      height: 360px;
+      overflow: auto;
+      border: 1px solid var(--border-soft);
+      border-radius: 10px;
+    }
+
+
     input, button {
       background: #0c1330;
       border: 1px solid var(--border-soft);
@@ -118,6 +126,129 @@
     }
   </style>
 </head>
+  
+<body>
+
+<h1>Orbital Conjunction Analysis</h1>
+<div class="subtitle">
+  Inspection · Visualization · Simulation · Scenario Reasoning
+</div>
+
+<!-- ================= SECTION 1: CSV INSPECTION ================= -->
+<div class="section">
+  <div class="section-title">CSV Inspection</div>
+
+  <div class="panel">
+    <input
+      id="searchInput"
+      type="text"
+      placeholder="Search conjunctions…"
+      disabled
+    />
+
+    <div class="status" id="status">
+      Type to load and filter CSV
+    </div>
+
+
+    <div class="table-wrapper" style="margin-top:14px; height:360px;">
+      <table>
+        <thead id="thead"></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ================= SECTION 2: IMAGE ================= -->
+<div class="section image-section">
+  <div class="section-title">Orbital Context</div>
+  <img src="sim_dataset/cpmd_risk_zones.png" alt="risk zones" />
+</div>
+
+<!-- ================= SECTION 3: CALCULATION + PLOT ================= -->
+<div class="section">
+  <div class="section-title">Maneuver Analysis</div>
+
+  <div class="two-column">
+    <!-- Left: Calculation -->
+    <div class="panel">
+      <h3>Analytical Calculation</h3>
+      <p class="subtitle">Converted from Python logic</p>
+
+      <label>Input A</label><br />
+      <input type="number" /><br /><br />
+
+      <label>Input B</label><br />
+      <input type="number" /><br /><br />
+
+      <div>
+        Output: <strong>—</strong>
+      </div>
+    </div>
+
+    <!-- Right: Plot -->
+    <div class="panel">
+      <h3>Visualization</h3>
+      <div id="plotly-container" style="height:320px;">
+        <!-- Plotly plot goes here -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= SECTION 4: GIF SIMULATION ================= -->
+<div class="section">
+  <div class="section-title">Thrust Simulation</div>
+  <div class="panel">
+
+    <input type="number" placeholder="Thrust Force" />
+    <input type="number" placeholder="Duration" />
+    <input type="number" placeholder="Timing" />
+
+    <button style="margin-left:10px;">Simulate</button>
+
+    <div style="margin-top:20px;">
+      <img id="simGif" src="sim_dataset/simulation.gif" style="max-width:100%; border-radius:12px;" />
+    </div>
+  </div>
+</div>
+
+<!-- ================= SECTION 5: ACCORDION ================= -->
+<div class="section">
+  <div class="section-title">Operational Scenarios</div>
+  <div class="panel">
+
+    <div class="accordion-item">
+      <div class="accordion-header">Scenario 1 — Nominal Avoidance</div>
+      <div class="accordion-content">
+        Text describing nominal conjunction handling.
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <div class="accordion-header">Scenario 2 — Late Warning</div>
+      <div class="accordion-content">
+        Text describing late TCA discovery.
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <div class="accordion-header">Scenario 3 — High Uncertainty</div>
+      <div class="accordion-content">
+        Text describing covariance growth effects.
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <div class="accordion-header">Scenario 4 — Regulatory Mandate</div>
+      <div class="accordion-content">
+        Text describing compliance-driven maneuver.
+      </div>
+    </div>
+
+  </div>
+</div>
 
 <script>
 /* ================= CSV INSPECTION WITH CAPPED FILTERING ================= */
@@ -265,128 +396,7 @@ searchInput.addEventListener("input", e => {
 });
 </script>
 
-  
-<body>
 
-<h1>Orbital Conjunction Analysis</h1>
-<div class="subtitle">
-  Inspection · Visualization · Simulation · Scenario Reasoning
-</div>
-
-<!-- ================= SECTION 1: CSV INSPECTION ================= -->
-<div class="section">
-  <div class="section-title">CSV Inspection</div>
-
-  <div class="panel">
-    <input
-      id="searchInput"
-      type="text"
-      placeholder="Search conjunctions…"
-      disabled
-    />
-
-    <div class="status" id="status">
-      Loading CSV…
-    </div>
-
-    <div class="table-wrapper" style="margin-top:14px; height:360px;">
-      <table>
-        <thead id="thead"></thead>
-        <tbody id="tbody"></tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<!-- ================= SECTION 2: IMAGE ================= -->
-<div class="section image-section">
-  <div class="section-title">Orbital Context</div>
-  <img src="sim_dataset/cpmd_risk_zones.png" alt="risk zones" />
-</div>
-
-<!-- ================= SECTION 3: CALCULATION + PLOT ================= -->
-<div class="section">
-  <div class="section-title">Maneuver Analysis</div>
-
-  <div class="two-column">
-    <!-- Left: Calculation -->
-    <div class="panel">
-      <h3>Analytical Calculation</h3>
-      <p class="subtitle">Converted from Python logic</p>
-
-      <label>Input A</label><br />
-      <input type="number" /><br /><br />
-
-      <label>Input B</label><br />
-      <input type="number" /><br /><br />
-
-      <div>
-        Output: <strong>—</strong>
-      </div>
-    </div>
-
-    <!-- Right: Plot -->
-    <div class="panel">
-      <h3>Visualization</h3>
-      <div id="plotly-container" style="height:320px;">
-        <!-- Plotly plot goes here -->
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ================= SECTION 4: GIF SIMULATION ================= -->
-<div class="section">
-  <div class="section-title">Thrust Simulation</div>
-  <div class="panel">
-
-    <input type="number" placeholder="Thrust Force" />
-    <input type="number" placeholder="Duration" />
-    <input type="number" placeholder="Timing" />
-
-    <button style="margin-left:10px;">Simulate</button>
-
-    <div style="margin-top:20px;">
-      <img id="simGif" src="sim_dataset/simulation.gif" style="max-width:100%; border-radius:12px;" />
-    </div>
-  </div>
-</div>
-
-<!-- ================= SECTION 5: ACCORDION ================= -->
-<div class="section">
-  <div class="section-title">Operational Scenarios</div>
-  <div class="panel">
-
-    <div class="accordion-item">
-      <div class="accordion-header">Scenario 1 — Nominal Avoidance</div>
-      <div class="accordion-content">
-        Text describing nominal conjunction handling.
-      </div>
-    </div>
-
-    <div class="accordion-item">
-      <div class="accordion-header">Scenario 2 — Late Warning</div>
-      <div class="accordion-content">
-        Text describing late TCA discovery.
-      </div>
-    </div>
-
-    <div class="accordion-item">
-      <div class="accordion-header">Scenario 3 — High Uncertainty</div>
-      <div class="accordion-content">
-        Text describing covariance growth effects.
-      </div>
-    </div>
-
-    <div class="accordion-item">
-      <div class="accordion-header">Scenario 4 — Regulatory Mandate</div>
-      <div class="accordion-content">
-        Text describing compliance-driven maneuver.
-      </div>
-    </div>
-
-  </div>
-</div>
 
 <script>
   document.querySelectorAll(".accordion-header").forEach(h => {

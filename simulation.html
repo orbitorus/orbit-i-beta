@@ -27,6 +27,11 @@ body {
   color: var(--text-main);
 }
 
+h1 {
+  margin-bottom: 10px;
+  font-size: 26px;
+}
+
 .panel {
   background: var(--bg-panel);
   border: 1px solid var(--border-soft);
@@ -81,6 +86,7 @@ th {
 <body>
 
 <h1>Conjunction CSV Inspector</h1>
+
 <div class="panel">
   <input id="searchInput" placeholder="Search conjunctions…" disabled />
   <div class="status" id="status">Loading CSV…</div>
@@ -113,6 +119,12 @@ const HIDDEN_COLUMNS = [
   'object1_catalog_name','object2_catalog_name'
 ];
 
+const FORMAT_RULES = {
+  miss_distance: v => Number(v).toFixed(2),
+  relative_speed: v => Number(v).toFixed(2),
+  collision_probability: v => Number(v).toExponential(2)
+};
+
 const table = document.getElementById("dataTable");
 const thead = table.querySelector("thead");
 const tbody = table.querySelector("tbody");
@@ -125,6 +137,7 @@ let allRows = [];
 let visibleColumnIndexes = [];
 let searchColumnIndexes = [];
 let filteredIndexes = [];
+let formattersByIndex = {};
 
 function render(startIndex) {
   tbody.innerHTML = "";
@@ -136,9 +149,17 @@ function render(startIndex) {
 
     visibleColumnIndexes.forEach(idx => {
       const td = document.createElement("td");
-      td.textContent = row[idx];
+      const raw = row[idx];
+      const formatter = formattersByIndex[idx];
+
+      td.textContent =
+        formatter && raw !== "" && !isNaN(raw)
+          ? formatter(raw)
+          : raw;
+
       tr.appendChild(td);
     });
+
     tbody.appendChild(tr);
   }
 
@@ -160,6 +181,12 @@ fetch(CSV_URL)
     searchColumnIndexes = SEARCH_COLUMNS
       .map(c=>headers.indexOf(c))
       .filter(i=>i>=0);
+
+    headers.forEach((h,i)=>{
+      if (FORMAT_RULES[h]) {
+        formattersByIndex[i] = FORMAT_RULES[h];
+      }
+    });
 
     const hr = document.createElement("tr");
     visibleColumnIndexes.forEach(i=>{
@@ -184,6 +211,7 @@ scrollContainer.addEventListener("scroll", () => {
 
 searchInput.addEventListener("input", () => {
   const q = searchInput.value.toLowerCase().trim();
+
   filteredIndexes = allRows
     .map((r,i)=>searchColumnIndexes.some(idx=>r[idx]?.toLowerCase().includes(q))?i:-1)
     .filter(i=>i>=0);

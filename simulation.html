@@ -2,16 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Conjunction CSV Inspector</title>
-
-  <!-- PapaParse (for worker-based streaming CSV parsing) -->
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <title>Orbital Conjunction Analysis Dashboard</title>
 
   <style>
     :root {
       --bg-main: #0b1020;
       --bg-panel: #121a33;
-      --bg-table-header: #1b254b;
+      --bg-header: #1b254b;
       --border-soft: #26346b;
       --text-main: #e6ebff;
       --text-muted: #9aa4d6;
@@ -28,246 +25,216 @@
         radial-gradient(circle at 80% 10%, #101a40 0%, transparent 45%),
         linear-gradient(180deg, #050816 0%, var(--bg-main) 100%);
       color: var(--text-main);
-      min-height: 100vh;
     }
 
     h1 {
-      font-size: 26px;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
     }
 
     .subtitle {
-      font-size: 13px;
       color: var(--text-muted);
-      margin-bottom: 22px;
+      font-size: 13px;
+      margin-bottom: 30px;
     }
 
     .section {
-      margin-bottom: 36px;
+      margin-bottom: 48px;
+    }
+
+    .section-title {
+      font-size: 18px;
+      color: var(--accent);
+      margin-bottom: 14px;
     }
 
     .panel {
       background: var(--bg-panel);
       border: 1px solid var(--border-soft);
-      border-radius: 12px;
+      border-radius: 14px;
       padding: 18px;
-      box-shadow: 0 0 28px rgba(0,0,0,0.45);
+      box-shadow: 0 0 30px rgba(0,0,0,0.45);
     }
 
-    input {
-      width: 420px;
-      max-width: 100%;
-      padding: 10px 14px;
-      font-size: 14px;
-      border-radius: 8px;
-      border: 1px solid var(--border-soft);
+    input, button {
       background: #0c1330;
-      color: var(--text-main);
-      outline: none;
-    }
-
-    input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 2px var(--accent-glow);
-    }
-
-    .status {
-      margin-top: 10px;
-      font-size: 13px;
-      color: var(--text-muted);
-    }
-
-    .table-wrapper {
-      margin-top: 16px;
-      height: 420px;
-      overflow: auto;
       border: 1px solid var(--border-soft);
-      border-radius: 10px;
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: var(--text-main);
+      font-size: 14px;
     }
 
-    table {
-      border-collapse: collapse;
-      width: max-content;
-      min-width: 100%;
-      font-size: 13px;
+    button {
+      cursor: pointer;
     }
 
-    th, td {
-      padding: 9px 12px;
-      border-bottom: 1px solid var(--border-soft);
-      white-space: nowrap;
+    button:hover {
+      border-color: var(--accent);
     }
 
-    th {
-      position: sticky;
-      top: 0;
-      background: var(--bg-table-header);
-      color: var(--accent);
-      z-index: 2;
+    /* ===== Section 3 layout ===== */
+    .two-column {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
     }
 
-    tbody tr:hover {
-      background: rgba(110,168,255,0.06);
-    }
-
+    /* ===== Image ===== */
     .image-section {
       text-align: center;
     }
 
     .image-section img {
-      max-width: 900px;
       width: 95%;
-      opacity: 0.7;
+      max-width: 900px;
       border-radius: 16px;
+      opacity: 0.75;
       box-shadow:
         0 0 40px rgba(110,168,255,0.18),
         0 0 90px rgba(0,0,0,0.6);
     }
 
-    .image-caption {
-      margin-top: 10px;
-      font-size: 12px;
+    /* ===== Accordion ===== */
+    .accordion-item {
+      border-bottom: 1px solid var(--border-soft);
+    }
+
+    .accordion-header {
+      padding: 14px;
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .accordion-content {
+      display: none;
+      padding: 0 14px 14px;
       color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .accordion-item.active .accordion-content {
+      display: block;
     }
   </style>
 </head>
 
 <body>
 
-<h1>Conjunction CSV Inspector</h1>
+<h1>Orbital Conjunction Analysis</h1>
 <div class="subtitle">
-  Worker-based CSV streaming · Virtualized rendering · Analyst-ready
+  Inspection · Visualization · Simulation · Scenario Reasoning
 </div>
 
+<!-- ================= SECTION 1: CSV INSPECTION ================= -->
 <div class="section">
+  <div class="section-title">CSV Inspection</div>
   <div class="panel">
-    <input
-      id="searchInput"
-      type="text"
-      placeholder="Search across conjunction ID, object names, probability…"
-      disabled
-    />
-
-    <div class="status" id="status">Streaming CSV in background…</div>
-
-    <div class="table-wrapper" id="tableWrapper">
-      <table>
-        <thead id="thead"></thead>
-        <tbody id="tbody"></tbody>
-      </table>
+    <input type="text" placeholder="Search conjunctions…" />
+    <div style="margin-top:12px; color:var(--text-muted); font-size:13px;">
+      Status: awaiting user input
+    </div>
+    <div style="margin-top:14px; height:360px; border:1px solid var(--border-soft); border-radius:10px;">
+      <!-- virtualized table goes here -->
     </div>
   </div>
 </div>
 
+<!-- ================= SECTION 2: IMAGE ================= -->
 <div class="section image-section">
-  <div class="section-title">Dataset Visualization</div>
+  <div class="section-title">Orbital Context</div>
+  <img src="sim_dataset/cpmd_risk_zones.png" alt="risk zones" />
+</div>
 
-  <img
-    src="https://raw.githubusercontent.com/orbitorus/orbit-i-beta/main/sim_dataset/cpmd_risk_zones.png"
-    alt="conjunction context visualization"
-  />
+<!-- ================= SECTION 3: CALCULATION + PLOT ================= -->
+<div class="section">
+  <div class="section-title">Maneuver Analysis</div>
 
-  <div class="image-caption">
-    Example orbital geometry / conjunction visualization
+  <div class="two-column">
+    <!-- Left: Calculation -->
+    <div class="panel">
+      <h3>Analytical Calculation</h3>
+      <p class="subtitle">Converted from Python logic</p>
+
+      <label>Input A</label><br />
+      <input type="number" /><br /><br />
+
+      <label>Input B</label><br />
+      <input type="number" /><br /><br />
+
+      <div>
+        Output: <strong>—</strong>
+      </div>
+    </div>
+
+    <!-- Right: Plot -->
+    <div class="panel">
+      <h3>Visualization</h3>
+      <div id="plotly-container" style="height:320px;">
+        <!-- Plotly plot goes here -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= SECTION 4: GIF SIMULATION ================= -->
+<div class="section">
+  <div class="section-title">Thrust Simulation</div>
+  <div class="panel">
+
+    <input type="number" placeholder="Thrust Force" />
+    <input type="number" placeholder="Duration" />
+    <input type="number" placeholder="Timing" />
+
+    <button style="margin-left:10px;">Simulate</button>
+
+    <div style="margin-top:20px;">
+      <img id="simGif" src="sim_dataset/simulation.gif" style="max-width:100%; border-radius:12px;" />
+    </div>
+  </div>
+</div>
+
+<!-- ================= SECTION 5: ACCORDION ================= -->
+<div class="section">
+  <div class="section-title">Operational Scenarios</div>
+  <div class="panel">
+
+    <div class="accordion-item">
+      <div class="accordion-header">Scenario 1 — Nominal Avoidance</div>
+      <div class="accordion-content">
+        Text describing nominal conjunction handling.
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <div class="accordion-header">Scenario 2 — Late Warning</div>
+      <div class="accordion-content">
+        Text describing late TCA discovery.
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <div class="accordion-header">Scenario 3 — High Uncertainty</div>
+      <div class="accordion-content">
+        Text describing covariance growth effects.
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <div class="accordion-header">Scenario 4 — Regulatory Mandate</div>
+      <div class="accordion-content">
+        Text describing compliance-driven maneuver.
+      </div>
+    </div>
+
   </div>
 </div>
 
 <script>
-  const CSV_URL =
-    "https://raw.githubusercontent.com/orbitorus/orbit-i-beta/main/sim_dataset/selected_conjunction_data.csv";
-
-  const searchColumns = [
-    "conjunction_id",
-    "object1_object_name",
-    "object2_object_name",
-    "object1_catalog_name",
-    "object2_catalog_name",
-    "object1_object_designator",
-    "object2_object_designator"
-  ];
-
-  const floatCols = [
-    "miss_distance",
-    "relative_speed",
-    "collision_probability"
-  ];
-
-  let rows = [];
-  let filtered = [];
-  let columns = [];
-  const ROW_HEIGHT = 34;
-  const tbody = document.getElementById("tbody");
-  const thead = document.getElementById("thead");
-  const wrapper = document.getElementById("tableWrapper");
-  const status = document.getElementById("status");
-  const searchInput = document.getElementById("searchInput");
-
-  function renderHeader() {
-    thead.innerHTML =
-      "<tr>" + columns.map(c => `<th>${c}</th>`).join("") + "</tr>";
-  }
-
-  function renderVisibleRows() {
-    const scrollTop = wrapper.scrollTop;
-    const height = wrapper.clientHeight;
-    const start = Math.floor(scrollTop / ROW_HEIGHT);
-    const end = Math.min(start + Math.ceil(height / ROW_HEIGHT) + 5, filtered.length);
-
-    tbody.innerHTML = "";
-    tbody.style.height = filtered.length * ROW_HEIGHT + "px";
-
-    for (let i = start; i < end; i++) {
-      const tr = document.createElement("tr");
-      tr.style.position = "absolute";
-      tr.style.top = i * ROW_HEIGHT + "px";
-
-      columns.forEach(col => {
-        let val = filtered[i][col] ?? "";
-        if (floatCols.includes(col) && val !== "") {
-          val = Number(val).toPrecision(4);
-        }
-        tr.innerHTML += `<td>${val}</td>`;
-      });
-
-      tbody.appendChild(tr);
-    }
-  }
-
-  function applyFilter(term) {
-    const q = term.toLowerCase();
-    filtered = rows.filter(r =>
-      searchColumns.some(c => (r[c] || "").toLowerCase().includes(q))
-    );
-    status.textContent = `Matches: ${filtered.length}`;
-    wrapper.scrollTop = 0;
-    renderVisibleRows();
-  }
-
-  // ===== FIX 1: Worker-based streaming parse =====
-  Papa.parse(CSV_URL, {
-    download: true,
-    header: true,
-    worker: true,
-    skipEmptyLines: true,
-    step: function (result) {
-      rows.push(result.data);
-    },
-    complete: function () {
-      columns = Object.keys(rows[0] || {});
-      filtered = rows;
-
-      renderHeader();
-      renderVisibleRows();
-
-      searchInput.disabled = false;
-      status.textContent = `Loaded ${rows.length} conjunctions`;
-    }
-  });
-
-  wrapper.addEventListener("scroll", renderVisibleRows);
-
-  searchInput.addEventListener("input", e => {
-    applyFilter(e.target.value);
+  document.querySelectorAll(".accordion-header").forEach(h => {
+    h.addEventListener("click", () => {
+      h.parentElement.classList.toggle("active");
+    });
   });
 </script>
 

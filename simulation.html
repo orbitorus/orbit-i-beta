@@ -120,7 +120,7 @@
 </head>
 
 <script>
-/* ================= CSV INSPECTION LOGIC ================= */
+/* ================= CSV INSPECTION (LAZY LOAD) ================= */
 
 const CSV_URL =
   "https://raw.githubusercontent.com/orbitorus/orbit-i-beta/main/sim_dataset/selected_conjunction_data.csv";
@@ -133,12 +133,10 @@ const COLUMNS = [
   "relative_speed",
   "collision_probability",
   "object1_object_designator",
-  "object1_catalog_name",
   "object1_object_name",
   "object1_international_designator",
   "object1_object_type",
   "object2_object_designator",
-  "object2_catalog_name",
   "object2_object_name",
   "object2_international_designator",
   "object2_object_type"
@@ -147,6 +145,7 @@ const COLUMNS = [
 const INITIAL_RENDER_COUNT = 10;
 
 let allRows = [];
+let dataLoaded = false;
 
 const thead = document.getElementById("thead");
 const tbody = document.getElementById("tbody");
@@ -170,6 +169,7 @@ function parseCSV(text) {
 }
 
 function renderHeader() {
+  thead.innerHTML = "";
   const tr = document.createElement("tr");
   COLUMNS.forEach(col => {
     const th = document.createElement("th");
@@ -181,39 +181,48 @@ function renderHeader() {
 
 function renderRows(rows) {
   tbody.innerHTML = "";
-
   rows.forEach(row => {
     const tr = document.createElement("tr");
-
     COLUMNS.forEach(col => {
       const td = document.createElement("td");
       td.textContent = row[col] ?? "";
       tr.appendChild(td);
     });
-
     tbody.appendChild(tr);
   });
 }
 
-/* ---------- Load CSV ---------- */
+/* ---------- Lazy CSV Load ---------- */
 
-fetch(CSV_URL)
-  .then(res => res.text())
-  .then(text => {
-    allRows = parseCSV(text);
+async function loadCSVOnce() {
+  if (dataLoaded) return;
 
-    renderHeader();
-    renderRows(allRows.slice(0, INITIAL_RENDER_COUNT));
+  status.textContent = "Downloading CSV…";
+  searchInput.disabled = true;
 
-    status.textContent =
-      `Loaded ${allRows.length.toLocaleString()} rows · showing first ${INITIAL_RENDER_COUNT}`;
+  const res = await fetch(CSV_URL);
+  const text = await res.text();
 
-    searchInput.disabled = false;
-  })
-  .catch(err => {
-    console.error(err);
-    status.textContent = "Failed to load CSV";
-  });
+  status.textContent = "Parsing CSV…";
+  allRows = parseCSV(text);
+
+  renderHeader();
+  renderRows(allRows.slice(0, INITIAL_RENDER_COUNT));
+
+  status.textContent =
+    `Loaded ${allRows.length.toLocaleString()} rows · showing first ${INITIAL_RENDER_COUNT}`;
+
+  dataLoaded = true;
+  searchInput.disabled = false;
+}
+
+/* ---------- Trigger Load on User Intent ---------- */
+
+searchInput.disabled = false;
+status.textContent = "Type to load and inspect CSV";
+
+searchInput.addEventListener("focus", loadCSVOnce);
+searchInput.addEventListener("input", loadCSVOnce);
 </script>
 
   

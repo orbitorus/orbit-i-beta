@@ -108,7 +108,7 @@
 
 <body>
 
-<h1>Conjunction CSV Inspector</h1>
+<h1>Conjunction Assessment</h1>
 <div class="subtitle">
   Multi-column search across CDM / conjunction attributes
 </div>
@@ -127,7 +127,6 @@
 </div>
 
 <script>
-  // 🔽 Replace with your RAW GitHub CSV URL
   const CSV_URL =
     "https://raw.githubusercontent.com/orbitorus/orbit-i-beta/refs/heads/main/sim_dataset/selected_conjunction_data.csv";
 
@@ -139,15 +138,19 @@
     'relative_speed',
     'collision_probability',
     'object1_object_designator',
-    'object1_catalog_name',
     'object1_object_name',
     'object1_international_designator',
     'object1_object_type',
     'object2_object_designator',
-    'object2_catalog_name',
     'object2_object_name',
     'object2_international_designator',
     'object2_object_type'
+  ];
+
+  // Columns to hide from display
+  const HIDDEN_COLUMNS = [
+    'object1_catalog_name',
+    'object2_catalog_name'
   ];
 
   const table = document.getElementById("dataTable");
@@ -155,6 +158,7 @@
   const status = document.getElementById("status");
 
   let searchColumnIndexes = [];
+  let visibleColumnIndexes = [];
 
   fetch(CSV_URL)
     .then(res => {
@@ -169,7 +173,13 @@
 
       const headers = rows[0].map(h => h.trim());
 
-      // Resolve column indexes dynamically
+      // Resolve visible columns (exclude hidden)
+      visibleColumnIndexes = headers
+        .map((h, i) => ({ h, i }))
+        .filter(col => !HIDDEN_COLUMNS.includes(col.h))
+        .map(col => col.i);
+
+      // Resolve searchable columns
       searchColumnIndexes = SEARCH_COLUMNS
         .map(col => headers.indexOf(col))
         .filter(idx => idx !== -1);
@@ -182,9 +192,9 @@
       // Build table header
       const thead = document.createElement("thead");
       const headerRow = document.createElement("tr");
-      headers.forEach(h => {
+      visibleColumnIndexes.forEach(idx => {
         const th = document.createElement("th");
-        th.textContent = h;
+        th.textContent = headers[idx];
         headerRow.appendChild(th);
       });
       thead.appendChild(headerRow);
@@ -194,9 +204,9 @@
       const tbody = document.createElement("tbody");
       rows.slice(1).forEach(row => {
         const tr = document.createElement("tr");
-        row.forEach(cell => {
+        visibleColumnIndexes.forEach(idx => {
           const td = document.createElement("td");
-          td.textContent = cell;
+          td.textContent = row[idx];
           tr.appendChild(td);
         });
         tbody.appendChild(tr);
@@ -206,13 +216,14 @@
       status.textContent = `Loaded ${rows.length - 1} conjunctions`;
       searchInput.disabled = false;
 
-      // Multi-column search
+      // Multi-column search (searches full row, not just visible columns)
       searchInput.addEventListener("input", () => {
         const query = searchInput.value.toLowerCase().trim();
 
-        Array.from(tbody.rows).forEach(row => {
+        Array.from(tbody.rows).forEach((row, rowIdx) => {
+          const originalRow = rows[rowIdx + 1];
           const match = searchColumnIndexes.some(idx =>
-            row.cells[idx]?.textContent.toLowerCase().includes(query)
+            originalRow[idx]?.toLowerCase().includes(query)
           );
           row.classList.toggle("hidden", query && !match);
         });

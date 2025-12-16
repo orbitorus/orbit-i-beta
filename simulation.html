@@ -119,6 +119,104 @@
   </style>
 </head>
 
+<script>
+/* ================= CSV INSPECTION LOGIC ================= */
+
+const CSV_URL =
+  "https://raw.githubusercontent.com/orbitorus/orbit-i-beta/main/sim_dataset/selected_conjunction_data.csv";
+
+const COLUMNS = [
+  "conjunction_id",
+  "creation_date",
+  "tca",
+  "miss_distance",
+  "relative_speed",
+  "collision_probability",
+  "object1_object_designator",
+  "object1_catalog_name",
+  "object1_object_name",
+  "object1_international_designator",
+  "object1_object_type",
+  "object2_object_designator",
+  "object2_catalog_name",
+  "object2_object_name",
+  "object2_international_designator",
+  "object2_object_type"
+];
+
+const INITIAL_RENDER_COUNT = 10;
+
+let allRows = [];
+
+const thead = document.getElementById("thead");
+const tbody = document.getElementById("tbody");
+const status = document.getElementById("status");
+const searchInput = document.getElementById("searchInput");
+
+/* ---------- Utilities ---------- */
+
+function parseCSV(text) {
+  const lines = text.trim().split("\n");
+  const headers = lines[0].split(",");
+
+  return lines.slice(1).map(line => {
+    const values = line.split(",");
+    const row = {};
+    headers.forEach((h, i) => {
+      row[h] = values[i] ?? "";
+    });
+    return row;
+  });
+}
+
+function renderHeader() {
+  const tr = document.createElement("tr");
+  COLUMNS.forEach(col => {
+    const th = document.createElement("th");
+    th.textContent = col;
+    tr.appendChild(th);
+  });
+  thead.appendChild(tr);
+}
+
+function renderRows(rows) {
+  tbody.innerHTML = "";
+
+  rows.forEach(row => {
+    const tr = document.createElement("tr");
+
+    COLUMNS.forEach(col => {
+      const td = document.createElement("td");
+      td.textContent = row[col] ?? "";
+      tr.appendChild(td);
+    });
+
+    tbody.appendChild(tr);
+  });
+}
+
+/* ---------- Load CSV ---------- */
+
+fetch(CSV_URL)
+  .then(res => res.text())
+  .then(text => {
+    allRows = parseCSV(text);
+
+    renderHeader();
+    renderRows(allRows.slice(0, INITIAL_RENDER_COUNT));
+
+    status.textContent =
+      `Loaded ${allRows.length.toLocaleString()} rows · showing first ${INITIAL_RENDER_COUNT}`;
+
+    searchInput.disabled = false;
+  })
+  .catch(err => {
+    console.error(err);
+    status.textContent = "Failed to load CSV";
+  });
+</script>
+
+  
 <body>
 
 <h1>Orbital Conjunction Analysis</h1>
@@ -129,13 +227,24 @@
 <!-- ================= SECTION 1: CSV INSPECTION ================= -->
 <div class="section">
   <div class="section-title">CSV Inspection</div>
+
   <div class="panel">
-    <input type="text" placeholder="Search conjunctions…" />
-    <div style="margin-top:12px; color:var(--text-muted); font-size:13px;">
-      Status: awaiting user input
+    <input
+      id="searchInput"
+      type="text"
+      placeholder="Search conjunctions…"
+      disabled
+    />
+
+    <div class="status" id="status">
+      Loading CSV…
     </div>
-    <div style="margin-top:14px; height:360px; border:1px solid var(--border-soft); border-radius:10px;">
-      <!-- virtualized table goes here -->
+
+    <div class="table-wrapper" style="margin-top:14px; height:360px;">
+      <table>
+        <thead id="thead"></thead>
+        <tbody id="tbody"></tbody>
+      </table>
     </div>
   </div>
 </div>

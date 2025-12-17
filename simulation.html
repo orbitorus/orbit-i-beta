@@ -231,13 +231,39 @@
       line-height: 1.6;
       white-space: pre-wrap;
     }
+
+    .accordion-content h1,
+    .accordion-content h2,
+    .accordion-content h3 {
+      color: #9fb6ff;
+      margin-top: 1.2em;
+    }
     
+    .accordion-content table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+    }
+    
+    .accordion-content th,
+    .accordion-content td {
+      border: 1px solid #2a3565;
+      padding: 8px;
+    }
+    
+    .accordion-content strong {
+      color: #ffffff;
+    }
+
   </style>
 
   
   <script src="https://cdn.plot.ly/plotly-2.30.0.min.js">
     /* ===== Plotly ===== */
   </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
   
 </head>
   
@@ -794,7 +820,7 @@ function plotDeltaVvsDeltaH() {
 
       const isOpen = header.classList.contains("active");
 
-      // Close all
+      // Close all panels
       headers.forEach(h => {
         h.classList.remove("active");
         h.nextElementSibling.style.display = "none";
@@ -805,21 +831,21 @@ function plotDeltaVvsDeltaH() {
       header.classList.add("active");
       content.style.display = "block";
 
-      // Load markdown only once
       if (!content.dataset.loaded) {
-        content.textContent = "Loading scenario...";
+        content.innerHTML = "<em>Loading scenario...</em>";
         try {
           const response = await fetch(mdPath);
           const text = await response.text();
-          content.textContent = text;
+          content.innerHTML = marked.parse(text);
           content.dataset.loaded = "true";
-        } catch (err) {
-          content.textContent = "Failed to load scenario content.";
+        } catch {
+          content.innerHTML = "<em>Failed to load scenario.</em>";
         }
       }
     });
   });
 </script>
+
 
 
 </body>

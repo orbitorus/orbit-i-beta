@@ -181,19 +181,29 @@
   <div class="two-column">
     <!-- Left: Calculation -->
     <div class="panel">
-      <h3>Analytical Calculation</h3>
-      <p class="subtitle">Converted from Python logic</p>
+  <h3>Maneuver Cost Estimator</h3>
+  <p class="subtitle">Simplified analytical model</p>
 
-      <label>Input A</label><br />
-      <input type="number" /><br /><br />
+  <label>Δh (meters)</label><br />
+  <input id="dh" type="number" value="100" /><br /><br />
 
-      <label>Input B</label><br />
-      <input type="number" /><br /><br />
+  <label>Satellite mass (kg)</label><br />
+  <input id="mass" type="number" value="500" /><br /><br />
 
-      <div>
-        Output: <strong>—</strong>
-      </div>
-    </div>
+  <label>Isp (s)</label><br />
+  <input id="isp" type="number" value="1500" /><br /><br />
+
+  <label>Number of maneuvers</label><br />
+  <input id="times" type="number" value="10" /><br /><br />
+
+  <label>Base orbit altitude (km)</label><br />
+  <input id="orbit" type="number" value="500" /><br /><br />
+
+  <button onclick="computeManeuver()">Compute</button>
+
+  <div id="calcOutput" style="margin-top:16px; font-size:13px;"></div>
+</div>
+
 
     <!-- Right: Plot -->
     <div class="panel">
@@ -445,8 +455,6 @@ searchInput.addEventListener("input", e => {
 });
 </script>
 
-
-
 <script>
   document.querySelectorAll(".accordion-header").forEach(h => {
     h.addEventListener("click", () => {
@@ -454,6 +462,101 @@ searchInput.addEventListener("input", e => {
     });
   });
 </script>
+
+<script>
+/* ================= SECTION 3: MANEUVER CALCULATION ================= */
+
+/* ---- Constants ---- */
+const MU = 398600.4418;      // km^3/s^2
+const R_E = 6378.1363;       // km
+const G0 = 9.80665;          // m/s^2
+
+const C_ORBIT_VALUE = 20000; // USD/kg
+const KRYPTON_COST = 1200;   // USD/kg
+const CHEM_COST = 120;       // USD/kg
+
+const THRUST_SUGGEST = {
+  300: 3,
+  1500: 0.5,
+  2000: 0.2,
+  2500: 0.06
+};
+
+/* ---- Math Functions ---- */
+function hohmannDeltaV(h1_km, h2_km) {
+  const r1 = R_E + h1_km;
+  const r2 = R_E + h2_km;
+  const a = (r1 + r2) / 2;
+
+  const v1 = Math.sqrt(MU / r1);
+  const v2 = Math.sqrt(MU / r2);
+  const vp = Math.sqrt(MU * (2 / r1 - 1 / a));
+  const va = Math.sqrt(MU * (2 / r2 - 1 / a));
+
+  const dv1 = Math.abs(vp - v1) * 1000;
+  const dv2 = Math.abs(v2 - va) * 1000;
+
+  return {
+    dv1,
+    dv2,
+    dv_one_way: dv1 + dv2,
+    dv_round_trip: 2 * (dv1 + dv2)
+  };
+}
+
+function propellantMass(m0, isp, deltaV) {
+  return m0 * (1 - Math.exp(-deltaV / (isp * G0)));
+}
+
+function estimateCost(mp, isp) {
+  const fuelCost = isp > 600 ? KRYPTON_COST : CHEM_COST;
+  return mp * (fuelCost + C_ORBIT_VALUE);
+}
+
+/* ---- Compute Handler ---- */
+function computeManeuver() {
+  const dh_m = parseFloat(document.getElementById("dh").value);
+  const m0 = parseFloat(document.getElementById("mass").value);
+  const isp = parseFloat(document.getElementById("isp").value);
+  const times = parseInt(document.getElementById("times").value, 10);
+  const baseOrbit = parseFloat(document.getElementById("orbit").value);
+
+  if ([dh_m, m0, isp, times, baseOrbit].some(isNaN)) {
+    alert("Please fill all inputs with valid numbers.");
+    return;
+  }
+
+  const dh_km = dh_m / 1000;
+  const h2 = baseOrbit + dh_km;
+
+  const dv = hohmannDeltaV(baseOrbit, h2);
+  const mpPer = propellantMass(m0, isp, dv.dv_round_trip);
+
+  const totalDv = dv.dv_round_trip * times;
+  const totalMp = mpPer * times;
+  const totalCost = estimateCost(totalMp, isp);
+
+  const thrust = THRUST_SUGGEST[isp] ?? "N/A";
+
+  document.getElementById("calcOutput").innerHTML = `
+    <strong>Per Maneuver</strong><br>
+    ΔV burn 1: ${dv.dv1.toFixed(6)} m/s<br>
+    ΔV burn 2: ${dv.dv2.toFixed(6)} m/s<br>
+    ΔV round trip: ${dv.dv_round_trip.toFixed(6)} m/s<br>
+    Propellant: ${mpPer.toFixed(6)} kg<br><br>
+
+    <strong>Total (${times} maneuvers)</strong><br>
+    Total ΔV: ${totalDv.toFixed(6)} m/s<br>
+    Total propellant: ${totalMp.toFixed(6)} kg<br>
+    Estimated cost: $${totalCost.toLocaleString(undefined, {maximumFractionDigits: 2})}<br><br>
+
+    <strong>Thruster</strong><br>
+    Isp: ${isp} s<br>
+    Suggested thrust: ${thrust} N
+  `;
+}
+</script>
+
 
 </body>
 </html>

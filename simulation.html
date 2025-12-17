@@ -130,7 +130,57 @@
       padding: 6px;
     }
 
+    .gif-sim-container {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 24px;
+      align-items: center;
+    }
     
+    .gif-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .gif-controls label {
+      display: flex;
+      flex-direction: column;
+      font-size: 13px;
+      color: #cbd5f5;
+    }
+    
+    .gif-controls input {
+      margin-top: 4px;
+      padding: 6px;
+      background: #0b1020;
+      border: 1px solid #1e2a55;
+      color: white;
+      border-radius: 6px;
+    }
+    
+    .gif-controls button {
+      margin-top: 10px;
+      padding: 10px;
+      background: #1e40af;
+      border: none;
+      color: white;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    
+    .gif-controls button:hover {
+      background: #2563eb;
+    }
+    
+    .gif-display img {
+      width: 100%;
+      border-radius: 10px;
+      background: #020617;
+      padding: 8px;
+    }
+
     
     /* ===== Accordion ===== */
     .accordion-item {
@@ -252,21 +302,43 @@
 </div>
 
 <!-- ================= SECTION 4: GIF SIMULATION ================= -->
-<div class="section">
-  <div class="section-title">Thrust Simulation</div>
-  <div class="panel">
+<section class="section">
+  <h2>Thruster Maneuver Simulation</h2>
 
-    <input type="number" placeholder="Thrust Force" />
-    <input type="number" placeholder="Duration" />
-    <input type="number" placeholder="Timing" />
+  <div class="gif-sim-container">
 
-    <button style="margin-left:10px;">Simulate</button>
+    <!-- Controls -->
+    <div class="gif-controls">
+      <label>
+        Thrust (N)
+        <input type="number" id="thrustInput" value="0.2" step="0.01">
+      </label>
 
-    <div style="margin-top:20px;">
-      <img id="simGif" src="sim_dataset/simulation.gif" style="max-width:100%; border-radius:12px;" />
+      <label>
+        Duration (s)
+        <input type="number" id="durationInput" value="120">
+      </label>
+
+      <label>
+        Timing (s)
+        <input type="number" id="timingInput" value="600">
+      </label>
+
+      <button id="simulateBtn">Simulate</button>
     </div>
+
+    <!-- GIF display -->
+    <div class="gif-display">
+      <img
+        id="simGif"
+        src="sim_dataset/prop_dgtwin.gif"
+        alt="Thruster maneuver simulation"
+      >
+    </div>
+
   </div>
-</div>
+</section>
+
 
 <!-- ================= SECTION 5: ACCORDION ================= -->
 <div class="section">
@@ -648,6 +720,25 @@ function plotDeltaVvsDeltaH() {
     responsive: true
   });
 }
+</script>
+
+<script>
+  const simulateBtn = document.getElementById("simulateBtn");
+  const gif = document.getElementById("simGif");
+
+  simulateBtn.addEventListener("click", () => {
+    // Capture inputs (for future logic)
+    const thrust = document.getElementById("thrustInput").value;
+    const duration = document.getElementById("durationInput").value;
+    const timing = document.getElementById("timingInput").value;
+
+    // Force GIF replay
+    const src = gif.src;
+    gif.src = "";
+    gif.src = src + "?t=" + new Date().getTime();
+
+    console.log("Simulate pressed:", { thrust, duration, timing });
+  });
 </script>
 
 

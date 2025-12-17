@@ -312,8 +312,19 @@ function renderHeader() {
   thead.appendChild(tr);
 }
 
-
 function formatValue(column, value) {
+  if (value === null || value === undefined || value === "") return value;
+
+  /* ---------- Integer identifiers ---------- */
+  if (
+    column === "conjunction_id" ||
+    column === "object1_object_designator" ||
+    column === "object2_object_designator"
+  ) {
+    return String(parseInt(value, 10));
+  }
+
+  /* ---------- Floating metrics ---------- */
   const num = Number(value);
   if (Number.isNaN(num)) return value;
 

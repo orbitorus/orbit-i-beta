@@ -109,6 +109,26 @@
         0 0 40px rgba(110,168,255,0.18),
         0 0 90px rgba(0,0,0,0.6);
     }
+
+    .plot-container {
+      width: 100%;
+      height: 420px;
+    }
+    
+    .plot-images {
+      margin-top: 16px;
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+    
+    .plot-images img {
+      max-width: 48%;
+      border-radius: 8px;
+      background: #0b1020;
+      padding: 6px;
+    }
+
     
     
     /* ===== Accordion ===== */
@@ -135,8 +155,10 @@
     }
   </style>
 
-  /* ===== Plotly ===== */
-  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+  
+  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js">
+    /* ===== Plotly ===== */
+  </script>
   
 </head>
   
@@ -215,10 +237,15 @@
 
     <!-- Right: Plot -->
     <div class="panel">
+      <!-- Plotly plot goes here -->
       <h3>Visualization</h3>
-      <div id="plotly-container" style="height:320px;">
-        <!-- Plotly plot goes here -->
+      <div id="plotly-container" style="height:320px;"></div>
+      <!-- Images under plot -->
+      <div class="plot-images">
+      <img src="sim_dataset/md_cp_vs_tca_dual_axis.png" alt="Image 1">
+      <img src="sim_dataset/enhanced_conjunction_polar_plot.png" alt="Image 2">
       </div>
+      
     </div>
   </div>
 </div>

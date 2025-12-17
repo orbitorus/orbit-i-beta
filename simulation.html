@@ -63,6 +63,14 @@
     }
 
 
+    th {
+    white-space: normal;
+    text-align: center;
+    line-height: 1.2;
+    font-size: 12px;
+    color: var(--accent);
+    }
+
     input, button {
       background: #0c1330;
       border: 1px solid var(--border-soft);
@@ -304,12 +312,22 @@ function parseCSV(text) {
 function renderHeader() {
   thead.innerHTML = "";
   const tr = document.createElement("tr");
+
   DISPLAY_COLUMNS.forEach(col => {
     const th = document.createElement("th");
-    th.textContent = col;
+    th.innerHTML = formatHeaderLabel(col);
     tr.appendChild(th);
   });
+
   thead.appendChild(tr);
+}
+
+
+function formatHeaderLabel(col) {
+  const idx = col.indexOf("_");
+  if (idx === -1) return col;
+
+  return col.slice(0, idx) + "<br>" + col.slice(idx + 1);
 }
 
 function formatValue(column, value) {

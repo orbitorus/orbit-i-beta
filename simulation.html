@@ -203,23 +203,35 @@
       border-bottom: 1px solid var(--border-soft);
     }
 
-    .accordion-header {
-      padding: 14px;
-      cursor: pointer;
-      font-weight: 600;
-      color: var(--accent);
-    }
-
-    .accordion-content {
-      display: none;
-      padding: 0 14px 14px;
-      color: var(--text-muted);
-      font-size: 14px;
-    }
-
     .accordion-item.active .accordion-content {
       display: block;
     }
+
+    .accordion-header {
+      width: 100%;
+      text-align: left;
+      padding: 14px 18px;
+      background: #0b1020;
+      color: #e6ecff;
+      border: none;
+      border-bottom: 1px solid #1c2440;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    
+    .accordion-header.active {
+      background: #121a3a;
+    }
+    
+    .accordion-content {
+      display: none;
+      padding: 18px;
+      background: #0f1428;
+      color: #d8defa;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    
   </style>
 
   
@@ -367,40 +379,33 @@
 
 
 <!-- ================= SECTION 5: ACCORDION ================= -->
-<div class="section">
-  <div class="section-title">Operational Scenarios</div>
-  <div class="panel">
+<section id="scenario-section">
+  <h2>Scenarios</h2>
 
-    <div class="accordion-item">
-      <div class="accordion-header">Scenario 1 — Nominal Avoidance</div>
-      <div class="accordion-content">
-        Text describing nominal conjunction handling.
-      </div>
-    </div>
+  <div class="accordion">
 
-    <div class="accordion-item">
-      <div class="accordion-header">Scenario 2 — Late Warning</div>
-      <div class="accordion-content">
-        Text describing late TCA discovery.
-      </div>
-    </div>
+    <button class="accordion-header" data-md="sim_dataset/scenario_md/Scenario_1_Starlink_Scale_Constellation.md">
+      Scenario 1: Starlink-Scale Constellation
+    </button>
+    <div class="accordion-content"></div>
 
-    <div class="accordion-item">
-      <div class="accordion-header">Scenario 3 — High Uncertainty</div>
-      <div class="accordion-content">
-        Text describing covariance growth effects.
-      </div>
-    </div>
+    <button class="accordion-header" data-md="sim_dataset/scenario_md/Scenario_2_Small_Operator_Medium_Density.md">
+      Scenario 2: Small Operator in Medium-Density Shell
+    </button>
+    <div class="accordion-content"></div>
 
-    <div class="accordion-item">
-      <div class="accordion-header">Scenario 4 — Regulatory Mandate</div>
-      <div class="accordion-content">
-        Text describing compliance-driven maneuver.
-      </div>
-    </div>
+    <button class="accordion-header" data-md="sim_dataset/scenario_md/Scenario_3_Delayed_Maneuver_Decision.md">
+      Scenario 3: Delayed Maneuver Decision
+    </button>
+    <div class="accordion-content"></div>
+
+    <button class="accordion-header" data-md="sim_dataset/scenario_md/Scenario_4_Systematic_Traffic_Growth.md">
+      Scenario 4: Systematic Traffic Growth
+    </button>
+    <div class="accordion-content"></div>
 
   </div>
-</div>
+</section>
 
 <script>
 /* ================= CSV INSPECTION WITH CAPPED FILTERING ================= */
@@ -779,7 +784,42 @@ function plotDeltaVvsDeltaH() {
   });
 </script>
 
+<script>
+  const headers = document.querySelectorAll(".accordion-header");
 
+  headers.forEach(header => {
+    header.addEventListener("click", async () => {
+      const content = header.nextElementSibling;
+      const mdPath = header.dataset.md;
+
+      const isOpen = header.classList.contains("active");
+
+      // Close all
+      headers.forEach(h => {
+        h.classList.remove("active");
+        h.nextElementSibling.style.display = "none";
+      });
+
+      if (isOpen) return;
+
+      header.classList.add("active");
+      content.style.display = "block";
+
+      // Load markdown only once
+      if (!content.dataset.loaded) {
+        content.textContent = "Loading scenario...";
+        try {
+          const response = await fetch(mdPath);
+          const text = await response.text();
+          content.textContent = text;
+          content.dataset.loaded = "true";
+        } catch (err) {
+          content.textContent = "Failed to load scenario content.";
+        }
+      }
+    });
+  });
+</script>
 
 
 </body>

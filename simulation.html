@@ -109,7 +109,10 @@
         0 0 40px rgba(110,168,255,0.18),
         0 0 90px rgba(0,0,0,0.6);
     }
-
+    
+    /* ===== Plotly ===== */
+    <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+    
     /* ===== Accordion ===== */
     .accordion-item {
       border-bottom: 1px solid var(--border-soft);
@@ -199,8 +202,11 @@
   <label>Base orbit altitude (km)</label><br />
   <input id="orbit" type="number" value="500" /><br /><br />
 
-  <button onclick="computeManeuver()">Compute</button>
+  <button onclick="computeManeuver(); plotDeltaVvsDeltaH();">
+  Compute
+  </button>
 
+  
   <div id="calcOutput" style="margin-top:16px; font-size:13px;"></div>
 </div>
 
@@ -554,8 +560,66 @@ function computeManeuver() {
     Isp: ${isp} s<br>
     Suggested thrust: ${thrust} N
   `;
+  }
+  </script>
+
+  <script>
+/* ================= ΔV vs Δh PLOT ================= */
+
+function plotDeltaVvsDeltaH() {
+  const baseOrbit = parseFloat(document.getElementById("orbit").value);
+
+  if (isNaN(baseOrbit)) {
+    alert("Base orbit altitude is required to plot.");
+    return;
+  }
+
+  const dhValues = [];
+  const dvValues = [];
+
+  // Sweep Δh from 10 m to 2000 m
+  for (let dh_m = 10; dh_m <= 2000; dh_m += 10) {
+    const dh_km = dh_m / 1000;
+    const h2 = baseOrbit + dh_km;
+
+    const dv = hohmannDeltaV(baseOrbit, h2);
+    dhValues.push(dh_m);
+    dvValues.push(dv.dv_round_trip);
+  }
+
+  const trace = {
+    x: dhValues,
+    y: dvValues,
+    mode: "lines",
+    line: { width: 3 },
+    name: "ΔV (round trip)"
+  };
+
+  const layout = {
+    title: "ΔV vs Altitude Change (Hohmann Transfer)",
+    xaxis: {
+      title: "Δh (meters)",
+      gridcolor: "#26346b"
+    },
+    yaxis: {
+      title: "ΔV (m/s)",
+      gridcolor: "#26346b"
+    },
+    paper_bgcolor: "rgba(0,0,0,0)",
+    plot_bgcolor: "rgba(0,0,0,0)",
+    font: {
+      color: "#e6ebff"
+    },
+    margin: { t: 50, l: 60, r: 30, b: 50 }
+  };
+
+  Plotly.newPlot("plotly-container", [trace], layout, {
+    displayModeBar: false,
+    responsive: true
+  });
 }
 </script>
+
 
 
 </body>

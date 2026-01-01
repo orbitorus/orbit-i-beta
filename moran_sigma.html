@@ -226,6 +226,45 @@
             border-color: #94a3b8;
         }
         
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(10, 25, 41, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            backdrop-filter: blur(5px);
+        }
+        
+        .loading-content {
+            text-align: center;
+            color: #fbbf24;
+        }
+        
+        .loading-spinner {
+            border: 4px solid rgba(251, 191, 36, 0.3);
+            border-top: 4px solid #fbbf24;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
         .sigma-selector {
             display: flex;
             gap: 1rem;
@@ -263,28 +302,37 @@
     </style>
 </head>
 <body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Calculating Spatial Statistics...</h2>
+            <p style="color: #93c5fd;">This may take a few seconds</p>
+        </div>
+    </div>
+    
     <div class="container">
         <h1>Spatial Statistics: Moran's I vs Sigma-based Analysis</h1>
         <p class="subtitle">Interactive demonstration of spatial autocorrelation vs traditional statistical outlier detection</p>
         
         <div class="card">
             <label style="margin-bottom: 1rem; display: block;">Select Spatial Pattern:</label>
-            <div class="button-group">
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-bottom: 1.5rem;">
                 <button class="btn btn-primary" onclick="changePattern('clustered')">
-                    <span class="btn-title">Clustered (High Positive Moran's I)</span>
-                    <span class="btn-desc">Similar values group together</span>
+                    <span class="btn-title">Clustered</span>
+                    <span class="btn-desc">High Positive Moran's I</span>
                 </button>
                 <button class="btn" onclick="changePattern('dispersed')">
-                    <span class="btn-title">Dispersed (Negative Moran's I)</span>
-                    <span class="btn-desc">Alternating high/low values</span>
+                    <span class="btn-title">Dispersed</span>
+                    <span class="btn-desc">Negative Moran's I</span>
                 </button>
                 <button class="btn" onclick="changePattern('random')">
-                    <span class="btn-title">Random (Near Zero Moran's I)</span>
-                    <span class="btn-desc">No spatial pattern</span>
+                    <span class="btn-title">Random</span>
+                    <span class="btn-desc">Near Zero Moran's I</span>
                 </button>
                 <button class="btn" onclick="changePattern('gradient')">
-                    <span class="btn-title">Gradient (Positive Moran's I)</span>
-                    <span class="btn-desc">Smooth spatial trend</span>
+                    <span class="btn-title">Gradient</span>
+                    <span class="btn-desc">Positive Moran's I</span>
                 </button>
             </div>
             
@@ -327,20 +375,20 @@
         
         <div class="grid-container">
             <div class="card">
-            <h3 style="margin-bottom: 1rem;">Moran Scatterplot (Spatial Context)</h3>
-            <div style="height: 350px; position: relative;">
-                <canvas id="moranScatterChart"></canvas>
-            </div>
-            <div class="legend" style="margin-top: 1rem; background: rgba(10, 25, 41, 0.6); padding: 0.75rem; border-radius: 6px; border: 1px solid rgba(251, 191, 36, 0.3);">
-                <div style="margin-bottom: 0.5rem;"><strong>X-axis:</strong> Standardized values | <strong>Y-axis:</strong> Spatial lag (neighbors' avg)</div>
-                <div style="display: flex; flex-wrap: wrap; gap: 1rem; font-size: 0.875rem;">
-                    <div><span style="color: #22c55e; font-size: 1.2rem;">●</span> <strong>High-High</strong> (clustering)</div>
-                    <div><span style="color: #ef4444; font-size: 1.2rem;">●</span> <strong>Low-Low</strong> (clustering)</div>
-                    <div><span style="color: #f59e0b; font-size: 1.2rem;">●</span> <strong>High-Low</strong> (outlier)</div>
-                    <div><span style="color: #3b82f6; font-size: 1.2rem;">●</span> <strong>Low-High</strong> (outlier)</div>
+                <h3 style="margin-bottom: 1rem;">Moran Scatterplot (Spatial Context)</h3>
+                <div style="height: 350px; position: relative;">
+                    <canvas id="moranScatterChart"></canvas>
+                </div>
+                <div class="legend" style="margin-top: 1rem; background: rgba(10, 25, 41, 0.6); padding: 0.75rem; border-radius: 6px; border: 1px solid rgba(251, 191, 36, 0.3);">
+                    <div style="margin-bottom: 0.5rem;"><strong>X-axis:</strong> Standardized values | <strong>Y-axis:</strong> Spatial lag (neighbors' avg)</div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 1rem; font-size: 0.875rem;">
+                        <div><span style="color: #22c55e; font-size: 1.2rem;">●</span> <strong>High-High</strong> (clustering)</div>
+                        <div><span style="color: #ef4444; font-size: 1.2rem;">●</span> <strong>Low-Low</strong> (clustering)</div>
+                        <div><span style="color: #f59e0b; font-size: 1.2rem;">●</span> <strong>High-Low</strong> (outlier)</div>
+                        <div><span style="color: #3b82f6; font-size: 1.2rem;">●</span> <strong>Low-High</strong> (outlier)</div>
+                    </div>
                 </div>
             </div>
-        </div>
             
             <div class="card">
                 <h3 style="margin-bottom: 1rem;">Value Distribution (Sigma Context)</h3>
@@ -373,7 +421,7 @@
             </div>
         </div>
         
-            
+    
             <div class="card">
                 <h3 style="margin-bottom: 1rem;">Method Comparison</h3>
                 <table>
@@ -417,6 +465,8 @@
         
         <div class="card">
             <h3 style="margin-bottom: 1rem;">Interpretation Guide</h3>
+            
+            <h4 style="color: #fbbf24; margin-top: 1.5rem; margin-bottom: 0.75rem;">Moran's I Values</h4>
             <div class="interpretation-grid">
                 <div class="interpretation-card green-card">
                     <div style="font-weight: 600; color: #22c55e; margin-bottom: 0.5rem;">Moran's I > 0.3</div>
@@ -431,11 +481,71 @@
                     <p style="color: #e0e7ff; font-size: 0.875rem;">Random spatial pattern. Location doesn't predict value (sigma-based methods may be sufficient)</p>
                 </div>
             </div>
+            
+            <h4 style="color: #fbbf24; margin-top: 1.5rem; margin-bottom: 0.75rem;">Statistical Significance (z-score and p-value)</h4>
+            <div class="interpretation-grid">
+                <div class="interpretation-card" style="background: rgba(251, 191, 36, 0.1); border-color: #fbbf24;">
+                    <div style="font-weight: 600; color: #fbbf24; margin-bottom: 0.5rem;">Z-score</div>
+                    <p style="color: #e0e7ff; font-size: 0.875rem;">
+                        <strong>Measures:</strong> How many standard deviations the observed Moran's I is from expected value under randomness.<br>
+                        <strong>|z| > 1.96</strong> → Significant at 95% confidence<br>
+                        <strong>|z| > 2.58</strong> → Significant at 99% confidence<br>
+                        <strong>|z| > 3.29</strong> → Significant at 99.9% confidence
+                    </p>
+                </div>
+                <div class="interpretation-card" style="background: rgba(167, 139, 250, 0.1); border-color: #a78bfa;">
+                    <div style="font-weight: 600; color: #a78bfa; margin-bottom: 0.5rem;">P-value</div>
+                    <p style="color: #e0e7ff; font-size: 0.875rem;">
+                        <strong>Measures:</strong> Probability that the spatial pattern occurred by random chance.<br>
+                        <strong>p < 0.05 (*)</strong> → Statistically significant<br>
+                        <strong>p < 0.01 (**)</strong> → Very significant<br>
+                        <strong>p < 0.001 (***)</strong> → Highly significant<br>
+                        <strong>Lower p-value = stronger evidence</strong> of spatial pattern
+                    </p>
+                </div>
+            </div>
+            
+            <h4 style="color: #fbbf24; margin-top: 1.5rem; margin-bottom: 0.75rem;">Sigma-based Statistics</h4>
+            <div class="interpretation-grid">
+                <div class="interpretation-card" style="background: rgba(34, 197, 94, 0.1); border-color: #22c55e;">
+                    <div style="font-weight: 600; color: #22c55e; margin-bottom: 0.5rem;">Mean (μ)</div>
+                    <p style="color: #e0e7ff; font-size: 0.875rem;">
+                        The average value of all data points. Represents the "center" of your distribution. Half the values are above it, half below.
+                    </p>
+                </div>
+                <div class="interpretation-card" style="background: rgba(59, 130, 246, 0.1); border-color: #3b82f6;">
+                    <div style="font-weight: 600; color: #3b82f6; margin-bottom: 0.5rem;">Standard Deviation (σ)</div>
+                    <p style="color: #e0e7ff; font-size: 0.875rem;">
+                        Measures how spread out values are from the mean. <strong>Larger σ</strong> = more variability. <strong>Smaller σ</strong> = values closer to mean.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="interpretation-grid" style="margin-top: 1rem;">
+                <div class="interpretation-card" style="background: rgba(245, 158, 11, 0.1); border-color: #f59e0b;">
+                    <div style="font-weight: 600; color: #f59e0b; margin-bottom: 0.5rem;">±1σ (68% of data)</div>
+                    <p style="color: #e0e7ff; font-size: 0.875rem;">
+                        <strong>Most sensitive threshold.</strong> Captures ~32% of data as outliers. Values within 1 standard deviation are "typical". Use when you want to catch moderately unusual values.
+                    </p>
+                </div>
+                <div class="interpretation-card" style="background: rgba(239, 68, 68, 0.1); border-color: #ef4444;">
+                    <div style="font-weight: 600; color: #ef4444; margin-bottom: 0.5rem;">±2σ (95% of data)</div>
+                    <p style="color: #e0e7ff; font-size: 0.875rem;">
+                        <strong>Standard threshold.</strong> Captures ~5% of data as outliers. Commonly used in statistics and quality control. Good balance between sensitivity and specificity.
+                    </p>
+                </div>
+                <div class="interpretation-card" style="background: rgba(220, 38, 38, 0.1); border-color: #dc2626;">
+                    <div style="font-weight: 600; color: #dc2626; margin-bottom: 0.5rem;">±3σ (99.7% of data)</div>
+                    <p style="color: #e0e7ff; font-size: 0.875rem;">
+                        <strong>Very conservative threshold.</strong> Captures ~0.3% of data as outliers. Only flags the most extreme values. Use when false alarms are costly.
+                    </p>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        const gridSize = 50;
+        const gridSize = 30;
         let currentPattern = 'clustered';
         let currentSigma = 1;
         let data = [];
@@ -763,119 +873,121 @@
             }
             
             moranScatterChart = new Chart(ctx, {
-            type: 'scatter',
-            data: {
-                datasets: [
-                    {
-                        label: 'High-High',
-                        data: HH,
-                        backgroundColor: 'rgba(34, 197, 94, 0.7)',
-                        borderColor: '#22c55e',
-                        pointRadius: 2.5,
-                        pointHoverRadius: 5
-                    },
-                    {
-                        label: 'Low-Low',
-                        data: LL,
-                        backgroundColor: 'rgba(239, 68, 68, 0.7)',
-                        borderColor: '#ef4444',
-                        pointRadius: 2.5,
-                        pointHoverRadius: 5
-                    },
-                    {
-                        label: 'High-Low',
-                        data: HL,
-                        backgroundColor: 'rgba(245, 158, 11, 0.7)',
-                        borderColor: '#f59e0b',
-                        pointRadius: 2.5,
-                        pointHoverRadius: 5
-                    },
-                    {
-                        label: 'Low-High',
-                        data: LH,
-                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
-                        borderColor: '#3b82f6',
-                        pointRadius: 2.5,
-                        pointHoverRadius: 5
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                aspectRatio: 1.3,
-                layout: {
-                    padding: {
-                        left: 5,
-                        right: 5,
-                        top: 5,
-                        bottom: 5
-                    }
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        {
+                            label: 'High-High',
+                            data: HH,
+                            backgroundColor: 'rgba(34, 197, 94, 0.7)',
+                            borderColor: '#22c55e',
+                            pointRadius: 2.5,
+                            pointHoverRadius: 5
+                        },
+                        {
+                            label: 'Low-Low',
+                            data: LL,
+                            backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                            borderColor: '#ef4444',
+                            pointRadius: 2.5,
+                            pointHoverRadius: 5
+                        },
+                        {
+                            label: 'High-Low',
+                            data: HL,
+                            backgroundColor: 'rgba(245, 158, 11, 0.7)',
+                            borderColor: '#f59e0b',
+                            pointRadius: 2.5,
+                            pointHoverRadius: 5
+                        },
+                        {
+                            label: 'Low-High',
+                            data: LH,
+                            backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                            borderColor: '#3b82f6',
+                            pointRadius: 2.5,
+                            pointHoverRadius: 5
+                        }
+                    ]
                 },
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top',
-                        labels: {
-                            color: '#93c5fd',
-                            font: {
-                                size: 11
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    aspectRatio: 1.3,
+                    layout: {
+                        padding: {
+                            left: 5,
+                            right: 5,
+                            top: 5,
+                            bottom: 5
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                color: '#93c5fd',
+                                font: {
+                                    size: 11
+                                },
+                                padding: 10,
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: (${context.parsed.x.toFixed(2)}, ${context.parsed.y.toFixed(2)})`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Standardized Value',
+                                color: '#93c5fd',
+                                font: {
+                                    size: 12
+                                }
                             },
-                            padding: 10,
-                            usePointStyle: true,
-                            pointStyle: 'circle'
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return `${context.dataset.label}: (${context.parsed.x.toFixed(2)}, ${context.parsed.y.toFixed(2)})`;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Standardized Value',
-                            color: '#93c5fd',
-                            font: {
-                                size: 12
+                            ticks: {
+                                color: '#93c5fd',
+                                font: {
+                                    size: 10
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(251, 191, 36, 0.1)'
                             }
                         },
-                        ticks: {
-                            color: '#93c5fd',
-                            font: {
-                                size: 10
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Spatial Lag',
+                                color: '#93c5fd',
+                                font: {
+                                    size: 12
+                                }
+                            },
+                            ticks: {
+                                color: '#93c5fd',
+                                font: {
+                                    size: 10
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(251, 191, 36, 0.1)'
                             }
-                        },
-                        grid: {
-                            color: 'rgba(251, 191, 36, 0.1)'
-                        }
-                    },
-                    y: {
-                        title: {
-                            display: true,
-                            text: 'Spatial Lag',
-                            color: '#93c5fd',
-                            font: {
-                                size: 12
-                            }
-                        },
-                        ticks: {
-                            color: '#93c5fd',
-                            font: {
-                                size: 10
-                            }
-                        },
-                        grid: {
-                            color: 'rgba(251, 191, 36, 0.1)'
                         }
                     }
                 }
-            }
-        });
+            });
+        }
+
         function updateDisplay() {
             data = generateData(currentPattern);
             
@@ -959,7 +1071,9 @@
         }
 
         // Initialize on load
-        updateDisplay();
+        window.addEventListener('load', () => {
+            updateDisplay();
+        });
     </script>
 </body>
 </html>

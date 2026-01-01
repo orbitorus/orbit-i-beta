@@ -2,163 +2,192 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Spatial Statistics: Moran's I vs Sigma-based Analysis</title>
+<title>Moran Scatterplot – Local Moran’s I</title>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
 
 <style>
-/* --- ALL YOUR ORIGINAL CSS UNCHANGED --- */
-*{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto;background:linear-gradient(135deg,#0a1929,#1e3a5f,#0d2847);padding:20px;color:#e0e7ff}
-.container{max-width:1400px;margin:0 auto}
-.card{background:rgba(30,58,95,.6);border-radius:8px;padding:1.5rem;border:2px solid rgba(251,191,36,.3);margin-bottom:1.5rem}
-.card h3{color:#fbbf24}
-.grid-container{display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:1.5rem}
-.spatial-grid{display:grid;gap:2px}
-.grid-cell{aspect-ratio:1;border-radius:2px;border:1px solid rgba(251,191,36,.2)}
-.outlier-sigma{border:3px solid #fbbf24!important}
-.outlier-spatial{border:3px solid #a78bfa!important}
-.legend{font-size:.85rem;color:#93c5fd;margin-top:1rem}
-.btn{padding:.6rem 1rem;border:2px solid rgba(251,191,36,.5);background:#0a1929;color:#e0e7ff;cursor:pointer;border-radius:6px}
-.btn-primary{background:#fbbf24;color:#0a1929}
-.sigma-btn.active{background:#fbbf24;color:#0a1929}
+    body {
+        background: #0b1220;
+        color: #e5e7eb;
+        font-family: system-ui, sans-serif;
+        padding: 2rem;
+    }
+
+    .grid-container {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        max-width: 900px;
+        margin: auto;
+    }
+
+    .card {
+        background: rgba(15, 23, 42, 0.9);
+        border-radius: 10px;
+        padding: 1.25rem;
+        border: 1px solid rgba(251, 191, 36, 0.25);
+    }
+
+    canvas {
+        background: rgba(2, 6, 23, 0.8);
+        border-radius: 6px;
+    }
+
+    .legend {
+        margin-top: 1.5rem;
+        background: rgba(10, 25, 41, 0.6);
+        padding: 0.75rem;
+        border-radius: 6px;
+        border: 1px solid rgba(251, 191, 36, 0.3);
+        font-size: 0.9rem;
+    }
+
+    .legend-items {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-top: 0.5rem;
+    }
 </style>
 </head>
 
 <body>
-<div class="container">
-
-<h1>Spatial Statistics: Moran's I vs Sigma-based Analysis</h1>
 
 <div class="grid-container">
-<div class="card">
-<h3>Moran Scatterplot (Spatial Context)</h3>
-<div style="min-height:350px;margin-bottom:1.5rem">
-<canvas id="moranScatterChart"></canvas>
-</div>
-<div class="legend">
-High–Low & Low–High are **statistically significant Local Moran’s I outliers**
-</div>
-</div>
+    <div class="card">
+        <h3>Moran Scatterplot (Local Moran’s I)</h3>
 
-<div class="card">
-<h3>Value Distribution (Sigma Context)</h3>
-<canvas id="histogramChart"></canvas>
-</div>
-</div>
+        <div style="height: 420px;">
+            <canvas id="moranScatterChart"></canvas>
+        </div>
 
-<div class="grid-container">
-<div class="card">
-<h3>Local Moran’s I Outliers</h3>
-<div id="spatialGrid" class="spatial-grid"></div>
-</div>
-
-<div class="card">
-<h3>Sigma-based Outliers</h3>
-<div id="sigmaGrid" class="spatial-grid"></div>
-</div>
-</div>
-
+        <div class="legend">
+            <div><strong>X-axis:</strong> Standardized value (z)</div>
+            <div><strong>Y-axis:</strong> Spatial lag</div>
+            <div class="legend-items">
+                <div style="color:#22c55e">● High–High</div>
+                <div style="color:#ef4444">● Low–Low</div>
+                <div style="color:#f59e0b">● High–Low</div>
+                <div style="color:#3b82f6">● Low–High</div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
-const gridSize = 30;
-let data = [];
-
-function generateData(){
-    const d=[];
-    for(let i=0;i<gridSize;i++){
-        for(let j=0;j<gridSize;j++){
-            const v=Math.random()*100;
-            d.push({x:i,y:j,value:v,id:`${i}-${j}`});
-        }
+/* ---------------------------
+   Example spatial dataset
+---------------------------- */
+const data = [];
+for (let x = 0; x < 15; x++) {
+    for (let y = 0; y < 15; y++) {
+        data.push({
+            x, y,
+            value: Math.random() * 100
+        });
     }
-    return d;
 }
 
-/* ---------- GLOBAL MORAN (UNCHANGED) ---------- */
-function normalCDF(x){
-    const t=1/(1+0.2316419*Math.abs(x));
-    const d=0.3989423*Math.exp(-x*x/2);
-    const p=d*t*(0.3193815+t*(-0.3565638+t*(1.781478+t*(-1.821256+t*1.330274))));
-    return x>0?1-p:p;
-}
+/* ---------------------------
+   Local Moran’s I (Permutation)
+---------------------------- */
+function computeLocalMoran(data, permutations = 499) {
+    const n = data.length;
+    const values = data.map(d => d.value);
+    const mean = values.reduce((a,b)=>a+b,0) / n;
+    const std = Math.sqrt(values.reduce((s,v)=>s+(v-mean)**2,0)/n);
+    const z = values.map(v => (v-mean)/std);
 
-/* ---------- NEW: LOCAL MORAN’S I ---------- */
-function computeLocalMoran(data, permutations=999){
-    const n=data.length;
-    const values=data.map(d=>d.value);
-    const mean=values.reduce((a,b)=>a+b,0)/n;
-    const std=Math.sqrt(values.reduce((s,v)=>s+(v-mean)**2,0)/n);
-    const z=values.map(v=>(v-mean)/std);
-
-    const neighbors=data.map((p,i)=>
-        data.map((q,j)=>{
-            if(i===j) return null;
-            const dx=p.x-q.x,dy=p.y-q.y;
-            return Math.sqrt(dx*dx+dy*dy)<=1.5?j:null;
-        }).filter(j=>j!==null)
+    const neighbors = data.map((p,i) =>
+        data
+            .map((q,j)=>{
+                if (i===j) return null;
+                const dx = p.x-q.x;
+                const dy = p.y-q.y;
+                return Math.sqrt(dx*dx+dy*dy)<=1.5 ? j : null;
+            })
+            .filter(j=>j!==null)
     );
 
-    const localI=(i,zv)=>zv[i]*neighbors[i].reduce((s,j)=>s+zv[j],0);
-    const observed=z.map((_,i)=>localI(i,z));
+    function localI(i, zvals){
+        return zvals[i] * neighbors[i].reduce((s,j)=>s+zvals[j],0);
+    }
 
-    const pvals=observed.map((obs,i)=>{
+    const observed = z.map((_,i)=>localI(i,z));
+
+    const pvals = observed.map((obs,i)=>{
         let extreme=0;
         for(let k=0;k<permutations;k++){
             const perm=[...z].sort(()=>Math.random()-0.5);
-            if(Math.abs(localI(i,perm))>=Math.abs(obs)) extreme++;
+            if (Math.abs(localI(i,perm))>=Math.abs(obs)) extreme++;
         }
         return (extreme+1)/(permutations+1);
     });
 
     return data.map((d,i)=>{
-        const lag=neighbors[i].length
+        const lag = neighbors[i].length
             ? neighbors[i].reduce((s,j)=>s+z[j],0)/neighbors[i].length
             : 0;
 
-        let quadrant='NS';
-        if(z[i]>0 && lag<0) quadrant='HL';
-        if(z[i]<0 && lag>0) quadrant='LH';
+        let quadrant = 'NS';
+        if (z[i]>0 && lag>0) quadrant='HH';
+        if (z[i]<0 && lag<0) quadrant='LL';
+        if (z[i]>0 && lag<0) quadrant='HL';
+        if (z[i]<0 && lag>0) quadrant='LH';
 
-        return {...d,Ii:observed[i],p:pvals[i],quadrant};
+        return { ...d, z: z[i], lag, quadrant, p: pvals[i] };
     });
 }
 
-/* ---------- REPLACED FUNCTION ---------- */
-function findSpatialOutliers(data){
-    const local=computeLocalMoran(data);
-    return local.filter(p=>p.p<0.05&&(p.quadrant==='HL'||p.quadrant==='LH'));
-}
+/* ---------------------------
+   Build Moran Scatterplot
+---------------------------- */
+const local = computeLocalMoran(data);
 
-/* ---------- SIGMA (UNCHANGED) ---------- */
-function findSigmaOutliers(data){
-    const v=data.map(d=>d.value);
-    const m=v.reduce((a,b)=>a+b,0)/v.length;
-    const s=Math.sqrt(v.reduce((x,y)=>x+(y-m)**2,0)/v.length);
-    return data.filter(d=>Math.abs(d.value-m)>2*s);
-}
+const colors = {
+    HH: '#22c55e',
+    LL: '#ef4444',
+    HL: '#f59e0b',
+    LH: '#3b82f6',
+    NS: '#9ca3af'
+};
 
-function renderGrid(id,data,outliers,cls){
-    const c=document.getElementById(id);
-    c.style.gridTemplateColumns=`repeat(${gridSize},1fr)`;
-    c.innerHTML='';
-    data.forEach(p=>{
-        const e=document.createElement('div');
-        e.className='grid-cell';
-        e.style.background=`rgb(${p.value*2.5},100,${255-p.value*2.5})`;
-        if(outliers.some(o=>o.id===p.id)) e.classList.add(cls);
-        c.appendChild(e);
-    });
-}
+const scatterData = local.map(p => ({
+    x: p.z,
+    y: p.lag,
+    backgroundColor: colors[p.quadrant]
+}));
 
-function update(){
-    data=generateData();
-    renderGrid('sigmaGrid',data,findSigmaOutliers(data),'outlier-sigma');
-    renderGrid('spatialGrid',data,findSpatialOutliers(data),'outlier-spatial');
-}
+const ctx = document.getElementById('moranScatterChart').getContext('2d');
 
-update();
+new Chart(ctx, {
+    type: 'scatter',
+    data: {
+        datasets: [{
+            data: scatterData,
+            pointRadius: 4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false }
+        },
+        scales: {
+            x: {
+                title: { display: true, text: 'Standardized Value (z)' },
+                grid: { color: 'rgba(255,255,255,0.1)' }
+            },
+            y: {
+                title: { display: true, text: 'Spatial Lag' },
+                grid: { color: 'rgba(255,255,255,0.1)' }
+            }
+        }
+    }
+});
 </script>
+
 </body>
 </html>

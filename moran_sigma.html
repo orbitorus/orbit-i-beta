@@ -317,22 +317,22 @@
         
         <div class="card">
             <label style="margin-bottom: 1rem; display: block;">Select Spatial Pattern:</label>
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-bottom: 1.5rem;">
+            <div class="button-group">
                 <button class="btn btn-primary" onclick="changePattern('clustered')">
-                    <span class="btn-title">Clustered</span>
-                    <span class="btn-desc">High Positive Moran's I</span>
+                    <span class="btn-title">Clustered (High Positive Moran's I)</span>
+                    <span class="btn-desc">Similar values group together</span>
                 </button>
                 <button class="btn" onclick="changePattern('dispersed')">
-                    <span class="btn-title">Dispersed</span>
-                    <span class="btn-desc">Negative Moran's I</span>
+                    <span class="btn-title">Dispersed (Negative Moran's I)</span>
+                    <span class="btn-desc">Alternating high/low values</span>
                 </button>
                 <button class="btn" onclick="changePattern('random')">
-                    <span class="btn-title">Random</span>
-                    <span class="btn-desc">Near Zero Moran's I</span>
+                    <span class="btn-title">Random (Near Zero Moran's I)</span>
+                    <span class="btn-desc">No spatial pattern</span>
                 </button>
                 <button class="btn" onclick="changePattern('gradient')">
-                    <span class="btn-title">Gradient</span>
-                    <span class="btn-desc">Positive Moran's I</span>
+                    <span class="btn-title">Gradient (Positive Moran's I)</span>
+                    <span class="btn-desc">Smooth spatial trend</span>
                 </button>
             </div>
             
@@ -420,45 +420,56 @@
                 </div>
             </div>
         </div>
+        
+        <div class="grid-container">
+            <div class="card">
+                <h3 style="margin-bottom: 1rem;">Value Distribution (Sigma Context)</h3>
+                <div style="height: 300px; position: relative;">
+                    <canvas id="histogramChart"></canvas>
+                </div>
+                <div class="legend" style="margin-top: 1rem;">
+                    This shows the distribution that sigma-based methods analyze (no spatial info)
+                </div>
+            </div>
             
             <div class="card">
                 <h3 style="margin-bottom: 1rem;">Method Comparison</h3>
                 <table>
-                <thead>
-                    <tr>
-                        <th>Aspect</th>
-                        <th style="color: #2563eb;">Moran's I</th>
-                        <th style="color: #ea580c;">Sigma-based</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td style="font-weight: 600;">Considers location?</td>
-                        <td>✅ Yes</td>
-                        <td>❌ No</td>
-                    </tr>
-                    <tr>
-                        <td style="font-weight: 600;">Detects clusters?</td>
-                        <td>✅ Yes</td>
-                        <td>❌ No</td>
-                    </tr>
-                    <tr>
-                        <td style="font-weight: 600;">Outliers found</td>
-                        <td style="color: #a78bfa; font-weight: bold;"><span id="spatialOutlierCount2">0</span></td>
-                        <td style="color: #fbbf24; font-weight: bold;"><span id="sigmaOutlierCount2">0</span></td>
-                    </tr>
-                    <tr>
-                        <td style="font-weight: 600;">What it measures</td>
-                        <td>Spatial pattern</td>
-                        <td>Deviation from mean</td>
-                    </tr>
-                    <tr>
-                        <td style="font-weight: 600;">Best for</td>
-                        <td>Spatial analysis</td>
-                        <td>General outliers</td>
-                    </tr>
-                </tbody>
-            </table>
+                    <thead>
+                        <tr>
+                            <th>Aspect</th>
+                            <th>Sigma-based</th>
+                            <th>Moran's I</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="font-weight: 600;">Considers location?</td>
+                            <td>❌ No</td>
+                            <td>✅ Yes</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: 600;">Detects clusters?</td>
+                            <td>❌ No</td>
+                            <td>✅ Yes</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: 600;">Outliers found</td>
+                            <td style="color: #fbbf24; font-weight: bold;"><span id="sigmaOutlierCount2">0</span></td>
+                            <td style="color: #a78bfa; font-weight: bold;"><span id="spatialOutlierCount2">0</span></td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: 600;">What it measures</td>
+                            <td>Deviation from mean</td>
+                            <td>Spatial pattern</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: 600;">Best for</td>
+                            <td>General outliers</td>
+                            <td>Spatial analysis</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
         
@@ -923,8 +934,8 @@
                     },
                     plugins: {
                         legend: {
-                            display: false,
-                            position: 'bottom',
+                            display: true,
+                            position: 'top',
                             labels: {
                                 color: '#93c5fd',
                                 font: {

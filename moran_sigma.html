@@ -1,215 +1,1078 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Spatial Statistics: Moran's I vs Sigma-based Analysis</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-
-<style>
-/* ===================== BASE ===================== */
-* { margin: 0; padding: 0; box-sizing: border-box; }
-
-body {
-    font-family: system-ui, sans-serif;
-    background: linear-gradient(135deg, #0a1929, #1e3a5f, #0d2847);
-    padding: 20px;
-    color: #e0e7ff;
-}
-
-.container { max-width: 1400px; margin: auto; }
-
-h1 { color: #fbbf24; margin-bottom: .5rem; }
-.subtitle { color: #93c5fd; margin-bottom: 1.5rem; }
-
-/* ===================== CARDS ===================== */
-.card {
-    background: rgba(30, 58, 95, 0.6);
-    border-radius: 8px;
-    padding: 1.5rem;
-    border: 2px solid rgba(251, 191, 36, 0.3);
-    margin-bottom: 1.5rem;
-}
-
-.card h3 { color: #fbbf24; }
-
-/* ===================== BUTTONS ===================== */
-.btn {
-    padding: .75rem 1rem;
-    border: 2px solid rgba(251, 191, 36, .5);
-    border-radius: 8px;
-    background: rgba(10, 25, 41, .8);
-    color: #e0e7ff;
-    cursor: pointer;
-    transition: .25s;
-}
-
-.btn:hover { border-color: #fbbf24; }
-
-.btn-primary {
-    background: linear-gradient(135deg, #fbbf24, #f59e0b);
-    color: #0a1929;
-    font-weight: 600;
-}
-
-/* ===================== GRIDS ===================== */
-.stats-grid, .grid-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-    gap: 1.5rem;
-}
-
-/* ===================== LEGEND ===================== */
-.legend {
-    font-size: .875rem;
-    color: #93c5fd;
-    margin-top: 1rem;
-}
-
-/* ===================== SIGMA BUTTONS ===================== */
-.sigma-btn {
-    padding: .5rem 1.5rem;
-    border: 2px solid rgba(251,191,36,.5);
-    border-radius: 6px;
-    background: rgba(10,25,41,.8);
-    color: #e0e7ff;
-    cursor: pointer;
-}
-
-.sigma-btn.active {
-    background: linear-gradient(135deg, #fbbf24, #f59e0b);
-    color: #0a1929;
-    font-weight: 600;
-}
-</style>
-</head>
-
-<body>
-<div class="container">
-
-<h1>Spatial Statistics: Moran's I vs Sigma-based Analysis</h1>
-<p class="subtitle">Spatial autocorrelation vs classical outlier detection</p>
-
-<!-- ===================== PATTERN SELECTOR ===================== -->
-<div class="card">
-<label>Select Spatial Pattern:</label>
-
-<div class="pattern-buttons"
-     style="display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;margin-top:.75rem">
-    <button class="btn btn-primary" onclick="changePattern('clustered')">Clustered</button>
-    <button class="btn" onclick="changePattern('dispersed')">Dispersed</button>
-    <button class="btn" onclick="changePattern('random')">Random</button>
-    <button class="btn" onclick="changePattern('gradient')">Gradient</button>
-</div>
-
-<div style="margin-top:1rem">
-    <button class="sigma-btn active" onclick="changeSigma(1)">±1σ</button>
-    <button class="sigma-btn" onclick="changeSigma(2)">±2σ</button>
-    <button class="sigma-btn" onclick="changeSigma(3)">±3σ</button>
-</div>
-</div>
-
-<!-- ===================== CHARTS ===================== -->
-<div class="grid-container">
-
-<div class="card">
-<h3>Moran Scatterplot (Spatial Context)</h3>
-
-<div style="min-height:360px">
-    <canvas id="moranScatterChart"></canvas>
-</div>
-
-<div class="legend" style="background:rgba(10,25,41,.6);padding:.75rem;border-radius:6px">
-<strong>X:</strong> Standardized value |
-<strong>Y:</strong> Spatial lag
-<div style="display:flex;gap:1rem;margin-top:.5rem;flex-wrap:wrap">
-<div style="color:#22c55e">● High–High</div>
-<div style="color:#ef4444">● Low–Low</div>
-<div style="color:#f59e0b">● High–Low</div>
-<div style="color:#3b82f6">● Low–High</div>
-</div>
-</div>
-</div>
-
-<div class="card">
-<h3>Value Distribution (Sigma Context)</h3>
-<canvas id="histogramChart"></canvas>
-</div>
-
-</div>
-
-</div>
-
-<script>
-let currentPattern = 'clustered';
-let currentSigma = 1;
-let moranScatterChart, histogramChart;
-
-/* ===================== BUTTON LOGIC ===================== */
-function changePattern(pattern) {
-    currentPattern = pattern;
-
-    document.querySelectorAll('.pattern-buttons .btn')
-        .forEach(b => b.classList.remove('btn-primary'));
-
-    const patterns = ['clustered','dispersed','random','gradient'];
-    document.querySelectorAll('.pattern-buttons .btn')
-        [patterns.indexOf(pattern)]
-        .classList.add('btn-primary');
-
-    updateCharts();
-}
-
-function changeSigma(s) {
-    currentSigma = s;
-    document.querySelectorAll('.sigma-btn').forEach(b => b.classList.remove('active'));
-    event.target.classList.add('active');
-    updateCharts();
-}
-
-/* ===================== DATA ===================== */
-function generateData() {
-    const data = [];
-    for (let i=0;i<30;i++)
-        for (let j=0;j<30;j++)
-            data.push({x:i,y:j,value:Math.random()*100});
-    return data;
-}
-
-/* ===================== CHARTS ===================== */
-function updateCharts() {
-    const data = generateData();
-    drawMoran(data);
-}
-
-function drawMoran(data) {
-    const ctx = document.getElementById('moranScatterChart').getContext('2d');
-    if (moranScatterChart) moranScatterChart.destroy();
-
-    moranScatterChart = new Chart(ctx,{
-        type:'scatter',
-        data:{
-            datasets:[{
-                data:data.map(d=>({x:d.value/50-1,y:d.value/50-1})),
-                backgroundColor:'#22c55e',
-                pointRadius:3
-            }]
-        },
-        options:{
-            responsive:true,
-            plugins:{
-                legend:{ display:false }   // IMPORTANT FIX
-            },
-            scales:{
-                x:{ title:{display:true,text:'Standardized Value'}},
-                y:{ title:{display:true,text:'Spatial Lag'}}
-            }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spatial Statistics: Moran's I vs Sigma-based Analysis</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-    });
-}
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0a1929 0%, #1e3a5f 50%, #0d2847 100%);
+            padding: 20px;
+            min-height: 100vh;
+            color: #e0e7ff;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            color: #fbbf24;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
+        }
+        
+        .subtitle {
+            color: #93c5fd;
+            margin-bottom: 1.5rem;
+        }
+        
+        .card {
+            background: rgba(30, 58, 95, 0.6);
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 0 30px rgba(251, 191, 36, 0.2);
+            border: 2px solid rgba(251, 191, 36, 0.3);
+            margin-bottom: 1.5rem;
+            backdrop-filter: blur(10px);
+        }
+        
+        .card h3 {
+            color: #fbbf24;
+        }
+        
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .btn {
+            padding: 0.75rem 1rem;
+            border: 2px solid rgba(251, 191, 36, 0.5);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.875rem;
+            background: rgba(10, 25, 41, 0.8);
+            color: #e0e7ff;
+        }
+        
+        .btn:hover {
+            border-color: #fbbf24;
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.4);
+            transform: translateY(-2px);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: #0a1929;
+            border-color: #fbbf24;
+            box-shadow: 0 0 30px rgba(251, 191, 36, 0.6);
+            font-weight: 600;
+        }
+        
+        .btn-title {
+            font-weight: 600;
+            display: block;
+        }
+        
+        .btn-desc {
+            font-size: 0.75rem;
+            opacity: 0.9;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 0.5rem 0;
+            text-shadow: 0 0 10px currentColor;
+        }
+        
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .spatial-grid {
+            display: grid;
+            gap: 2px;
+            margin: 1rem 0;
+        }
+        
+        .grid-cell {
+            aspect-ratio: 1;
+            border-radius: 2px;
+            border: 1px solid rgba(251, 191, 36, 0.2);
+            position: relative;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .grid-cell:hover {
+            transform: scale(1.1);
+            z-index: 10;
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.8);
+        }
+        
+        .grid-cell:hover::after {
+            content: attr(data-value);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(251, 191, 36, 0.95);
+            color: #0a1929;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            white-space: nowrap;
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.8);
+        }
+        
+        .outlier-sigma {
+            border: 3px solid #fbbf24 !important;
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.8), inset 0 0 10px rgba(251, 191, 36, 0.3);
+            animation: glow-sigma 2s ease-in-out infinite;
+        }
+        
+        .outlier-spatial {
+            border: 3px solid #a78bfa !important;
+            box-shadow: 0 0 15px rgba(167, 139, 250, 0.8), inset 0 0 10px rgba(167, 139, 250, 0.3);
+            animation: glow-spatial 2s ease-in-out infinite;
+        }
+        
+        @keyframes glow-sigma {
+            0%, 100% { box-shadow: 0 0 15px rgba(251, 191, 36, 0.8), inset 0 0 10px rgba(251, 191, 36, 0.3); }
+            50% { box-shadow: 0 0 25px rgba(251, 191, 36, 1), inset 0 0 15px rgba(251, 191, 36, 0.5); }
+        }
+        
+        @keyframes glow-spatial {
+            0%, 100% { box-shadow: 0 0 15px rgba(167, 139, 250, 0.8), inset 0 0 10px rgba(167, 139, 250, 0.3); }
+            50% { box-shadow: 0 0 25px rgba(167, 139, 250, 1), inset 0 0 15px rgba(167, 139, 250, 0.5); }
+        }
+        
+        .legend {
+            font-size: 0.875rem;
+            color: #93c5fd;
+            margin-top: 1rem;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+        
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(251, 191, 36, 0.2);
+        }
+        
+        th {
+            background: rgba(251, 191, 36, 0.1);
+            font-weight: 600;
+            color: #fbbf24;
+        }
+        
+        .interpretation-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .interpretation-card {
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 4px solid;
+            backdrop-filter: blur(5px);
+        }
+        
+        .green-card {
+            background: rgba(34, 197, 94, 0.15);
+            border-color: #22c55e;
+        }
+        
+        .red-card {
+            background: rgba(239, 68, 68, 0.15);
+            border-color: #ef4444;
+        }
+        
+        .gray-card {
+            background: rgba(148, 163, 184, 0.15);
+            border-color: #94a3b8;
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(10, 25, 41, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            backdrop-filter: blur(5px);
+        }
+        
+        .loading-content {
+            text-align: center;
+            color: #fbbf24;
+        }
+        
+        .loading-spinner {
+            border: 4px solid rgba(251, 191, 36, 0.3);
+            border-top: 4px solid #fbbf24;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .sigma-selector {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            margin-top: 1rem;
+        }
+        
+        .sigma-btn {
+            padding: 0.5rem 1.5rem;
+            border: 2px solid rgba(251, 191, 36, 0.5);
+            border-radius: 6px;
+            background: rgba(10, 25, 41, 0.8);
+            color: #e0e7ff;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        
+        .sigma-btn:hover {
+            border-color: #fbbf24;
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.4);
+        }
+        
+        .sigma-btn.active {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: #0a1929;
+            border-color: #fbbf24;
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.6);
+        }
+        
+        label {
+            color: #fbbf24;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Calculating Spatial Statistics...</h2>
+            <p style="color: #93c5fd;">This may take a few seconds</p>
+        </div>
+    </div>
+    
+    <div class="container">
+        <h1>Spatial Statistics: Moran's I vs Sigma-based Analysis</h1>
+        <p class="subtitle">Interactive demonstration of spatial autocorrelation vs traditional statistical outlier detection</p>
+        
+        <div class="card">
+            <label style="margin-bottom: 1rem; display: block;">Select Spatial Pattern:</label>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-bottom: 1.5rem;">
+                <button class="btn btn-primary" onclick="changePattern('clustered')">
+                    <span class="btn-title">Clustered</span>
+                    <span class="btn-desc">High Positive Moran's I</span>
+                </button>
+                <button class="btn" onclick="changePattern('dispersed')">
+                    <span class="btn-title">Dispersed</span>
+                    <span class="btn-desc">Negative Moran's I</span>
+                </button>
+                <button class="btn" onclick="changePattern('random')">
+                    <span class="btn-title">Random</span>
+                    <span class="btn-desc">Near Zero Moran's I</span>
+                </button>
+                <button class="btn" onclick="changePattern('gradient')">
+                    <span class="btn-title">Gradient</span>
+                    <span class="btn-desc">Positive Moran's I</span>
+                </button>
+            </div>
+            
+            <div class="sigma-selector">
+                <label>Select Sigma Threshold:</label>
+                <button class="sigma-btn active" onclick="changeSigma(1)">±1σ</button>
+                <button class="sigma-btn" onclick="changeSigma(2)">±2σ</button>
+                <button class="sigma-btn" onclick="changeSigma(3)">±3σ</button>
+            </div>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="card">
+                <h3 style="margin-bottom: 0.5rem; font-size: 1.125rem;">Moran's I (Spatial Autocorrelation)</h3>
+                <div class="stat-value" id="moranValue" style="color: #22c55e;">0.000</div>
+                <p id="moranInterpretation" style="font-size: 0.875rem; color: #93c5fd;"></p>
+                <p style="font-size: 0.75rem; margin-top: 0.5rem; color: #64748b;">Measures if neighbors have similar values</p>
+                <div style="margin-top: 0.75rem; font-size: 0.875rem;">
+                    <span style="font-weight: 600; color: #a78bfa;">Spatial outliers found: <span id="spatialOutlierCount">0</span></span>
+                    <p style="font-size: 0.75rem; color: #64748b;">Points that differ from their neighbors</p>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3 style="margin-bottom: 0.5rem; font-size: 1.125rem;">Sigma-based Analysis (<span id="sigmaLabel">±1σ</span>)</h3>
+                <div style="font-size: 0.875rem; margin-bottom: 0.5rem;">
+                    <span style="font-weight: 600;">Mean:</span> <span id="meanValue">0</span> | 
+                    <span style="font-weight: 600; margin-left: 0.5rem;">Std Dev:</span> <span id="sigmaValue">0</span>
+                </div>
+                <div style="font-size: 0.875rem; margin-bottom: 0.5rem;">
+                    <span style="font-weight: 600;"><span id="sigmaThreshold">1</span>σ Range:</span> [<span id="sigmaRange">0, 0</span>]
+                </div>
+                <p style="font-size: 0.75rem; color: #64748b; margin-bottom: 0.5rem;">Values beyond <span id="sigmaLabel2">±1σ</span> are statistical outliers</p>
+                <div style="margin-top: 0.75rem; font-size: 0.875rem;">
+                    <span style="font-weight: 600; color: #fbbf24;">Statistical outliers found: <span id="sigmaOutlierCount">0</span></span>
+                    <p style="font-size: 0.75rem; color: #64748b;">Ignores spatial location completely</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="grid-container">
+            <div class="card">
+                <h3 style="margin-bottom: 1rem;">Moran Scatterplot (Spatial Context)</h3>
+                <div style="height: 350px; position: relative;">
+                    <canvas id="moranScatterChart"></canvas>
+                </div>
+                <div class="legend" style="margin-top: 1rem; background: rgba(10, 25, 41, 0.6); padding: 0.75rem; border-radius: 6px; border: 1px solid rgba(251, 191, 36, 0.3);">
+                    <div style="margin-bottom: 0.5rem;"><strong>X-axis:</strong> Standardized values | <strong>Y-axis:</strong> Spatial lag (neighbors' avg)</div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 1rem; font-size: 0.875rem;">
+                        <div><span style="color: #22c55e; font-size: 1.2rem;">●</span> <strong>High-High</strong> (clustering)</div>
+                        <div><span style="color: #ef4444; font-size: 1.2rem;">●</span> <strong>Low-Low</strong> (clustering)</div>
+                        <div><span style="color: #f59e0b; font-size: 1.2rem;">●</span> <strong>High-Low</strong> (outlier)</div>
+                        <div><span style="color: #3b82f6; font-size: 1.2rem;">●</span> <strong>Low-High</strong> (outlier)</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3 style="margin-bottom: 1rem;">Value Distribution (Sigma Context)</h3>
+                <div style="height: 300px; position: relative;">
+                    <canvas id="histogramChart"></canvas>
+                </div>
+                <div class="legend" style="margin-top: 1rem;">
+                    This shows the distribution that sigma-based methods analyze (no spatial info)
+                </div>
+            </div>
+        </div>
+        
+        <div class="grid-container">
+            <div class="card">
+                <h3 style="margin-bottom: 1rem;">Moran's I Spatial Outlier Detection</h3>
+                <p style="font-size: 0.75rem; color: #93c5fd; margin-bottom: 1rem;">Purple glowing borders = spatial outliers (different from neighbors)</p>
+                <div id="spatialGrid" class="spatial-grid"></div>
+                <div class="legend">
+                    <strong>Key insight:</strong> Spatial methods identify points that break local patterns regardless of global statistics
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3 style="margin-bottom: 1rem;">Sigma-based Outlier Detection</h3>
+                <p style="font-size: 0.75rem; color: #93c5fd; margin-bottom: 1rem;">Yellow glowing borders = statistical outliers (beyond <span id="sigmaLabel3">±1σ</span> from mean)</p>
+                <div id="sigmaGrid" class="spatial-grid"></div>
+                <div class="legend">
+                    <strong>Key insight:</strong> Sigma-based methods identify extreme values but ignore whether they cluster spatially
+                </div>
+            </div>
+        </div>
+            
+            <div class="card">
+                <h3 style="margin-bottom: 1rem;">Method Comparison</h3>
+                <table>
+                <thead>
+                    <tr>
+                        <th>Aspect</th>
+                        <th style="color: #2563eb;">Moran's I</th>
+                        <th style="color: #ea580c;">Sigma-based</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="font-weight: 600;">Considers location?</td>
+                        <td>✅ Yes</td>
+                        <td>❌ No</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">Detects clusters?</td>
+                        <td>✅ Yes</td>
+                        <td>❌ No</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">Outliers found</td>
+                        <td style="color: #a78bfa; font-weight: bold;"><span id="spatialOutlierCount2">0</span></td>
+                        <td style="color: #fbbf24; font-weight: bold;"><span id="sigmaOutlierCount2">0</span></td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">What it measures</td>
+                        <td>Spatial pattern</td>
+                        <td>Deviation from mean</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">Best for</td>
+                        <td>Spatial analysis</td>
+                        <td>General outliers</td>
+                    </tr>
+                </tbody>
+            </table>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h3 style="margin-bottom: 1rem;">Interpretation Guide</h3>
+            
+            <h4 style="color: #fbbf24; margin-top: 1.5rem; margin-bottom: 0.75rem;">Moran's I Values</h4>
+            <div class="interpretation-grid">
+                <div class="interpretation-card green-card">
+                    <div style="font-weight: 600; color: #22c55e; margin-bottom: 0.5rem;">Moran's I > 0.3</div>
+                    <p style="color: #e0e7ff; font-size: 0.875rem;">Positive spatial autocorrelation. Similar values cluster together (e.g., disease hotspots, income segregation)</p>
+                </div>
+                <div class="interpretation-card red-card">
+                    <div style="font-weight: 600; color: #ef4444; margin-bottom: 0.5rem;">Moran's I < -0.3</div>
+                    <p style="color: #e0e7ff; font-size: 0.875rem;">Negative spatial autocorrelation. Checkerboard pattern where neighbors are dissimilar (rare in nature)</p>
+                </div>
+                <div class="interpretation-card gray-card">
+                    <div style="font-weight: 600; color: #94a3b8; margin-bottom: 0.5rem;">Moran's I ≈ 0</div>
+                    <p style="color: #e0e7ff; font-size: 0.875rem;">Random spatial pattern. Location doesn't predict value (sigma-based methods may be sufficient)</p>
+                </div>
+            </div>
+            
+            <h4 style="color: #fbbf24; margin-top: 1.5rem; margin-bottom: 0.75rem;">Statistical Significance (z-score and p-value)</h4>
+            <div class="interpretation-grid">
+                <div class="interpretation-card" style="background: rgba(251, 191, 36, 0.1); border-color: #fbbf24;">
+                    <div style="font-weight: 600; color: #fbbf24; margin-bottom: 0.5rem;">Z-score</div>
+                    <p style="color: #e0e7ff; font-size: 0.875rem;">
+                        <strong>Measures:</strong> How many standard deviations the observed Moran's I is from expected value under randomness.<br>
+                        <strong>|z| > 1.96</strong> → Significant at 95% confidence<br>
+                        <strong>|z| > 2.58</strong> → Significant at 99% confidence<br>
+                        <strong>|z| > 3.29</strong> → Significant at 99.9% confidence
+                    </p>
+                </div>
+                <div class="interpretation-card" style="background: rgba(167, 139, 250, 0.1); border-color: #a78bfa;">
+                    <div style="font-weight: 600; color: #a78bfa; margin-bottom: 0.5rem;">P-value</div>
+                    <p style="color: #e0e7ff; font-size: 0.875rem;">
+                        <strong>Measures:</strong> Probability that the spatial pattern occurred by random chance.<br>
+                        <strong>p < 0.05 (*)</strong> → Statistically significant<br>
+                        <strong>p < 0.01 (**)</strong> → Very significant<br>
+                        <strong>p < 0.001 (***)</strong> → Highly significant<br>
+                        <strong>Lower p-value = stronger evidence</strong> of spatial pattern
+                    </p>
+                </div>
+            </div>
+            
+            <h4 style="color: #fbbf24; margin-top: 1.5rem; margin-bottom: 0.75rem;">Sigma-based Statistics</h4>
+            <div class="interpretation-grid">
+                <div class="interpretation-card" style="background: rgba(34, 197, 94, 0.1); border-color: #22c55e;">
+                    <div style="font-weight: 600; color: #22c55e; margin-bottom: 0.5rem;">Mean (μ)</div>
+                    <p style="color: #e0e7ff; font-size: 0.875rem;">
+                        The average value of all data points. Represents the "center" of your distribution. Half the values are above it, half below.
+                    </p>
+                </div>
+                <div class="interpretation-card" style="background: rgba(59, 130, 246, 0.1); border-color: #3b82f6;">
+                    <div style="font-weight: 600; color: #3b82f6; margin-bottom: 0.5rem;">Standard Deviation (σ)</div>
+                    <p style="color: #e0e7ff; font-size: 0.875rem;">
+                        Measures how spread out values are from the mean. <strong>Larger σ</strong> = more variability. <strong>Smaller σ</strong> = values closer to mean.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="interpretation-grid" style="margin-top: 1rem;">
+                <div class="interpretation-card" style="background: rgba(245, 158, 11, 0.1); border-color: #f59e0b;">
+                    <div style="font-weight: 600; color: #f59e0b; margin-bottom: 0.5rem;">±1σ (68% of data)</div>
+                    <p style="color: #e0e7ff; font-size: 0.875rem;">
+                        <strong>Most sensitive threshold.</strong> Captures ~32% of data as outliers. Values within 1 standard deviation are "typical". Use when you want to catch moderately unusual values.
+                    </p>
+                </div>
+                <div class="interpretation-card" style="background: rgba(239, 68, 68, 0.1); border-color: #ef4444;">
+                    <div style="font-weight: 600; color: #ef4444; margin-bottom: 0.5rem;">±2σ (95% of data)</div>
+                    <p style="color: #e0e7ff; font-size: 0.875rem;">
+                        <strong>Standard threshold.</strong> Captures ~5% of data as outliers. Commonly used in statistics and quality control. Good balance between sensitivity and specificity.
+                    </p>
+                </div>
+                <div class="interpretation-card" style="background: rgba(220, 38, 38, 0.1); border-color: #dc2626;">
+                    <div style="font-weight: 600; color: #dc2626; margin-bottom: 0.5rem;">±3σ (99.7% of data)</div>
+                    <p style="color: #e0e7ff; font-size: 0.875rem;">
+                        <strong>Very conservative threshold.</strong> Captures ~0.3% of data as outliers. Only flags the most extreme values. Use when false alarms are costly.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
 
-updateCharts();
-</script>
+    <script>
+        const gridSize = 30;
+        let currentPattern = 'clustered';
+        let currentSigma = 1;
+        let data = [];
+        let histogramChart = null;
+        let moranScatterChart = null;
 
+        function getColor(value) {
+            const normalized = value / 100;
+            const r = Math.round(255 * normalized);
+            const b = Math.round(255 * (1 - normalized));
+            return `rgb(${r}, 100, ${b})`;
+        }
+
+        function generateData(patternType) {
+            const newData = [];
+            
+            for (let i = 0; i < gridSize; i++) {
+                for (let j = 0; j < gridSize; j++) {
+                    let value;
+                    
+                    switch(patternType) {
+                        case 'clustered':
+                            // Scale cluster positions and sizes with grid size
+                            const clusterRadius = gridSize * 0.15;
+                            const cluster1 = Math.sqrt((i-gridSize*0.25)**2 + (j-gridSize*0.25)**2) < clusterRadius;
+                            const cluster2 = Math.sqrt((i-gridSize*0.75)**2 + (j-gridSize*0.75)**2) < clusterRadius;
+                            const cluster3 = Math.sqrt((i-gridSize*0.5)**2 + (j-gridSize*0.75)**2) < clusterRadius;
+                            const cluster4 = Math.sqrt((i-gridSize*0.75)**2 + (j-gridSize*0.25)**2) < clusterRadius;
+                            value = cluster1 || cluster2 || cluster3 || cluster4 ? 80 + Math.random() * 20 : 20 + Math.random() * 30;
+                            break;
+                            
+                        case 'dispersed':
+                            value = (i + j) % 2 === 0 ? 80 + Math.random() * 20 : 20 + Math.random() * 20;
+                            break;
+                            
+                        case 'random':
+                            value = Math.random() * 100;
+                            break;
+                            
+                        case 'gradient':
+                            value = (i / gridSize) * 100 + Math.random() * 10;
+                            break;
+                            
+                        default:
+                            value = 50;
+                    }
+                    
+                    newData.push({
+                        x: i,
+                        y: j,
+                        value: Math.round(value),
+                        id: `${i}-${j}`
+                    });
+                }
+            }
+            
+            return newData;
+        }
+
+        function calculateMoranI(data) {
+            const n = data.length;
+            const values = data.map(d => d.value);
+            const meanVal = values.reduce((a, b) => a + b, 0) / n;
+            
+            let sumW = 0;
+            let numerator = 0;
+            let denominator = 0;
+            let S0 = 0, S1 = 0, S2 = 0;
+            
+            // Build weights matrix and calculate sums
+            const weights = [];
+            for (let i = 0; i < data.length; i++) {
+                weights[i] = [];
+                for (let j = 0; j < data.length; j++) {
+                    if (i !== j) {
+                        const dx = data[i].x - data[j].x;
+                        const dy = data[i].y - data[j].y;
+                        const distance = Math.sqrt(dx**2 + dy**2);
+                        weights[i][j] = distance <= 1.5 ? 1 : 0;
+                    } else {
+                        weights[i][j] = 0;
+                    }
+                }
+            }
+            
+            // Calculate Moran's I and components for variance
+            for (let i = 0; i < data.length; i++) {
+                const diff_i = values[i] - meanVal;
+                denominator += diff_i ** 2;
+                
+                let rowSum = 0;
+                for (let j = 0; j < data.length; j++) {
+                    const w = weights[i][j];
+                    S0 += w;
+                    rowSum += w;
+                    
+                    if (w > 0) {
+                        const diff_j = values[j] - meanVal;
+                        numerator += w * diff_i * diff_j;
+                    }
+                }
+                S1 += rowSum ** 2;
+            }
+            
+            // S2 calculation
+            for (let i = 0; i < data.length; i++) {
+                for (let j = 0; j < data.length; j++) {
+                    S2 += (weights[i][j] + weights[j][i]) ** 2;
+                }
+            }
+            S1 *= 0.5;
+            S2 *= 0.5;
+            
+            const moranI = S0 > 0 ? (n / S0) * (numerator / denominator) : 0;
+            
+            // Calculate expected value and variance
+            const E_I = -1 / (n - 1);
+            
+            const m2 = denominator / n;
+            const m4 = values.reduce((sum, v) => sum + (v - meanVal) ** 4, 0) / n;
+            const b2 = m4 / (m2 ** 2);
+            
+            const A = n * ((n**2 - 3*n + 3) * S1 - n * S2 + 3 * (S0**2));
+            const B = b2 * ((n**2 - n) * S1 - 2*n*S2 + 6 * (S0**2));
+            const C = (n - 1) * (n - 2) * (n - 3) * (S0**2);
+            
+            const Var_I = (A - B) / C - E_I**2;
+            
+            // Calculate z-score
+            const z = (moranI - E_I) / Math.sqrt(Var_I);
+            
+            // Calculate p-value (two-tailed test)
+            const p = 2 * (1 - normalCDF(Math.abs(z)));
+            
+            return { moranI, z, p };
+        }
+        
+        // Standard normal cumulative distribution function
+        function normalCDF(x) {
+            const t = 1 / (1 + 0.2316419 * Math.abs(x));
+            const d = 0.3989423 * Math.exp(-x * x / 2);
+            const prob = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+            return x > 0 ? 1 - prob : prob;
+        }
+
+        function findSigmaOutliers(data, sigmaThreshold) {
+            const values = data.map(d => d.value);
+            const meanVal = values.reduce((a, b) => a + b, 0) / values.length;
+            const variance = values.reduce((sum, val) => sum + (val - meanVal)**2, 0) / values.length;
+            const stdDev = Math.sqrt(variance);
+            
+            return {
+                outliers: data.filter(d => Math.abs(d.value - meanVal) > sigmaThreshold * stdDev),
+                mean: meanVal,
+                sigma: stdDev
+            };
+        }
+
+        function findSpatialOutliers(data) {
+            const outliers = [];
+            const values = data.map(d => d.value);
+            const meanVal = values.reduce((a, b) => a + b, 0) / values.length;
+            
+            data.forEach(point => {
+                const neighbors = data.filter(d => {
+                    if (d.id === point.id) return false;
+                    const dx = d.x - point.x;
+                    const dy = d.y - point.y;
+                    return Math.sqrt(dx**2 + dy**2) <= 1.5;
+                });
+                
+                if (neighbors.length > 0) {
+                    const neighborMean = neighbors.reduce((sum, n) => sum + n.value, 0) / neighbors.length;
+                    const isHighLow = point.value > meanVal && neighborMean < meanVal;
+                    const isLowHigh = point.value < meanVal && neighborMean > meanVal;
+                    
+                    if ((isHighLow || isLowHigh) && Math.abs(point.value - neighborMean) > 30) {
+                        outliers.push(point);
+                    }
+                }
+            });
+            
+            return outliers;
+        }
+
+        function renderGrid(containerId, data, outliers, outlierClass) {
+            const container = document.getElementById(containerId);
+            container.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+            container.innerHTML = '';
+            
+            data.forEach(point => {
+                const cell = document.createElement('div');
+                cell.className = 'grid-cell';
+                cell.style.backgroundColor = getColor(point.value);
+                cell.setAttribute('data-value', point.value);
+                
+                if (outliers.some(o => o.id === point.id)) {
+                    cell.classList.add(outlierClass);
+                }
+                
+                container.appendChild(cell);
+            });
+        }
+
+        function updateHistogram(data) {
+            const values = data.map(d => d.value);
+            const min = Math.min(...values);
+            const max = Math.max(...values);
+            const bins = 10;
+            const binSize = (max - min) / bins;
+            
+            const histogram = Array(bins).fill(0).map((_, i) => ({
+                bin: Math.round(min + i * binSize),
+                count: 0
+            }));
+            
+            values.forEach(v => {
+                const binIndex = Math.min(Math.floor((v - min) / binSize), bins - 1);
+                histogram[binIndex].count++;
+            });
+            
+            const ctx = document.getElementById('histogramChart').getContext('2d');
+            
+            if (histogramChart) {
+                histogramChart.destroy();
+            }
+            
+            histogramChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: histogram.map(h => h.bin),
+                    datasets: [{
+                        label: 'Count',
+                        data: histogram.map(h => h.count),
+                        backgroundColor: '#fbbf24'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    aspectRatio: 2,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Value',
+                                color: '#93c5fd'
+                            },
+                            ticks: {
+                                color: '#93c5fd'
+                            },
+                            grid: {
+                                color: 'rgba(251, 191, 36, 0.1)'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Count',
+                                color: '#93c5fd'
+                            },
+                            ticks: {
+                                color: '#93c5fd'
+                            },
+                            grid: {
+                                color: 'rgba(251, 191, 36, 0.1)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function updateMoranScatterplot(data) {
+            const values = data.map(d => d.value);
+            const mean = values.reduce((a, b) => a + b, 0) / values.length;
+            const std = Math.sqrt(values.reduce((sum, v) => sum + (v - mean) ** 2, 0) / values.length);
+            
+            // Calculate spatial lag (neighbors' average) for each point
+            const scatterData = data.map(point => {
+                const neighbors = data.filter(d => {
+                    if (d.id === point.id) return false;
+                    const dx = d.x - point.x;
+                    const dy = d.y - point.y;
+                    return Math.sqrt(dx**2 + dy**2) <= 1.5;
+                });
+                
+                const spatialLag = neighbors.length > 0 
+                    ? neighbors.reduce((sum, n) => sum + n.value, 0) / neighbors.length 
+                    : point.value;
+                
+                // Standardize values
+                const stdValue = (point.value - mean) / std;
+                const stdLag = (spatialLag - mean) / std;
+                
+                // Determine quadrant for coloring
+                let quadrant;
+                if (stdValue > 0 && stdLag > 0) quadrant = 'HH'; // High-High
+                else if (stdValue < 0 && stdLag < 0) quadrant = 'LL'; // Low-Low
+                else if (stdValue > 0 && stdLag < 0) quadrant = 'HL'; // High-Low
+                else quadrant = 'LH'; // Low-High
+                
+                return {
+                    x: stdValue,
+                    y: stdLag,
+                    quadrant: quadrant
+                };
+            });
+            
+            // Separate by quadrant
+            const HH = scatterData.filter(d => d.quadrant === 'HH');
+            const LL = scatterData.filter(d => d.quadrant === 'LL');
+            const HL = scatterData.filter(d => d.quadrant === 'HL');
+            const LH = scatterData.filter(d => d.quadrant === 'LH');
+            
+            const ctx = document.getElementById('moranScatterChart').getContext('2d');
+            
+            if (moranScatterChart) {
+                moranScatterChart.destroy();
+            }
+            
+            moranScatterChart = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        {
+                            label: 'High-High',
+                            data: HH,
+                            backgroundColor: 'rgba(34, 197, 94, 0.7)',
+                            borderColor: '#22c55e',
+                            pointRadius: 2.5,
+                            pointHoverRadius: 5
+                        },
+                        {
+                            label: 'Low-Low',
+                            data: LL,
+                            backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                            borderColor: '#ef4444',
+                            pointRadius: 2.5,
+                            pointHoverRadius: 5
+                        },
+                        {
+                            label: 'High-Low',
+                            data: HL,
+                            backgroundColor: 'rgba(245, 158, 11, 0.7)',
+                            borderColor: '#f59e0b',
+                            pointRadius: 2.5,
+                            pointHoverRadius: 5
+                        },
+                        {
+                            label: 'Low-High',
+                            data: LH,
+                            backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                            borderColor: '#3b82f6',
+                            pointRadius: 2.5,
+                            pointHoverRadius: 5
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    aspectRatio: 1.3,
+                    layout: {
+                        padding: {
+                            left: 5,
+                            right: 5,
+                            top: 5,
+                            bottom: 5
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false,
+                            position: 'bottom',
+                            labels: {
+                                color: '#93c5fd',
+                                font: {
+                                    size: 11
+                                },
+                                padding: 10,
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: (${context.parsed.x.toFixed(2)}, ${context.parsed.y.toFixed(2)})`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Standardized Value',
+                                color: '#93c5fd',
+                                font: {
+                                    size: 12
+                                }
+                            },
+                            ticks: {
+                                color: '#93c5fd',
+                                font: {
+                                    size: 10
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(251, 191, 36, 0.1)'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Spatial Lag',
+                                color: '#93c5fd',
+                                font: {
+                                    size: 12
+                                }
+                            },
+                            ticks: {
+                                color: '#93c5fd',
+                                font: {
+                                    size: 10
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(251, 191, 36, 0.1)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateDisplay() {
+            data = generateData(currentPattern);
+            
+            const moranResult = calculateMoranI(data);
+            const sigmaResult = findSigmaOutliers(data, currentSigma);
+            const spatialOutliers = findSpatialOutliers(data);
+            
+            // Update Moran's I
+            const moranValue = document.getElementById('moranValue');
+            moranValue.textContent = moranResult.moranI.toFixed(3);
+            moranValue.style.color = moranResult.moranI > 0 ? '#22c55e' : moranResult.moranI < 0 ? '#ef4444' : '#94a3b8';
+            
+            const moranInterp = document.getElementById('moranInterpretation');
+            const significance = moranResult.p < 0.001 ? '***' : moranResult.p < 0.01 ? '**' : moranResult.p < 0.05 ? '*' : 'ns';
+            const sigText = moranResult.p < 0.05 ? 'Statistically significant' : 'Not significant';
+            moranInterp.innerHTML = `${moranResult.moranI > 0.3 ? '✓ Strong positive spatial clustering' : 
+                                     moranResult.moranI < -0.3 ? '✓ Strong spatial dispersion' : 
+                                     '○ Weak or no spatial pattern'}<br>
+                                     <span style="font-size: 0.75rem;">z = ${moranResult.z.toFixed(3)}, p = ${moranResult.p.toFixed(4)} ${significance} (${sigText})</span>`;
+            
+            // Update Sigma stats
+            document.getElementById('meanValue').textContent = sigmaResult.mean.toFixed(1);
+            document.getElementById('sigmaValue').textContent = sigmaResult.sigma.toFixed(1);
+            document.getElementById('sigmaRange').textContent = 
+                `${(sigmaResult.mean - currentSigma * sigmaResult.sigma).toFixed(1)}, ${(sigmaResult.mean + currentSigma * sigmaResult.sigma).toFixed(1)}`;
+            
+            // Update sigma labels
+            document.getElementById('sigmaLabel').textContent = `±${currentSigma}σ`;
+            document.getElementById('sigmaLabel2').textContent = `±${currentSigma}σ`;
+            document.getElementById('sigmaLabel3').textContent = `±${currentSigma}σ`;
+            document.getElementById('sigmaThreshold').textContent = currentSigma;
+            
+            // Update outlier counts
+            document.getElementById('sigmaOutlierCount').textContent = sigmaResult.outliers.length;
+            document.getElementById('sigmaOutlierCount2').textContent = sigmaResult.outliers.length;
+            document.getElementById('spatialOutlierCount').textContent = spatialOutliers.length;
+            document.getElementById('spatialOutlierCount2').textContent = spatialOutliers.length;
+            
+            // Render grids
+            renderGrid('sigmaGrid', data, sigmaResult.outliers, 'outlier-sigma');
+            renderGrid('spatialGrid', data, spatialOutliers, 'outlier-spatial');
+            
+            // Update histogram
+            updateHistogram(data);
+            
+            // Update Moran scatterplot
+            updateMoranScatterplot(data);
+        }
+
+        function changePattern(pattern) {
+            currentPattern = pattern;
+            
+            // Update button styles
+            document.querySelectorAll('.button-group .btn').forEach((btn, idx) => {
+                const patterns = ['clustered', 'dispersed', 'random', 'gradient'];
+                if (patterns[idx] === pattern) {
+                    btn.className = 'btn btn-primary';
+                } else {
+                    btn.className = 'btn';
+                }
+            });
+            
+            updateDisplay();
+        }
+
+        function changeSigma(sigma) {
+            currentSigma = sigma;
+            
+            // Update button styles
+            document.querySelectorAll('.sigma-btn').forEach(btn => {
+                const btnText = btn.textContent;
+                const btnSigma = btnText.includes('1σ') ? 1 : btnText.includes('2σ') ? 2 : 3;
+                if (btnSigma === sigma) {
+                    btn.className = 'sigma-btn active';
+                } else {
+                    btn.className = 'sigma-btn';
+                }
+            });
+            
+            updateDisplay();
+        }
+
+        // Initialize on load
+        window.addEventListener('load', () => {
+            updateDisplay();
+        });
+    </script>
 </body>
 </html>

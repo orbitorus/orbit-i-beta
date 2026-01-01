@@ -2,187 +2,119 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Moran Scatterplot – Local Moran’s I</title>
+<title>Moran Scatterplot – Working Baseline</title>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 
 <style>
-    body {
-        background: #0b1220;
-        color: #e5e7eb;
-        font-family: system-ui, sans-serif;
-        padding: 2rem;
-    }
+body {
+    background:#0b1220;
+    color:#e5e7eb;
+    font-family: system-ui, sans-serif;
+    padding:40px;
+}
 
-    .grid-container {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 2rem;
-        max-width: 900px;
-        margin: auto;
-    }
+.card {
+    max-width:800px;
+    margin:auto;
+    background:#111827;
+    border-radius:8px;
+    padding:20px;
+    border:1px solid rgba(251,191,36,.3);
+}
 
-    .card {
-        background: rgba(15, 23, 42, 0.9);
-        border-radius: 10px;
-        padding: 1.25rem;
-        border: 1px solid rgba(251, 191, 36, 0.25);
-    }
-
-    canvas {
-        background: rgba(2, 6, 23, 0.8);
-        border-radius: 6px;
-    }
-
-    .legend {
-        margin-top: 1.5rem;
-        background: rgba(10, 25, 41, 0.6);
-        padding: 0.75rem;
-        border-radius: 6px;
-        border: 1px solid rgba(251, 191, 36, 0.3);
-        font-size: 0.9rem;
-    }
-
-    .legend-items {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1rem;
-        margin-top: 0.5rem;
-    }
+.legend {
+    margin-top:16px;
+    padding:12px;
+    background:rgba(10,25,41,.6);
+    border-radius:6px;
+    font-size:14px;
+}
 </style>
 </head>
 
 <body>
 
-<div class="grid-container">
-    <div class="card">
-        <h3>Moran Scatterplot (Local Moran’s I)</h3>
+<div class="card">
+    <h3>Moran Scatterplot (Working)</h3>
 
-        <div style="height: 420px;">
-            <canvas id="moranScatterChart"></canvas>
-        </div>
+    <div style="height:420px">
+        <canvas id="moranScatterChart"></canvas>
+    </div>
 
-        <div class="legend">
-            <div><strong>X-axis:</strong> Standardized value (z)</div>
-            <div><strong>Y-axis:</strong> Spatial lag</div>
-            <div class="legend-items">
-                <div style="color:#22c55e">● High–High</div>
-                <div style="color:#ef4444">● Low–Low</div>
-                <div style="color:#f59e0b">● High–Low</div>
-                <div style="color:#3b82f6">● Low–High</div>
-            </div>
-        </div>
+    <div class="legend">
+        X: standardized value (z)<br>
+        Y: spatial lag (neighbor mean)
     </div>
 </div>
 
 <script>
-/* ---------------------------
-   Example spatial dataset
----------------------------- */
+/* -----------------------
+   Create grid data
+------------------------ */
 const data = [];
-for (let x = 0; x < 15; x++) {
-    for (let y = 0; y < 15; y++) {
-        data.push({
-            x, y,
-            value: Math.random() * 100
-        });
+for (let x = 0; x < 10; x++) {
+    for (let y = 0; y < 10; y++) {
+        data.push({ x, y, value: Math.random() * 100 });
     }
 }
 
-/* ---------------------------
-   Local Moran’s I (Permutation)
----------------------------- */
-function computeLocalMoran(data, permutations = 499) {
-    const n = data.length;
-    const values = data.map(d => d.value);
-    const mean = values.reduce((a,b)=>a+b,0) / n;
-    const std = Math.sqrt(values.reduce((s,v)=>s+(v-mean)**2,0)/n);
-    const z = values.map(v => (v-mean)/std);
+/* -----------------------
+   Standardize values
+------------------------ */
+const values = data.map(d => d.value);
+const mean = values.reduce((a,b)=>a+b,0) / values.length;
+const std  = Math.sqrt(values.reduce((s,v)=>s+(v-mean)**2,0) / values.length);
 
-    const neighbors = data.map((p,i) =>
-        data
-            .map((q,j)=>{
-                if (i===j) return null;
-                const dx = p.x-q.x;
-                const dy = p.y-q.y;
-                return Math.sqrt(dx*dx+dy*dy)<=1.5 ? j : null;
-            })
-            .filter(j=>j!==null)
-    );
+const z = values.map(v => (v - mean) / std);
 
-    function localI(i, zvals){
-        return zvals[i] * neighbors[i].reduce((s,j)=>s+zvals[j],0);
-    }
-
-    const observed = z.map((_,i)=>localI(i,z));
-
-    const pvals = observed.map((obs,i)=>{
-        let extreme=0;
-        for(let k=0;k<permutations;k++){
-            const perm=[...z].sort(()=>Math.random()-0.5);
-            if (Math.abs(localI(i,perm))>=Math.abs(obs)) extreme++;
-        }
-        return (extreme+1)/(permutations+1);
-    });
-
-    return data.map((d,i)=>{
-        const lag = neighbors[i].length
-            ? neighbors[i].reduce((s,j)=>s+z[j],0)/neighbors[i].length
-            : 0;
-
-        let quadrant = 'NS';
-        if (z[i]>0 && lag>0) quadrant='HH';
-        if (z[i]<0 && lag<0) quadrant='LL';
-        if (z[i]>0 && lag<0) quadrant='HL';
-        if (z[i]<0 && lag>0) quadrant='LH';
-
-        return { ...d, z: z[i], lag, quadrant, p: pvals[i] };
-    });
+/* -----------------------
+   Spatial lag (queen)
+------------------------ */
+function neighbors(i) {
+    return data
+        .map((d,j)=>{
+            if (i===j) return null;
+            const dx = data[i].x - d.x;
+            const dy = data[i].y - d.y;
+            return Math.sqrt(dx*dx+dy*dy) <= 1.5 ? j : null;
+        })
+        .filter(j => j !== null);
 }
 
-/* ---------------------------
-   Build Moran Scatterplot
----------------------------- */
-const local = computeLocalMoran(data);
+const points = z.map((zi,i)=>{
+    const nbrs = neighbors(i);
+    const lag = nbrs.length
+        ? nbrs.reduce((s,j)=>s+z[j],0) / nbrs.length
+        : 0;
 
-const colors = {
-    HH: '#22c55e',
-    LL: '#ef4444',
-    HL: '#f59e0b',
-    LH: '#3b82f6',
-    NS: '#9ca3af'
-};
+    return { x: zi, y: lag };
+});
 
-const scatterData = local.map(p => ({
-    x: p.z,
-    y: p.lag,
-    backgroundColor: colors[p.quadrant]
-}));
-
+/* -----------------------
+   Render Chart
+------------------------ */
 const ctx = document.getElementById('moranScatterChart').getContext('2d');
 
 new Chart(ctx, {
     type: 'scatter',
     data: {
         datasets: [{
-            data: scatterData,
-            pointRadius: 4
+            data: points,
+            pointRadius: 4,
+            backgroundColor: '#60a5fa'
         }]
     },
     options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: {
-            legend: { display: false }
-        },
+        plugins: { legend: { display: false } },
         scales: {
             x: {
-                title: { display: true, text: 'Standardized Value (z)' },
-                grid: { color: 'rgba(255,255,255,0.1)' }
+                title: { display: true, text: 'Standardized Value (z)' }
             },
             y: {
-                title: { display: true, text: 'Spatial Lag' },
-                grid: { color: 'rgba(255,255,255,0.1)' }
+                title: { display: true, text: 'Spatial Lag' }
             }
         }
     }

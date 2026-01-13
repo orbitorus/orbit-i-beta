@@ -160,6 +160,7 @@
     <button onclick="showTab('satellite', this)">⭐ Satellite Plot</button>
 
     <!-- NEW -->
+    <button onclick="showTab('dashboard', this)">📉 Constellation Health</button>
     <button onclick="showTab('lisa2d', this)">📉 2D LISA Analysis</button>
     <button onclick="showTab('lisa3d', this)">🧊 3D LISA Spatial Analysis</button>
   </div>
@@ -183,7 +184,16 @@
   <div id="satellite" class="tab-content">
     <div class="card"><h3>⭐ Interactive GW Plot</h3><iframe src="interactive_satellite_plot.html"></iframe></div>
   </div>
+  
 
+  <!-- NEW Dashboard -->
+  <div id="dashboard" class="tab-content">
+    <div class="card">
+      <h3>📉 Constellation Health Dashboard</h3>
+      <iframe src="hulianwang_constellation_dashboard_dark.png"></iframe>
+    </div>
+  </div>
+  
   <!-- NEW 2D LISA TAB -->
   <div id="lisa2d" class="tab-content">
     <div class="card">

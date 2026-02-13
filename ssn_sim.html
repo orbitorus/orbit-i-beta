@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space-Based Optical Surveillance System</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+            background: #0f172a;
+        }
+        #root {
+            width: 100%;
+            min-height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // Lucide React icons implemented as simple SVG components
+        const Play = ({ size = 24 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+        );
+
+        const Pause = ({ size = 24 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="6" y="4" width="4" height="16"></rect>
+                <rect x="14" y="4" width="4" height="16"></rect>
+            </svg>
+        );
+
+        const RotateCcw = ({ size = 24 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="1 4 1 10 7 10"></polyline>
+                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+            </svg>
+        );
+
+        const Info = ({ size = 24, color = "currentColor" }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+        );
+
+
+
+
+
+const SpaceSurveillanceSimulation = () => {
+  const canvasRef = useRef(null);
+  const containerRef = useRef(null);
+  const [isRunning, setIsRunning] = useState(true);
+  const [time, setTime] = useState(0);
+  const [selectedObject, setSelectedObject] = useState(null);
+  const [speed, setSpeed] = useState(0.3);
+  const [canvasSize, setCanvasSize] = useState(700);
+  const [detectionData, setDetectionData] = useState({
+    starTracker: [],
+    irCamera: [],
+    rangeEstimates: []
+  });
+  const [showInfo, setShowInfo] = useState(true);
+
+  // Handle canvas resize - only on window resize, not initial load
+  useEffect(() => {
+    const updateCanvasSize = () => {
+      if (containerRef.current) {
+        const containerWidth = containerRef.current.clientWidth;
+        // Make canvas 70% of container width, square, max 900px
+        const size = Math.min(containerWidth * 0.7, 900);
+        setCanvasSize(Math.round(size));
+      }
+    };
+
+    // Only update on window resize, not on initial mount
+    window.addEventListener('resize', updateCanvasSize);
+    return () => window.removeEventListener('resize', updateCanvasSize);
+  }, []);
+
+  // Simulation parameters
+  const config = {
+    earthRadius: 60,
+    orbitRadius: 110,
+    outerOrbitRadius: 160,
+    numSatellites: 3,
+    numDebris: 15,
+    numOuterSatellites: 8,
+    numOuterDebris: 12,
+    cameraFOV: Math.PI / 3, // 60 degrees
+    beaconRange: 450,
+    speedScale: speed
+  };
+
+  // Initialize satellites with beacons
+  const initSatellites = () => {
+    const satellites = [];
+    
+    // Inner orbit satellites (clockwise)
+    for (let i = 0; i < config.numSatellites; i++) {
+      const angle = (i / config.numSatellites) * 2 * Math.PI;
+      satellites.push({
+        id: `SAT-${i + 1}`,
+        type: 'satellite',
+        angle: angle,
+        orbitRadius: config.orbitRadius,
+        angularVelocity: 0.02,
+        hasBeacon: true,
+        beaconActive: true,
+        beaconPhase: Math.random() * Math.PI * 2,
+        beaconFreq: 10, // Hz
+        health: 100,
+        orbitType: 'inner'
+      });
+    }
+    
+    // Outer orbit satellites (counter-clockwise)
+    for (let i = 0; i < config.numOuterSatellites; i++) {
+      const angle = (i / config.numOuterSatellites) * 2 * Math.PI;
+      satellites.push({
+        id: `SAT-O${i + 1}`,
+        type: 'satellite',
+        angle: angle,
+        orbitRadius: config.outerOrbitRadius,
+        angularVelocity: -0.015, // Negative for counter-clockwise
+        hasBeacon: true,
+        beaconActive: true,
+        beaconPhase: Math.random() * Math.PI * 2,
+        beaconFreq: 10, // Hz
+        health: 100,
+        orbitType: 'outer'
+      });
+    }
+    
+    return satellites;
+  };
+
+  // Initialize debris (non-cooperative)
+  const initDebris = () => {
+    const debris = [];
+    
+    // Inner orbit debris (clockwise)
+    for (let i = 0; i < config.numDebris; i++) {
+      const angle = Math.random() * 2 * Math.PI;
+      const radius = config.orbitRadius + (Math.random() - 0.5) * 80;
+      debris.push({
+        id: `DEB-${i + 1}`,
+        type: 'debris',
+        angle: angle,
+        orbitRadius: radius,
+        angularVelocity: 0.015 + Math.random() * 0.01,
+        hasBeacon: false,
+        tumbleRate: Math.random() * 5,
+        brightness: 0.3 + Math.random() * 0.7,
+        orbitType: 'inner'
+      });
+    }
+    
+    // Outer orbit debris (counter-clockwise)
+    for (let i = 0; i < config.numOuterDebris; i++) {
+      const angle = Math.random() * 2 * Math.PI;
+      const radius = config.outerOrbitRadius + (Math.random() - 0.5) * 80;
+      debris.push({
+        id: `DEB-O${i + 1}`,
+        type: 'debris',
+        angle: angle,
+        orbitRadius: radius,
+        angularVelocity: -(0.012 + Math.random() * 0.008), // Negative for counter-clockwise
+        hasBeacon: false,
+        tumbleRate: Math.random() * 5,
+        brightness: 0.3 + Math.random() * 0.7,
+        orbitType: 'outer'
+      });
+    }
+    
+    return debris;
+  };
+
+  const [satellites] = useState(initSatellites());
+  const [debris] = useState(initDebris());
+  const [observerSats, setObserverSats] = useState([0, 1, 2]); // Track SAT-1, SAT-2, SAT-3 (all inner orbit)
+
+  // Calculate position from orbital parameters
+  const getPosition = (obj, currentTime) => {
+    const angle = obj.angle + obj.angularVelocity * currentTime;
+    return {
+      x: Math.cos(angle) * obj.orbitRadius,
+      y: Math.sin(angle) * obj.orbitRadius,
+      angle: angle
+    };
+  };
+
+  // Check if object is in camera FOV
+  const isInFOV = (observerPos, targetPos, observerAngle, fov) => {
+    const dx = targetPos.x - observerPos.x;
+    const dy = targetPos.y - observerPos.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    if (distance < 10) return false; // Too close
+    
+    const angleToTarget = Math.atan2(dy, dx);
+    let relativeAngle = angleToTarget - observerAngle;
+    
+    // Normalize angle to [-PI, PI]
+    while (relativeAngle > Math.PI) relativeAngle -= 2 * Math.PI;
+    while (relativeAngle < -Math.PI) relativeAngle += 2 * Math.PI;
+    
+    return Math.abs(relativeAngle) < fov / 2;
+  };
+
+  // Calculate range using different methods
+  const calculateRange = (observerPos, targetPos, method, obj, currentTime) => {
+    const dx = targetPos.x - observerPos.x;
+    const dy = targetPos.y - observerPos.y;
+    const actualDistance = Math.sqrt(dx * dx + dy * dy);
+    
+    if (method === 'photometric' && obj.hasBeacon) {
+      // Brightness-based ranging for beaconed satellites
+      const beaconPower = 5; // watts
+      const measuredIntensity = beaconPower / (actualDistance * actualDistance);
+      const estimatedRange = Math.sqrt(beaconPower / measuredIntensity);
+      const error = (Math.random() - 0.5) * 0.2; // 20% error
+      return estimatedRange * (1 + error);
+    } else if (method === 'geometric') {
+      // Triangulation-based (simulated)
+      const error = (Math.random() - 0.5) * 0.05; // 5% error
+      return actualDistance * (1 + error);
+    } else if (method === 'angular_rate') {
+      // Angular rate method
+      const angularRate = Math.abs(obj.angularVelocity);
+      const error = (Math.random() - 0.5) * 0.15; // 15% error
+      return actualDistance * (1 + error);
+    }
+    return actualDistance;
+  };
+
+  // Main simulation update
+  useEffect(() => {
+    if (!isRunning) return;
+    
+    const interval = setInterval(() => {
+      setTime(t => t + speed);
+    }, 50);
+    
+    return () => clearInterval(interval);
+  }, [isRunning, speed]);
+
+  // Detection and ranging update
+  useEffect(() => {
+    const allDetectionData = {};
+    
+    observerSats.forEach(obsIdx => {
+      const observer = satellites[obsIdx];
+      const observerPos = getPosition(observer, time);
+      
+      const starTrackerDetections = [];
+      const irCameraDetections = [];
+      const rangeEstimates = [];
+      
+      // Check all objects
+      [...satellites, ...debris].forEach(obj => {
+        if (obj === observer) return;
+        
+        const targetPos = getPosition(obj, time);
+        const inFOV = isInFOV(observerPos, targetPos, observerPos.angle, config.cameraFOV);
+        
+        if (inFOV) {
+          const distance = Math.sqrt(
+            Math.pow(targetPos.x - observerPos.x, 2) + 
+            Math.pow(targetPos.y - observerPos.y, 2)
+          );
+          
+          // Star tracker detection (visible wavelengths)
+          if (distance < config.beaconRange) {
+            starTrackerDetections.push({
+              id: obj.id,
+              type: obj.type,
+              distance: distance,
+              angularPosition: Math.atan2(
+                targetPos.y - observerPos.y,
+                targetPos.x - observerPos.x
+              )
+            });
+          }
+          
+          // IR camera detection (800-1600nm)
+          if (obj.hasBeacon && obj.beaconActive) {
+            const beaconVisible = Math.sin(time * obj.beaconFreq + obj.beaconPhase) > 0;
+            if (beaconVisible && distance < config.beaconRange) {
+              irCameraDetections.push({
+                id: obj.id,
+                type: obj.type,
+                distance: distance,
+                beaconStrength: 1.0 - (distance / config.beaconRange),
+                modulation: obj.beaconFreq
+              });
+              
+              // Range estimates
+              const photoRange = calculateRange(observerPos, targetPos, 'photometric', obj, time);
+              const geoRange = calculateRange(observerPos, targetPos, 'geometric', obj, time);
+              
+              rangeEstimates.push({
+                id: obj.id,
+                actual: distance,
+                photometric: photoRange,
+                geometric: geoRange,
+                combined: (photoRange + geoRange * 2) / 3 // Weighted average
+              });
+            }
+          } else if (!obj.hasBeacon) {
+            // Non-cooperative object (debris) - sun glint detection
+            const glintVisible = Math.sin(time * obj.tumbleRate) > 0.7;
+            if (glintVisible && distance < config.beaconRange * 0.7) {
+              irCameraDetections.push({
+                id: obj.id,
+                type: obj.type,
+                distance: distance,
+                beaconStrength: 0.3 * obj.brightness,
+                modulation: 0
+              });
+              
+              const angularRange = calculateRange(observerPos, targetPos, 'angular_rate', obj, time);
+              rangeEstimates.push({
+                id: obj.id,
+                actual: distance,
+                photometric: null,
+                geometric: angularRange,
+                combined: angularRange
+              });
+            }
+          }
+        }
+      });
+      
+      allDetectionData[obsIdx] = {
+        starTracker: starTrackerDetections,
+        irCamera: irCameraDetections,
+        rangeEstimates: rangeEstimates
+      };
+    });
+    
+    setDetectionData(allDetectionData);
+  }, [time, observerSats]);
+
+  // Drawing
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+    const centerX = width / 2;
+    const centerY = height / 2;
+    
+    // Clear
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, width, height);
+    
+    // Draw stars background
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+    for (let i = 0; i < 100; i++) {
+      const x = (i * 127) % width;
+      const y = (i * 257) % height;
+      ctx.fillRect(x, y, 1, 1);
+    }
+    
+    // Draw Earth
+    const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, config.earthRadius);
+    gradient.addColorStop(0, '#1e40af');
+    gradient.addColorStop(0.7, '#1e3a8a');
+    gradient.addColorStop(1, '#1e293b');
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, config.earthRadius, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Draw orbit paths with direction indicators
+    ctx.strokeStyle = 'rgba(100, 116, 139, 0.3)';
+    ctx.lineWidth = 1;
+    
+    // Inner orbit (clockwise)
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, config.orbitRadius, 0, Math.PI * 2);
+    ctx.stroke();
+    
+    // Outer orbit (counter-clockwise)
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, config.outerOrbitRadius, 0, Math.PI * 2);
+    ctx.stroke();
+    
+    // Draw direction arrows
+    const drawArrow = (x, y, angle, color, reverse = false) => {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle + (reverse ? Math.PI : 0));
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(-8, -5);
+      ctx.lineTo(-8, 5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    };
+    
+    // Inner orbit arrows (clockwise - 4 arrows)
+    for (let i = 0; i < 4; i++) {
+      const angle = (i / 4) * 2 * Math.PI + Math.PI / 8;
+      const x = centerX + Math.cos(angle) * config.orbitRadius;
+      const y = centerY + Math.sin(angle) * config.orbitRadius;
+      drawArrow(x, y, angle + Math.PI / 2, 'rgba(100, 200, 255, 0.6)', false);
+    }
+    
+    // Outer orbit arrows (counter-clockwise - 4 arrows)
+    for (let i = 0; i < 4; i++) {
+      const angle = (i / 4) * 2 * Math.PI;
+      const x = centerX + Math.cos(angle) * config.outerOrbitRadius;
+      const y = centerY + Math.sin(angle) * config.outerOrbitRadius;
+      drawArrow(x, y, angle + Math.PI / 2, 'rgba(255, 150, 100, 0.6)', true);
+    }
+    
+    // Draw FOV cones for all observer satellites
+    observerSats.forEach((obsIdx, idx) => {
+      const observer = satellites[obsIdx];
+      const observerPos = getPosition(observer, time);
+      
+      const colors = [
+        { stroke: 'rgba(34, 197, 94, 0.3)', fill: 'rgba(34, 197, 94, 0.1)' },
+        { stroke: 'rgba(59, 130, 246, 0.3)', fill: 'rgba(59, 130, 246, 0.1)' },
+        { stroke: 'rgba(168, 85, 247, 0.3)', fill: 'rgba(168, 85, 247, 0.1)' }
+      ];
+      
+      const color = colors[idx];
+      
+      // Draw FOV cone
+      ctx.strokeStyle = color.stroke;
+      ctx.fillStyle = color.fill;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(centerX + observerPos.x, centerY + observerPos.y);
+      const fovStart = observerPos.angle - config.cameraFOV / 2;
+      const fovEnd = observerPos.angle + config.cameraFOV / 2;
+      ctx.arc(centerX + observerPos.x, centerY + observerPos.y, 150, fovStart, fovEnd);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    });
+    
+    // Draw debris
+    debris.forEach(deb => {
+      const pos = getPosition(deb, time);
+      const screenX = centerX + pos.x;
+      const screenY = centerY + pos.y;
+      
+      // Check if visible from any observer
+      let visibleFromAny = false;
+      observerSats.forEach(obsIdx => {
+        const observer = satellites[obsIdx];
+        const observerPos = getPosition(observer, time);
+        const inFOV = isInFOV(observerPos, pos, observerPos.angle, config.cameraFOV);
+        const distance = Math.sqrt(
+          Math.pow(pos.x - observerPos.x, 2) + 
+          Math.pow(pos.y - observerPos.y, 2)
+        );
+        
+        const glintVisible = Math.sin(time * deb.tumbleRate) > 0.7;
+        
+        if (inFOV && distance < config.beaconRange && glintVisible) {
+          visibleFromAny = true;
+          // Draw detection line
+          ctx.strokeStyle = 'rgba(251, 191, 36, 0.5)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(centerX + observerPos.x, centerY + observerPos.y);
+          ctx.lineTo(screenX, screenY);
+          ctx.stroke();
+        }
+      });
+      
+      // Draw debris
+      const glintVisible = Math.sin(time * deb.tumbleRate) > 0.7;
+      ctx.fillStyle = glintVisible ? '#fbbf24' : '#6b7280';
+      ctx.beginPath();
+      ctx.arc(screenX, screenY, 2, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Label only if visible
+      if (visibleFromAny) {
+        ctx.fillStyle = '#9ca3af';
+        ctx.font = '8px monospace';
+        ctx.fillText(deb.id, screenX + 5, screenY - 5);
+      }
+    });
+    
+    // Draw satellites
+    satellites.forEach((sat, idx) => {
+      const pos = getPosition(sat, time);
+      const screenX = centerX + pos.x;
+      const screenY = centerY + pos.y;
+      const isObserver = observerSats.includes(idx);
+      
+      // Determine observer color
+      let observerColor = '#3b82f6';
+      let observerStroke = '#2563eb';
+      if (isObserver) {
+        const obsIndex = observerSats.indexOf(idx);
+        const colors = [
+          { fill: '#22c55e', stroke: '#16a34a' },
+          { fill: '#3b82f6', stroke: '#2563eb' },
+          { fill: '#a855f7', stroke: '#9333ea' }
+        ];
+        observerColor = colors[obsIndex].fill;
+        observerStroke = colors[obsIndex].stroke;
+      }
+      
+      // Draw satellite body
+      ctx.fillStyle = observerColor;
+      ctx.strokeStyle = observerStroke;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(screenX, screenY, isObserver ? 5 : 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      
+      // Draw beacon (IR LED) if active
+      if (sat.beaconActive) {
+        const beaconVisible = Math.sin(time * sat.beaconFreq + sat.beaconPhase) > 0;
+        if (beaconVisible) {
+          const beaconGradient = ctx.createRadialGradient(screenX, screenY, 0, screenX, screenY, 12);
+          beaconGradient.addColorStop(0, 'rgba(220, 38, 38, 0.8)');
+          beaconGradient.addColorStop(0.5, 'rgba(220, 38, 38, 0.3)');
+          beaconGradient.addColorStop(1, 'rgba(220, 38, 38, 0)');
+          ctx.fillStyle = beaconGradient;
+          ctx.beginPath();
+          ctx.arc(screenX, screenY, 12, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        
+        // Draw beacon range to all observers
+        if (!isObserver) {
+          observerSats.forEach(obsIdx => {
+            const observer = satellites[obsIdx];
+            const observerPos = getPosition(observer, time);
+            const distance = Math.sqrt(
+              Math.pow(pos.x - observerPos.x, 2) + 
+              Math.pow(pos.y - observerPos.y, 2)
+            );
+            const inFOV = isInFOV(observerPos, pos, observerPos.angle, config.cameraFOV);
+            
+            if (inFOV && distance < config.beaconRange && beaconVisible) {
+              ctx.strokeStyle = 'rgba(220, 38, 38, 0.4)';
+              ctx.lineWidth = 1;
+              ctx.setLineDash([5, 3]);
+              ctx.beginPath();
+              ctx.moveTo(centerX + observerPos.x, centerY + observerPos.y);
+              ctx.lineTo(screenX, screenY);
+              ctx.stroke();
+              ctx.setLineDash([]);
+            }
+          });
+        }
+      }
+      
+      // Label
+      ctx.fillStyle = isObserver ? observerColor : '#60a5fa';
+      ctx.font = isObserver ? 'bold 10px monospace' : '9px monospace';
+      ctx.fillText(sat.id, screenX + 10, screenY - 7);
+      
+      if (isObserver) {
+        ctx.font = '8px monospace';
+        ctx.fillText('(OBS)', screenX + 10, screenY + 4);
+      }
+    });
+    
+    // Draw legend
+    drawLegend(ctx, width, height);
+    
+  }, [time, observerSats, satellites, debris, canvasSize]);
+
+  const drawLegend = (ctx, width, height) => {
+    const x = 20;
+    const y = 20;
+    
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.fillRect(x - 10, y - 10, 280, 210);
+    
+    ctx.font = 'bold 14px sans-serif';
+    ctx.fillStyle = '#fff';
+    ctx.fillText('Dual-Camera SSA System', x, y + 10);
+    
+    ctx.font = '12px sans-serif';
+    
+    // Observer satellites
+    const obsColors = ['#22c55e', '#3b82f6', '#a855f7'];
+    obsColors.forEach((color, idx) => {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x + idx * 25, y + 35, 5, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.fillStyle = '#fff';
+    ctx.fillText('Observer Satellites', x + 80, y + 40);
+    
+    // Beaconed satellite
+    ctx.fillStyle = '#60a5fa';
+    ctx.beginPath();
+    ctx.arc(x, y + 60, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#dc2626';
+    ctx.beginPath();
+    ctx.arc(x, y + 60, 12, 0, Math.PI * 2);
+    ctx.globalAlpha = 0.3;
+    ctx.fill();
+    ctx.globalAlpha = 1.0;
+    ctx.fillStyle = '#fff';
+    ctx.fillText('Satellite w/ IR Beacon (850nm)', x + 20, y + 65);
+    
+    // Debris
+    ctx.fillStyle = '#fbbf24';
+    ctx.beginPath();
+    ctx.arc(x, y + 85, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.fillText('Debris (sun glint)', x + 20, y + 90);
+    
+    // Orbit directions
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '11px sans-serif';
+    ctx.fillText('Inner orbit: Clockwise →', x, y + 110);
+    ctx.fillText('Outer orbit: Counter-clockwise ←', x, y + 125);
+    
+    // FOV
+    ctx.strokeStyle = 'rgba(34, 197, 94, 0.5)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x, y + 145);
+    ctx.lineTo(x + 30, y + 135);
+    ctx.lineTo(x + 30, y + 155);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.font = '12px sans-serif';
+    ctx.fillText('Camera FOV', x + 40, y + 150);
+    
+    // IR detection
+    ctx.strokeStyle = '#dc2626';
+    ctx.setLineDash([5, 3]);
+    ctx.beginPath();
+    ctx.moveTo(x, y + 170);
+    ctx.lineTo(x + 30, y + 170);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#fff';
+    ctx.fillText('IR Beacon Detection', x + 40, y + 175);
+    
+    // Glint detection
+    ctx.strokeStyle = 'rgba(251, 191, 36, 0.5)';
+    ctx.beginPath();
+    ctx.moveTo(x, y + 195);
+    ctx.lineTo(x + 30, y + 195);
+    ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.fillText('Sun Glint Detection', x + 40, y + 200);
+  };
+
+  const formatRange = (range) => {
+    if (range === null || range === undefined) return 'N/A';
+    return `${Math.round(range)}km`;
+  };
+
+  const calculateError = (actual, estimated) => {
+    if (!estimated || !actual) return 'N/A';
+    const error = Math.abs((estimated - actual) / actual) * 100;
+    return `${error.toFixed(1)}%`;
+  };
+
+  return (
+    <div style={{ width: '100%', maxWidth: '1600px', margin: '0 auto', padding: '20px', fontFamily: 'system-ui, sans-serif', background: '#0f172a', color: '#fff', minHeight: '100vh' }}>
+      <div style={{ marginBottom: '20px' }}>
+        <h1 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '10px', color: '#fff' }}>
+          Space-Based Optical Surveillance System
+        </h1>
+        <p style={{ color: '#94a3b8', fontSize: '14px' }}>
+          Dual-camera constellation with IR beacons for space situational awareness and collision avoidance
+        </p>
+      </div>
+
+      {/* Top row: Animation and System Overview */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '20px', marginBottom: '20px' }}>
+        {/* Main visualization */}
+        <div ref={containerRef} style={{ background: '#1e293b', borderRadius: '8px', padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <canvas 
+            ref={canvasRef} 
+            width={canvasSize} 
+            height={canvasSize}
+            style={{ width: '70%', height: 'auto', border: '1px solid #334155', borderRadius: '4px', display: 'block' }}
+          />
+          
+          <div style={{ marginTop: '20px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => setIsRunning(!isRunning)}
+              style={{
+                padding: '10px 20px',
+                background: isRunning ? '#dc2626' : '#22c55e',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '14px',
+                fontWeight: '500'
+              }}
+            >
+              {isRunning ? <><Pause size={16} /> Pause</> : <><Play size={16} /> Play</>}
+            </button>
+            
+            <button
+              onClick={() => setTime(0)}
+              style={{
+                padding: '10px 20px',
+                background: '#3b82f6',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '14px',
+                fontWeight: '500'
+              }}
+            >
+              <RotateCcw size={16} /> Reset
+            </button>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginLeft: '20px' }}>
+              <label style={{ color: '#94a3b8', fontSize: '14px', whiteSpace: 'nowrap' }}>
+                Speed: {speed.toFixed(2)}x
+              </label>
+              <input
+                type="range"
+                min="0"
+                max="4"
+                step="1"
+                value={[0.05, 0.1, 0.3, 0.5, 1.0].indexOf(speed)}
+                onChange={(e) => {
+                  const speeds = [0.05, 0.1, 0.3, 0.5, 1.0];
+                  setSpeed(speeds[parseInt(e.target.value)]);
+                }}
+                style={{
+                  width: '150px',
+                  accentColor: '#3b82f6'
+                }}
+              />
+              <div style={{ color: '#64748b', fontSize: '11px', whiteSpace: 'nowrap' }}>
+                [0.05x - 1.0x]
+              </div>
+            </div>
+            
+            <div style={{ marginLeft: '20px', color: '#94a3b8', fontSize: '14px' }}>
+              Time: {Math.round(time)}s
+            </div>
+          </div>
+
+          <div style={{ marginTop: '15px', display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
+            <label style={{ color: '#94a3b8', fontSize: '14px', whiteSpace: 'nowrap' }}>
+              Canvas Size: {canvasSize}px
+            </label>
+            <input
+              type="range"
+              min="400"
+              max="900"
+              step="50"
+              value={canvasSize}
+              onChange={(e) => setCanvasSize(parseInt(e.target.value))}
+              style={{
+                width: '200px',
+                accentColor: '#22c55e'
+              }}
+            />
+            <button
+              onClick={() => {
+                if (containerRef.current) {
+                  const containerWidth = containerRef.current.clientWidth;
+                  const size = Math.min(containerWidth * 0.7, 900);
+                  setCanvasSize(Math.round(size));
+                }
+              }}
+              style={{
+                padding: '6px 12px',
+                background: '#475569',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '12px',
+                fontWeight: '500'
+              }}
+            >
+              Auto Fit
+            </button>
+          </div>
+        </div>
+
+        {/* System Overview */}
+        <div style={{ background: '#1e293b', borderRadius: '8px', padding: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '15px' }}>
+            <Info size={20} color="#3b82f6" />
+            <h3 style={{ fontSize: '16px', fontWeight: '600', margin: 0 }}>System Overview</h3>
+          </div>
+          <div style={{ fontSize: '13px', lineHeight: '1.8', color: '#cbd5e1' }}>
+            <div style={{ marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid #334155' }}>
+              <strong style={{ color: '#fff', display: 'block', marginBottom: '6px' }}>Constellation:</strong>
+              <div>• {satellites.length} satellites ({config.numSatellites} inner + {config.numOuterSatellites} outer)</div>
+              <div>• {debris.length} debris objects ({config.numDebris} inner + {config.numOuterDebris} outer)</div>
+              <div>• {observerSats.length} active observer satellites</div>
+              <div>• Inner orbit: Clockwise</div>
+              <div>• Outer orbit: Counter-clockwise</div>
+            </div>
+            <div style={{ marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid #334155' }}>
+              <strong style={{ color: '#fff', display: 'block', marginBottom: '6px' }}>Star Tracker Camera:</strong>
+              <div>• Wavelength: 400-900nm (visible)</div>
+              <div>• Purpose: Precise astrometry</div>
+              <div>• Detects: All objects in FOV</div>
+            </div>
+            <div style={{ marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid #334155' }}>
+              <strong style={{ color: '#fff', display: 'block', marginBottom: '6px' }}>IR High-Speed Camera:</strong>
+              <div>• Wavelength: 850nm (NIR)</div>
+              <div>• Purpose: Beacon detection</div>
+              <div>• Frame rate: 100-1000 fps</div>
+            </div>
+            <div style={{ marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid #334155' }}>
+              <strong style={{ color: '#fff', display: 'block', marginBottom: '6px' }}>IR Beacons:</strong>
+              <div>• 850nm LED (invisible to eye)</div>
+              <div>• 10 Hz modulation for ID</div>
+              <div>• Dark sky compliant</div>
+            </div>
+            <div>
+              <strong style={{ color: '#fff', display: 'block', marginBottom: '6px' }}>Ranging Methods:</strong>
+              <div>• Photometric (brightness-based)</div>
+              <div>• Geometric (triangulation)</div>
+              <div>• Angular rate (motion-based)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom row: Detection data for 3 satellites side by side */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '20px' }}>
+        {observerSats.map((obsIdx, idx) => {
+          const sat = satellites[obsIdx];
+          const satDetectionData = detectionData[obsIdx] || { starTracker: [], irCamera: [], rangeEstimates: [] };
+          const colors = [
+            { name: 'Green', color: '#22c55e', bg: 'rgba(34, 197, 94, 0.1)' },
+            { name: 'Blue', color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.1)' },
+            { name: 'Purple', color: '#a855f7', bg: 'rgba(168, 85, 247, 0.1)' }
+          ];
+          const colorTheme = colors[idx];
+
+          return (
+            <div key={obsIdx} style={{ background: '#1e293b', borderRadius: '8px', padding: '20px', border: `2px solid ${colorTheme.color}` }}>
+              <h2 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '15px', color: colorTheme.color, textAlign: 'center' }}>
+                {sat.id} Observer
+              </h2>
+
+              {/* Star Tracker */}
+              <div style={{ marginBottom: '15px' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '10px', color: '#60a5fa', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span>Star Tracker</span>
+                  <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 'normal' }}>
+                    {satDetectionData.starTracker.length} obj
+                  </span>
+                </h3>
+                <div style={{ background: '#0f172a', borderRadius: '4px', padding: '10px', height: '180px', overflowY: 'auto' }}>
+                  {satDetectionData.starTracker.length === 0 ? (
+                    <div style={{ color: '#64748b', fontSize: '12px', textAlign: 'center', paddingTop: '70px' }}>
+                      No objects in FOV
+                    </div>
+                  ) : (
+                    satDetectionData.starTracker.slice(0, 6).map((det, i) => (
+                      <div 
+                        key={i}
+                        style={{
+                          padding: '6px 8px',
+                          background: '#1e293b',
+                          borderRadius: '3px',
+                          marginBottom: '5px',
+                          fontSize: '11px'
+                        }}
+                      >
+                        <div style={{ fontWeight: '600', color: '#fff', marginBottom: '2px' }}>{det.id}</div>
+                        <div style={{ color: '#94a3b8', fontSize: '10px' }}>
+                          {det.type} • {(det.angularPosition * 180 / Math.PI).toFixed(1)}°
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* IR Camera */}
+              <div style={{ marginBottom: '15px' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '10px', color: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span>IR Camera (850nm)</span>
+                  <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 'normal' }}>
+                    {satDetectionData.irCamera.length} det
+                  </span>
+                </h3>
+                <div style={{ background: '#0f172a', borderRadius: '4px', padding: '10px', height: '180px', overflowY: 'auto' }}>
+                  {satDetectionData.irCamera.length === 0 ? (
+                    <div style={{ color: '#64748b', fontSize: '12px', textAlign: 'center', paddingTop: '70px' }}>
+                      No beacons detected
+                    </div>
+                  ) : (
+                    satDetectionData.irCamera.slice(0, 6).map((det, i) => (
+                      <div 
+                        key={i}
+                        style={{
+                          padding: '6px 8px',
+                          background: '#1e293b',
+                          borderRadius: '3px',
+                          marginBottom: '5px',
+                          fontSize: '11px'
+                        }}
+                      >
+                        <div style={{ fontWeight: '600', color: '#fff', marginBottom: '2px' }}>{det.id}</div>
+                        <div style={{ color: '#94a3b8', fontSize: '10px' }}>
+                          Signal: {(det.beaconStrength * 100).toFixed(0)}%
+                          {det.modulation > 0 ? ` • ${det.modulation}Hz` : ' • Glint'}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Range Estimates */}
+              <div>
+                <h3 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '10px', color: '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span>Range Estimates</span>
+                  <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 'normal' }}>
+                    {satDetectionData.rangeEstimates.length} est
+                  </span>
+                </h3>
+                <div style={{ background: '#0f172a', borderRadius: '4px', padding: '10px', height: '280px', overflowY: 'auto' }}>
+                  {satDetectionData.rangeEstimates.length === 0 ? (
+                    <div style={{ color: '#64748b', fontSize: '12px', textAlign: 'center', paddingTop: '120px' }}>
+                      No range estimates
+                    </div>
+                  ) : (
+                    satDetectionData.rangeEstimates.slice(0, 4).map((est, i) => (
+                      <div 
+                        key={i}
+                        style={{
+                          padding: '8px',
+                          background: '#1e293b',
+                          borderRadius: '3px',
+                          marginBottom: '6px',
+                          fontSize: '10px'
+                        }}
+                      >
+                        <div style={{ fontWeight: '600', color: '#fff', marginBottom: '5px', fontSize: '11px' }}>{est.id}</div>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                          <tbody>
+                            <tr>
+                              <td style={{ color: '#94a3b8', padding: '1px 0' }}>Actual:</td>
+                              <td style={{ color: '#fff', textAlign: 'right', padding: '1px 0' }}>
+                                {formatRange(est.actual)}
+                              </td>
+                            </tr>
+                            {est.photometric && (
+                              <tr>
+                                <td style={{ color: '#94a3b8', padding: '1px 0' }}>Photo:</td>
+                                <td style={{ color: '#fbbf24', textAlign: 'right', padding: '1px 0' }}>
+                                  {formatRange(est.photometric)} <span style={{color: '#64748b'}}>({calculateError(est.actual, est.photometric)})</span>
+                                </td>
+                              </tr>
+                            )}
+                            <tr>
+                              <td style={{ color: '#94a3b8', padding: '1px 0' }}>Geo:</td>
+                              <td style={{ color: '#60a5fa', textAlign: 'right', padding: '1px 0' }}>
+                                {formatRange(est.geometric)} <span style={{color: '#64748b'}}>({calculateError(est.actual, est.geometric)})</span>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style={{ color: '#94a3b8', padding: '1px 0', fontWeight: '600' }}>Fused:</td>
+                              <td style={{ color: '#22c55e', textAlign: 'right', padding: '1px 0', fontWeight: '600' }}>
+                                {formatRange(est.combined)} <span style={{color: '#64748b', fontWeight: 'normal'}}>({calculateError(est.actual, est.combined)})</span>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Ranging Methods Explanation */}
+      <div style={{ background: '#1e293b', borderRadius: '8px', padding: '25px' }}>
+        <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '20px', color: '#fff', textAlign: 'center' }}>
+          Ranging Methods Explained
+        </h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
+          {/* Photometric Ranging */}
+          <div style={{ background: '#0f172a', borderRadius: '6px', padding: '20px', border: '2px solid #fbbf24' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
+              <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#fbbf24' }}></div>
+              <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#fbbf24', margin: 0 }}>
+                Photometric Ranging
+              </h3>
+            </div>
+            <div style={{ fontSize: '13px', lineHeight: '1.7', color: '#cbd5e1' }}>
+              <div style={{ marginBottom: '12px' }}>
+                <strong style={{ color: '#fff' }}>Principle:</strong> Uses brightness of IR beacon to estimate distance via inverse square law
+              </div>
+              <div style={{ marginBottom: '12px' }}>
+                <strong style={{ color: '#fff' }}>Formula:</strong> <code style={{ background: '#1e293b', padding: '2px 6px', borderRadius: '3px', fontSize: '12px' }}>Range = √(Power/Intensity)</code>
+              </div>
+              <div style={{ marginBottom: '12px' }}>
+                <strong style={{ color: '#fff' }}>Requirements:</strong>
+                <ul style={{ margin: '4px 0', paddingLeft: '20px' }}>
+                  <li>Known beacon output power</li>
+                  <li>Calibrated sensor</li>
+                  <li>Active IR beacon at 850nm</li>
+                </ul>
+              </div>
+              <div style={{ marginBottom: '12px' }}>
+                <strong style={{ color: '#fff' }}>Accuracy:</strong> ±10-20% typical
+              </div>
+              <div style={{ marginBottom: '12px' }}>
+                <strong style={{ color: '#fff' }}>Best for:</strong> Cooperative satellites with beacons
+              </div>
+              <div>
+                <strong style={{ color: '#fff' }}>Limitations:</strong> Requires beacon; affected by sensor calibration errors
+              </div>
+            </div>
+          </div>
+
+          {/* Geometric Ranging */}
+          <div style={{ background: '#0f172a', borderRadius: '6px', padding: '20px', border: '2px solid #60a5fa' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
+              <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#60a5fa' }}></div>
+              <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#60a5fa', margin: 0 }}>
+                Geometric Ranging
+              </h3>
+            </div>
+            <div style={{ fontSize: '13px', lineHeight: '1.7', color: '#cbd5e1' }}>
+              <div style={{ marginBottom: '12px' }}>
+                <strong style={{ color: '#fff' }}>Principle:</strong> Triangulation using angular measurements from multiple positions
+              </div>
+              <div style={{ marginBottom: '12px' }}>
+                <strong style={{ color: '#fff' }}>Method:</strong> Satellite moves along orbit, creating baseline for triangulation
+              </div>
+              <div style={{ marginBottom: '12px' }}>
+                <strong style={{ color: '#fff' }}>Requirements:</strong>
+                <ul style={{ margin: '4px 0', paddingLeft: '20px' }}>
+                  <li>Precise angular measurements</li>
+                  <li>Known observer positions</li>
+                  <li>Multiple observation points</li>
+                </ul>
+              </div>
+              <div style={{ marginBottom: '12px' }}>
+                <strong style={{ color: '#fff' }}>Accuracy:</strong> ±1-5% typical
+              </div>
+              <div style={{ marginBottom: '12px' }}>
+                <strong style={{ color: '#fff' }}>Best for:</strong> High-precision ranging with good geometry
+              </div>
+              <div>
+                <strong style={{ color: '#fff' }}>Advantages:</strong> Works for any detectable object; most accurate method
+              </div>
+            </div>
+          </div>
+
+          {/* Angular Rate Ranging */}
+          <div style={{ background: '#0f172a', borderRadius: '6px', padding: '20px', border: '2px solid #22c55e' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
+              <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#22c55e' }}></div>
+              <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#22c55e', margin: 0 }}>
+                Angular Rate Ranging
+              </h3>
+            </div>
+            <div style={{ fontSize: '13px', lineHeight: '1.7', color: '#cbd5e1' }}>
+              <div style={{ marginBottom: '12px' }}>
+                <strong style={{ color: '#fff' }}>Principle:</strong> Measures how fast an object moves across the field of view to estimate distance
+              </div>
+              <div style={{ marginBottom: '12px' }}>
+                <strong style={{ color: '#fff' }}>Formula:</strong> <code style={{ background: '#1e293b', padding: '2px 6px', borderRadius: '3px', fontSize: '12px' }}>Range = Velocity / Angular Rate</code>
+              </div>
+              <div style={{ marginBottom: '12px' }}>
+                <strong style={{ color: '#fff' }}>How it works:</strong>
+                <ul style={{ margin: '4px 0', paddingLeft: '20px' }}>
+                  <li>Track object motion across frames</li>
+                  <li>Measure angular velocity (deg/sec)</li>
+                  <li>Estimate perpendicular velocity</li>
+                  <li>Calculate distance from ratio</li>
+                </ul>
+              </div>
+              <div style={{ marginBottom: '12px' }}>
+                <strong style={{ color: '#fff' }}>Accuracy:</strong> ±10-15% typical
+              </div>
+              <div style={{ marginBottom: '12px' }}>
+                <strong style={{ color: '#fff' }}>Best for:</strong> Non-cooperative debris via sun glint detection
+              </div>
+              <div>
+                <strong style={{ color: '#fff' }}>Advantages:</strong> No beacon required; works with any moving detectable object; high frame rate camera excels at this
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Additional note */}
+        <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '6px', borderLeft: '4px solid #3b82f6' }}>
+          <div style={{ fontSize: '13px', color: '#cbd5e1', lineHeight: '1.6' }}>
+            <strong style={{ color: '#60a5fa' }}>Note:</strong> For non-cooperative debris without beacons, angular rate ranging is the primary method, using sun glint detections tracked by the high-speed IR camera. 
+            For beaconed satellites, photometric and geometric methods can be combined (fused) to achieve better accuracy. 
+            Multi-satellite observations significantly improve all ranging methods by providing longer baselines and different viewing geometries.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
+
+
+        // Render the app
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<SpaceSurveillanceSimulation />);
+    </script>
+</body>
+</html>

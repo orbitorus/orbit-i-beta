@@ -1,63 +1,61 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Space-Based Optical Surveillance System</title>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
-            background: #0f172a;
-        }
-        #root {
-            width: 100%;
-            min-height: 100vh;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Space-Based Optical Surveillance System</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0f172a;
+    }
+    #root {
+      width: 100%;
+      height: 100vh;
+      overflow-y: auto;
+    }
+  </style>
 </head>
 <body>
-    <div id="root"></div>
-
-    <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
-
-        // Lucide React icons implemented as simple SVG components
-        const Play = ({ size = 24 }) => (
-            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="5 3 19 12 5 21 5 3"></polygon>
-            </svg>
-        );
-
-        const Pause = ({ size = 24 }) => (
-            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="6" y="4" width="4" height="16"></rect>
-                <rect x="14" y="4" width="4" height="16"></rect>
-            </svg>
-        );
-
-        const RotateCcw = ({ size = 24 }) => (
-            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="1 4 1 10 7 10"></polyline>
-                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
-            </svg>
-        );
-
-        const Info = ({ size = 24, color = "currentColor" }) => (
-            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="16" x2="12" y2="12"></line>
-                <line x1="12" y1="8" x2="12.01" y2="8"></line>
-            </svg>
-        );
-
-
-
-
+  <div id="root"></div>
+  
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+    
+    // Icon components
+    const Play = ({ size = 24 }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+      </svg>
+    );
+    
+    const Pause = ({ size = 24 }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="6" y="4" width="4" height="16"></rect>
+        <rect x="14" y="4" width="4" height="16"></rect>
+      </svg>
+    );
+    
+    const RotateCcw = ({ size = 24 }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="1 4 1 10 7 10"></polyline>
+        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+      </svg>
+    );
+    
+    const Info = ({ size = 24, color = "currentColor" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="16" x2="12" y2="12"></line>
+        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+      </svg>
+    );
+    
 
 const SpaceSurveillanceSimulation = () => {
   const canvasRef = useRef(null);
@@ -67,6 +65,11 @@ const SpaceSurveillanceSimulation = () => {
   const [selectedObject, setSelectedObject] = useState(null);
   const [speed, setSpeed] = useState(0.3);
   const [canvasSize, setCanvasSize] = useState(700);
+  const [showTracksatFOV, setShowTracksatFOV] = useState(true);
+  const [showSatOFOV, setShowSatOFOV] = useState(true);
+  const [selectedPlotObject, setSelectedPlotObject] = useState('Tracksat-2'); // Object to plot
+  const [isPlotting, setIsPlotting] = useState(true); // Toggle for plot recording
+  const [rangeHistory, setRangeHistory] = useState({}); // Store range history for plotting
   const [detectionData, setDetectionData] = useState({
     starTracker: [],
     irCamera: [],
@@ -99,7 +102,7 @@ const SpaceSurveillanceSimulation = () => {
     numDebris: 15,
     numOuterSatellites: 8,
     numOuterDebris: 12,
-    cameraFOV: Math.PI / 3, // 60 degrees
+    cameraFOV: Math.PI / 6, // 30 degrees
     beaconRange: 450,
     speedScale: speed
   };
@@ -112,7 +115,7 @@ const SpaceSurveillanceSimulation = () => {
     for (let i = 0; i < config.numSatellites; i++) {
       const angle = (i / config.numSatellites) * 2 * Math.PI;
       satellites.push({
-        id: `SAT-${i + 1}`,
+        id: `Tracksat-${i + 1}`,
         type: 'satellite',
         angle: angle,
         orbitRadius: config.orbitRadius,
@@ -190,7 +193,10 @@ const SpaceSurveillanceSimulation = () => {
 
   const [satellites] = useState(initSatellites());
   const [debris] = useState(initDebris());
-  const [observerSats, setObserverSats] = useState([0, 1, 2]); // Track SAT-1, SAT-2, SAT-3 (all inner orbit)
+  const [observerSats, setObserverSats] = useState(() => {
+    // All satellites are observers (indices 0-10: 3 inner + 8 outer)
+    return Array.from({length: 11}, (_, i) => i);
+  });
 
   // Calculate position from orbital parameters
   const getPosition = (obj, currentTime) => {
@@ -218,6 +224,37 @@ const SpaceSurveillanceSimulation = () => {
     while (relativeAngle < -Math.PI) relativeAngle += 2 * Math.PI;
     
     return Math.abs(relativeAngle) < fov / 2;
+  };
+
+  // Check if line of sight between two positions is blocked by Earth
+  const isBlockedByEarth = (pos1, pos2, earthRadius) => {
+    // Vector from pos1 to pos2
+    const dx = pos2.x - pos1.x;
+    const dy = pos2.y - pos1.y;
+    const lineLength = Math.sqrt(dx * dx + dy * dy);
+    
+    if (lineLength === 0) return true;
+    
+    // Unit vector along the line
+    const ux = dx / lineLength;
+    const uy = dy / lineLength;
+    
+    // Find closest point on line segment to Earth center (0, 0)
+    // Using parametric form: point = pos1 + t * unitVector
+    const t = -(pos1.x * ux + pos1.y * uy);
+    
+    // Clamp t to line segment bounds
+    const tClamped = Math.max(0, Math.min(lineLength, t));
+    
+    // Closest point on line segment to Earth center
+    const closestX = pos1.x + tClamped * ux;
+    const closestY = pos1.y + tClamped * uy;
+    
+    // Distance from Earth center to closest point
+    const distToEarth = Math.sqrt(closestX * closestX + closestY * closestY);
+    
+    // Blocked if line passes through Earth
+    return distToEarth < earthRadius;
   };
 
   // Calculate range using different methods
@@ -265,6 +302,13 @@ const SpaceSurveillanceSimulation = () => {
       const observer = satellites[obsIdx];
       const observerPos = getPosition(observer, time);
       
+      // Outer orbit satellites point inward, inner orbit satellites point along tangent
+      const isOuterOrbit = observer.orbitType === 'outer';
+      const fovAngle = isOuterOrbit ? observerPos.angle + Math.PI : observerPos.angle;
+      
+      // Check if this observer's FOV is enabled (determines if sun glint should be detected)
+      const isFOVEnabled = isOuterOrbit ? showSatOFOV : showTracksatFOV;
+      
       const starTrackerDetections = [];
       const irCameraDetections = [];
       const rangeEstimates = [];
@@ -274,9 +318,12 @@ const SpaceSurveillanceSimulation = () => {
         if (obj === observer) return;
         
         const targetPos = getPosition(obj, time);
-        const inFOV = isInFOV(observerPos, targetPos, observerPos.angle, config.cameraFOV);
+        const inFOV = isInFOV(observerPos, targetPos, fovAngle, config.cameraFOV);
         
-        if (inFOV) {
+        // Check if line of sight is blocked by Earth
+        const blocked = isBlockedByEarth(observerPos, targetPos, config.earthRadius);
+        
+        if (inFOV && !blocked) {
           const distance = Math.sqrt(
             Math.pow(targetPos.x - observerPos.x, 2) + 
             Math.pow(targetPos.y - observerPos.y, 2)
@@ -295,8 +342,8 @@ const SpaceSurveillanceSimulation = () => {
             });
           }
           
-          // IR camera detection (800-1600nm)
-          if (obj.hasBeacon && obj.beaconActive) {
+          // IR camera detection (800-1600nm) - only if FOV is enabled
+          if (obj.hasBeacon && obj.beaconActive && isFOVEnabled) {
             const beaconVisible = Math.sin(time * obj.beaconFreq + obj.beaconPhase) > 0;
             if (beaconVisible && distance < config.beaconRange) {
               irCameraDetections.push({
@@ -319,8 +366,9 @@ const SpaceSurveillanceSimulation = () => {
                 combined: (photoRange + geoRange * 2) / 3 // Weighted average
               });
             }
-          } else if (!obj.hasBeacon) {
+          } else if (!obj.hasBeacon && isFOVEnabled) {
             // Non-cooperative object (debris) - sun glint detection
+            // Only detect if this observer's FOV is enabled
             const glintVisible = Math.sin(time * obj.tumbleRate) > 0.7;
             if (glintVisible && distance < config.beaconRange * 0.7) {
               irCameraDetections.push({
@@ -352,7 +400,45 @@ const SpaceSurveillanceSimulation = () => {
     });
     
     setDetectionData(allDetectionData);
-  }, [time, observerSats]);
+    
+    // Collect range history for plotting (keep last 100 data points) - only if plotting is enabled
+    if (isPlotting) {
+      setRangeHistory(prev => {
+        const newHistory = { ...prev };
+        const maxPoints = 100;
+        
+        // For each observer, record ranges to selected object
+        observerSats.forEach(obsIdx => {
+          const observer = satellites[obsIdx];
+          const data = allDetectionData[obsIdx];
+          
+          // Find selected object in range estimates
+          const estimate = data.rangeEstimates.find(est => est.id === selectedPlotObject);
+          
+          if (estimate) {
+            const key = `${observer.id}-${selectedPlotObject}`;
+            if (!newHistory[key]) {
+              newHistory[key] = [];
+            }
+            
+            newHistory[key].push({
+              time: time,
+              actual: estimate.actual,
+              geometric: estimate.geometric,
+              photometric: estimate.photometric
+            });
+            
+            // Keep only last maxPoints
+            if (newHistory[key].length > maxPoints) {
+              newHistory[key] = newHistory[key].slice(-maxPoints);
+            }
+          }
+        });
+        
+        return newHistory;
+      });
+    }
+  }, [time, observerSats, showTracksatFOV, showSatOFOV, selectedPlotObject, isPlotting]);
 
   // Drawing
   useEffect(() => {
@@ -439,10 +525,25 @@ const SpaceSurveillanceSimulation = () => {
       const observer = satellites[obsIdx];
       const observerPos = getPosition(observer, time);
       
+      // Check if we should draw this FOV based on orbit type
+      const isOuterOrbit = observer.orbitType === 'outer';
+      const shouldDrawFOV = isOuterOrbit ? showSatOFOV : showTracksatFOV;
+      
+      if (!shouldDrawFOV) return; // Skip drawing if FOV is disabled
+      
+      // Colors matching detection panel borders
       const colors = [
-        { stroke: 'rgba(34, 197, 94, 0.3)', fill: 'rgba(34, 197, 94, 0.1)' },
-        { stroke: 'rgba(59, 130, 246, 0.3)', fill: 'rgba(59, 130, 246, 0.1)' },
-        { stroke: 'rgba(168, 85, 247, 0.3)', fill: 'rgba(168, 85, 247, 0.1)' }
+        { stroke: 'rgba(34, 197, 94, 0.3)', fill: 'rgba(34, 197, 94, 0.05)' },     // Green - Tracksat-1
+        { stroke: 'rgba(59, 130, 246, 0.3)', fill: 'rgba(59, 130, 246, 0.05)' },   // Blue - Tracksat-2
+        { stroke: 'rgba(168, 85, 247, 0.3)', fill: 'rgba(168, 85, 247, 0.05)' },   // Purple - Tracksat-3
+        { stroke: 'rgba(234, 179, 8, 0.3)', fill: 'rgba(234, 179, 8, 0.05)' },     // Yellow - SAT-O1
+        { stroke: 'rgba(6, 182, 212, 0.3)', fill: 'rgba(6, 182, 212, 0.05)' },     // Cyan - SAT-O2
+        { stroke: 'rgba(236, 72, 153, 0.3)', fill: 'rgba(236, 72, 153, 0.05)' },   // Pink - SAT-O3
+        { stroke: 'rgba(249, 115, 22, 0.3)', fill: 'rgba(249, 115, 22, 0.05)' },   // Orange - SAT-O4
+        { stroke: 'rgba(20, 184, 166, 0.3)', fill: 'rgba(20, 184, 166, 0.05)' },   // Teal - SAT-O5
+        { stroke: 'rgba(99, 102, 241, 0.3)', fill: 'rgba(99, 102, 241, 0.05)' },   // Indigo - SAT-O6
+        { stroke: 'rgba(244, 63, 94, 0.3)', fill: 'rgba(244, 63, 94, 0.05)' },     // Rose - SAT-O7
+        { stroke: 'rgba(132, 204, 22, 0.3)', fill: 'rgba(132, 204, 22, 0.05)' }    // Lime - SAT-O8
       ];
       
       const color = colors[idx];
@@ -450,11 +551,16 @@ const SpaceSurveillanceSimulation = () => {
       // Draw FOV cone
       ctx.strokeStyle = color.stroke;
       ctx.fillStyle = color.fill;
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.moveTo(centerX + observerPos.x, centerY + observerPos.y);
-      const fovStart = observerPos.angle - config.cameraFOV / 2;
-      const fovEnd = observerPos.angle + config.cameraFOV / 2;
+      
+      // Outer orbit satellites (SAT-O series) point inward toward Earth
+      // Inner orbit satellites (Tracksat) point outward along their orbit tangent
+      const fovAngle = isOuterOrbit ? observerPos.angle + Math.PI : observerPos.angle;
+      
+      const fovStart = fovAngle - config.cameraFOV / 2;
+      const fovEnd = fovAngle + config.cameraFOV / 2;
       ctx.arc(centerX + observerPos.x, centerY + observerPos.y, 150, fovStart, fovEnd);
       ctx.closePath();
       ctx.fill();
@@ -472,15 +578,21 @@ const SpaceSurveillanceSimulation = () => {
       observerSats.forEach(obsIdx => {
         const observer = satellites[obsIdx];
         const observerPos = getPosition(observer, time);
-        const inFOV = isInFOV(observerPos, pos, observerPos.angle, config.cameraFOV);
+        const isOuterOrbit = observer.orbitType === 'outer';
+        const fovAngle = isOuterOrbit ? observerPos.angle + Math.PI : observerPos.angle;
+        const inFOV = isInFOV(observerPos, pos, fovAngle, config.cameraFOV);
         const distance = Math.sqrt(
           Math.pow(pos.x - observerPos.x, 2) + 
           Math.pow(pos.y - observerPos.y, 2)
         );
         
         const glintVisible = Math.sin(time * deb.tumbleRate) > 0.7;
+        const isFOVEnabled = isOuterOrbit ? showSatOFOV : showTracksatFOV;
         
-        if (inFOV && distance < config.beaconRange && glintVisible) {
+        // Check if line of sight is blocked by Earth
+        const blocked = isBlockedByEarth(observerPos, pos, config.earthRadius);
+        
+        if (inFOV && distance < config.beaconRange && glintVisible && isFOVEnabled && !blocked) {
           visibleFromAny = true;
           // Draw detection line
           ctx.strokeStyle = 'rgba(251, 191, 36, 0.5)';
@@ -492,9 +604,9 @@ const SpaceSurveillanceSimulation = () => {
         }
       });
       
-      // Draw debris
+      // Draw debris - show glint if visible from ANY observer with FOV enabled
       const glintVisible = Math.sin(time * deb.tumbleRate) > 0.7;
-      ctx.fillStyle = glintVisible ? '#fbbf24' : '#6b7280';
+      ctx.fillStyle = (glintVisible && visibleFromAny) ? '#fbbf24' : '#6b7280';
       ctx.beginPath();
       ctx.arc(screenX, screenY, 2, 0, Math.PI * 2);
       ctx.fill();
@@ -514,15 +626,23 @@ const SpaceSurveillanceSimulation = () => {
       const screenY = centerY + pos.y;
       const isObserver = observerSats.includes(idx);
       
-      // Determine observer color
+      // Determine observer color - matching detection panels and FOV cones
       let observerColor = '#3b82f6';
       let observerStroke = '#2563eb';
       if (isObserver) {
         const obsIndex = observerSats.indexOf(idx);
         const colors = [
-          { fill: '#22c55e', stroke: '#16a34a' },
-          { fill: '#3b82f6', stroke: '#2563eb' },
-          { fill: '#a855f7', stroke: '#9333ea' }
+          { fill: '#22c55e', stroke: '#16a34a' },     // Green - SAT-1
+          { fill: '#3b82f6', stroke: '#2563eb' },     // Blue - SAT-2
+          { fill: '#a855f7', stroke: '#9333ea' },     // Purple - SAT-3
+          { fill: '#eab308', stroke: '#ca8a04' },     // Yellow - SAT-O1
+          { fill: '#06b6d4', stroke: '#0891b2' },     // Cyan - SAT-O2
+          { fill: '#ec4899', stroke: '#db2777' },     // Pink - SAT-O3
+          { fill: '#f97316', stroke: '#ea580c' },     // Orange - SAT-O4
+          { fill: '#14b8a6', stroke: '#0d9488' },     // Teal - SAT-O5
+          { fill: '#6366f1', stroke: '#4f46e5' },     // Indigo - SAT-O6
+          { fill: '#f43f5e', stroke: '#e11d48' },     // Rose - SAT-O7
+          { fill: '#84cc16', stroke: '#65a30d' }      // Lime - SAT-O8
         ];
         observerColor = colors[obsIndex].fill;
         observerStroke = colors[obsIndex].stroke;
@@ -551,29 +671,39 @@ const SpaceSurveillanceSimulation = () => {
           ctx.fill();
         }
         
-        // Draw beacon range to all observers
-        if (!isObserver) {
-          observerSats.forEach(obsIdx => {
-            const observer = satellites[obsIdx];
-            const observerPos = getPosition(observer, time);
-            const distance = Math.sqrt(
-              Math.pow(pos.x - observerPos.x, 2) + 
-              Math.pow(pos.y - observerPos.y, 2)
-            );
-            const inFOV = isInFOV(observerPos, pos, observerPos.angle, config.cameraFOV);
-            
-            if (inFOV && distance < config.beaconRange && beaconVisible) {
-              ctx.strokeStyle = 'rgba(220, 38, 38, 0.4)';
-              ctx.lineWidth = 1;
-              ctx.setLineDash([5, 3]);
-              ctx.beginPath();
-              ctx.moveTo(centerX + observerPos.x, centerY + observerPos.y);
-              ctx.lineTo(screenX, screenY);
-              ctx.stroke();
-              ctx.setLineDash([]);
-            }
-          });
-        }
+        // Draw beacon range to all observers (observers can detect other observers' beacons)
+        // Only draw if observer's FOV is enabled and not blocked by Earth
+        observerSats.forEach(obsIdx => {
+          const observer = satellites[obsIdx];
+          // Skip if this is the same satellite
+          if (observer === sat) return;
+          
+          const observerPos = getPosition(observer, time);
+          const distance = Math.sqrt(
+            Math.pow(pos.x - observerPos.x, 2) + 
+            Math.pow(pos.y - observerPos.y, 2)
+          );
+          const isOuterOrbit = observer.orbitType === 'outer';
+          const fovAngle = isOuterOrbit ? observerPos.angle + Math.PI : observerPos.angle;
+          const inFOV = isInFOV(observerPos, pos, fovAngle, config.cameraFOV);
+          
+          // Check if this observer's FOV is enabled
+          const isFOVEnabled = isOuterOrbit ? showSatOFOV : showTracksatFOV;
+          
+          // Check if line of sight is blocked by Earth
+          const blocked = isBlockedByEarth(observerPos, pos, config.earthRadius);
+          
+          if (inFOV && distance < config.beaconRange && beaconVisible && isFOVEnabled && !blocked) {
+            ctx.strokeStyle = 'rgba(220, 38, 38, 0.4)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 3]);
+            ctx.beginPath();
+            ctx.moveTo(centerX + observerPos.x, centerY + observerPos.y);
+            ctx.lineTo(screenX, screenY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+          }
+        });
       }
       
       // Label
@@ -587,96 +717,7 @@ const SpaceSurveillanceSimulation = () => {
       }
     });
     
-    // Draw legend
-    drawLegend(ctx, width, height);
-    
-  }, [time, observerSats, satellites, debris, canvasSize]);
-
-  const drawLegend = (ctx, width, height) => {
-    const x = 20;
-    const y = 20;
-    
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.fillRect(x - 10, y - 10, 280, 210);
-    
-    ctx.font = 'bold 14px sans-serif';
-    ctx.fillStyle = '#fff';
-    ctx.fillText('Dual-Camera SSA System', x, y + 10);
-    
-    ctx.font = '12px sans-serif';
-    
-    // Observer satellites
-    const obsColors = ['#22c55e', '#3b82f6', '#a855f7'];
-    obsColors.forEach((color, idx) => {
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(x + idx * 25, y + 35, 5, 0, Math.PI * 2);
-      ctx.fill();
-    });
-    ctx.fillStyle = '#fff';
-    ctx.fillText('Observer Satellites', x + 80, y + 40);
-    
-    // Beaconed satellite
-    ctx.fillStyle = '#60a5fa';
-    ctx.beginPath();
-    ctx.arc(x, y + 60, 5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#dc2626';
-    ctx.beginPath();
-    ctx.arc(x, y + 60, 12, 0, Math.PI * 2);
-    ctx.globalAlpha = 0.3;
-    ctx.fill();
-    ctx.globalAlpha = 1.0;
-    ctx.fillStyle = '#fff';
-    ctx.fillText('Satellite w/ IR Beacon (850nm)', x + 20, y + 65);
-    
-    // Debris
-    ctx.fillStyle = '#fbbf24';
-    ctx.beginPath();
-    ctx.arc(x, y + 85, 3, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#fff';
-    ctx.fillText('Debris (sun glint)', x + 20, y + 90);
-    
-    // Orbit directions
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '11px sans-serif';
-    ctx.fillText('Inner orbit: Clockwise →', x, y + 110);
-    ctx.fillText('Outer orbit: Counter-clockwise ←', x, y + 125);
-    
-    // FOV
-    ctx.strokeStyle = 'rgba(34, 197, 94, 0.5)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(x, y + 145);
-    ctx.lineTo(x + 30, y + 135);
-    ctx.lineTo(x + 30, y + 155);
-    ctx.closePath();
-    ctx.stroke();
-    ctx.fillStyle = '#fff';
-    ctx.font = '12px sans-serif';
-    ctx.fillText('Camera FOV', x + 40, y + 150);
-    
-    // IR detection
-    ctx.strokeStyle = '#dc2626';
-    ctx.setLineDash([5, 3]);
-    ctx.beginPath();
-    ctx.moveTo(x, y + 170);
-    ctx.lineTo(x + 30, y + 170);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = '#fff';
-    ctx.fillText('IR Beacon Detection', x + 40, y + 175);
-    
-    // Glint detection
-    ctx.strokeStyle = 'rgba(251, 191, 36, 0.5)';
-    ctx.beginPath();
-    ctx.moveTo(x, y + 195);
-    ctx.lineTo(x + 30, y + 195);
-    ctx.stroke();
-    ctx.fillStyle = '#fff';
-    ctx.fillText('Sun Glint Detection', x + 40, y + 200);
-  };
+  }, [time, observerSats, satellites, debris, canvasSize, showTracksatFOV, showSatOFOV]);
 
   const formatRange = (range) => {
     if (range === null || range === undefined) return 'N/A';
@@ -777,6 +818,58 @@ const SpaceSurveillanceSimulation = () => {
             <div style={{ marginLeft: '20px', color: '#94a3b8', fontSize: '14px' }}>
               Time: {Math.round(time)}s
             </div>
+
+            <div style={{ marginLeft: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <input
+                type="checkbox"
+                id="tracksatFOVToggle"
+                checked={showTracksatFOV}
+                onChange={(e) => setShowTracksatFOV(e.target.checked)}
+                style={{
+                  width: '16px',
+                  height: '16px',
+                  cursor: 'pointer',
+                  accentColor: '#22c55e'
+                }}
+              />
+              <label 
+                htmlFor="tracksatFOVToggle" 
+                style={{ 
+                  color: '#94a3b8', 
+                  fontSize: '14px', 
+                  cursor: 'pointer',
+                  userSelect: 'none'
+                }}
+              >
+                Tracksat FOV
+              </label>
+            </div>
+
+            <div style={{ marginLeft: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <input
+                type="checkbox"
+                id="satOFOVToggle"
+                checked={showSatOFOV}
+                onChange={(e) => setShowSatOFOV(e.target.checked)}
+                style={{
+                  width: '16px',
+                  height: '16px',
+                  cursor: 'pointer',
+                  accentColor: '#eab308'
+                }}
+              />
+              <label 
+                htmlFor="satOFOVToggle" 
+                style={{ 
+                  color: '#94a3b8', 
+                  fontSize: '14px', 
+                  cursor: 'pointer',
+                  userSelect: 'none'
+                }}
+              >
+                SAT-O FOV
+              </label>
+            </div>
           </div>
 
           <div style={{ marginTop: '15px', display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
@@ -816,6 +909,94 @@ const SpaceSurveillanceSimulation = () => {
             >
               Auto Fit
             </button>
+          </div>
+
+          {/* Legend Section */}
+          <div style={{ marginTop: '20px', background: '#0f172a', borderRadius: '8px', padding: '15px', border: '1px solid #334155' }}>
+            <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '12px' }}>
+              Legend
+            </h4>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', fontSize: '12px' }}>
+              {/* Left column */}
+              <div>
+                {/* Observer satellites */}
+                <div style={{ marginBottom: '10px' }}>
+                  <div style={{ color: '#fff', fontWeight: '600', marginBottom: '6px' }}>All Satellites (11 observers)</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '4px' }}>
+                    {[
+                      { color: '#22c55e', name: '1' },
+                      { color: '#3b82f6', name: '2' },
+                      { color: '#a855f7', name: '3' },
+                      { color: '#eab308', name: 'O1' },
+                      { color: '#06b6d4', name: 'O2' },
+                      { color: '#ec4899', name: 'O3' },
+                      { color: '#f97316', name: 'O4' },
+                      { color: '#14b8a6', name: 'O5' }
+                    ].map((sat, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: sat.color }}></div>
+                        <span style={{ color: '#94a3b8', fontSize: '10px' }}>{sat.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ color: '#94a3b8', fontSize: '11px', marginTop: '4px' }}>
+                    • Tracksat-1,2,3: Inner orbit, FOV outward
+                  </div>
+                  <div style={{ color: '#94a3b8', fontSize: '11px' }}>
+                    • SAT-O1-8: Outer orbit, FOV inward
+                  </div>
+                </div>
+
+                {/* Other elements */}
+                <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#60a5fa', marginRight: '4px' }}></div>
+                    <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: 'rgba(220, 38, 38, 0.3)', marginLeft: '-8px' }}></div>
+                  </div>
+                  <span style={{ color: '#cbd5e1' }}>Satellite w/ IR Beacon (850nm)</span>
+                </div>
+
+                <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#fbbf24' }}></div>
+                  <span style={{ color: '#cbd5e1' }}>Debris (sun glint)</span>
+                </div>
+
+                <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#6b7280' }}></div>
+                  <span style={{ color: '#cbd5e1' }}>Debris (no glint)</span>
+                </div>
+              </div>
+
+              {/* Right column */}
+              <div>
+                {/* Orbit directions */}
+                <div style={{ marginBottom: '10px' }}>
+                  <div style={{ color: '#fff', fontWeight: '600', marginBottom: '6px' }}>Orbit Directions</div>
+                  <div style={{ color: '#94a3b8', fontSize: '11px', marginBottom: '3px' }}>
+                    • Inner orbit: Clockwise →
+                  </div>
+                  <div style={{ color: '#94a3b8', fontSize: '11px' }}>
+                    • Outer orbit: Counter-clockwise ←
+                  </div>
+                </div>
+
+                {/* Visual indicators */}
+                <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '24px', height: '16px', background: 'rgba(34, 197, 94, 0.1)', border: '2px solid rgba(34, 197, 94, 0.3)', borderRadius: '2px' }}></div>
+                  <span style={{ color: '#cbd5e1' }}>Camera FOV</span>
+                </div>
+
+                <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '24px', height: '2px', background: '#dc2626', opacity: 0.6, borderTop: '1px dashed #dc2626' }}></div>
+                  <span style={{ color: '#cbd5e1' }}>IR Beacon Detection</span>
+                </div>
+
+                <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '24px', height: '2px', background: 'rgba(251, 191, 36, 0.5)' }}></div>
+                  <span style={{ color: '#cbd5e1' }}>Sun Glint Detection</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -862,159 +1043,321 @@ const SpaceSurveillanceSimulation = () => {
         </div>
       </div>
 
-      {/* Bottom row: Detection data for 3 satellites side by side */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '20px' }}>
-        {observerSats.map((obsIdx, idx) => {
-          const sat = satellites[obsIdx];
-          const satDetectionData = detectionData[obsIdx] || { starTracker: [], irCamera: [], rangeEstimates: [] };
-          const colors = [
-            { name: 'Green', color: '#22c55e', bg: 'rgba(34, 197, 94, 0.1)' },
-            { name: 'Blue', color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.1)' },
-            { name: 'Purple', color: '#a855f7', bg: 'rgba(168, 85, 247, 0.1)' }
-          ];
-          const colorTheme = colors[idx];
+      {/* Bottom row: Detection data organized by satellite type */}
+      
+      {/* Tracksat row - 3 columns */}
+      <div style={{ marginBottom: '15px' }}>
+        <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '10px', color: '#22c55e', paddingLeft: '5px' }}>
+          Tracksat Series (Inner Orbit)
+        </h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px' }}>
+          {observerSats.slice(0, 3).map((obsIdx, idx) => {
+            const sat = satellites[obsIdx];
+            const satDetectionData = detectionData[obsIdx] || { starTracker: [], irCamera: [], rangeEstimates: [] };
+            
+            const colors = [
+              { name: 'Green', color: '#22c55e', bg: 'rgba(34, 197, 94, 0.1)' },      // Tracksat-1
+              { name: 'Blue', color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.1)' },      // Tracksat-2
+              { name: 'Purple', color: '#a855f7', bg: 'rgba(168, 85, 247, 0.1)' }     // Tracksat-3
+            ];
+            const colorTheme = colors[idx];
 
-          return (
-            <div key={obsIdx} style={{ background: '#1e293b', borderRadius: '8px', padding: '20px', border: `2px solid ${colorTheme.color}` }}>
-              <h2 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '15px', color: colorTheme.color, textAlign: 'center' }}>
-                {sat.id} Observer
-              </h2>
+            return (
+              <div key={obsIdx} style={{ background: '#1e293b', borderRadius: '8px', padding: '15px', border: `2px solid ${colorTheme.color}` }}>
+                <h2 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: colorTheme.color, textAlign: 'center' }}>
+                  {sat.id}
+                </h2>
 
-              {/* Star Tracker */}
-              <div style={{ marginBottom: '15px' }}>
-                <h3 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '10px', color: '#60a5fa', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span>Star Tracker</span>
-                  <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 'normal' }}>
-                    {satDetectionData.starTracker.length} obj
-                  </span>
-                </h3>
-                <div style={{ background: '#0f172a', borderRadius: '4px', padding: '10px', height: '180px', overflowY: 'auto' }}>
-                  {satDetectionData.starTracker.length === 0 ? (
-                    <div style={{ color: '#64748b', fontSize: '12px', textAlign: 'center', paddingTop: '70px' }}>
-                      No objects in FOV
-                    </div>
-                  ) : (
-                    satDetectionData.starTracker.slice(0, 6).map((det, i) => (
-                      <div 
-                        key={i}
-                        style={{
-                          padding: '6px 8px',
-                          background: '#1e293b',
-                          borderRadius: '3px',
-                          marginBottom: '5px',
-                          fontSize: '11px'
-                        }}
-                      >
-                        <div style={{ fontWeight: '600', color: '#fff', marginBottom: '2px' }}>{det.id}</div>
-                        <div style={{ color: '#94a3b8', fontSize: '10px' }}>
-                          {det.type} • {(det.angularPosition * 180 / Math.PI).toFixed(1)}°
-                        </div>
+                {/* Star Tracker */}
+                <div style={{ marginBottom: '12px' }}>
+                  <h3 style={{ fontSize: '12px', fontWeight: '600', marginBottom: '8px', color: '#60a5fa', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span>Star Tracker</span>
+                    <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 'normal' }}>
+                      {satDetectionData.starTracker.length} obj
+                    </span>
+                  </h3>
+                  <div style={{ background: '#0f172a', borderRadius: '4px', padding: '8px', height: '120px', overflowY: 'auto' }}>
+                    {satDetectionData.starTracker.length === 0 ? (
+                      <div style={{ color: '#64748b', fontSize: '11px', textAlign: 'center', paddingTop: '45px' }}>
+                        No objects
                       </div>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              {/* IR Camera */}
-              <div style={{ marginBottom: '15px' }}>
-                <h3 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '10px', color: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span>IR Camera (850nm)</span>
-                  <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 'normal' }}>
-                    {satDetectionData.irCamera.length} det
-                  </span>
-                </h3>
-                <div style={{ background: '#0f172a', borderRadius: '4px', padding: '10px', height: '180px', overflowY: 'auto' }}>
-                  {satDetectionData.irCamera.length === 0 ? (
-                    <div style={{ color: '#64748b', fontSize: '12px', textAlign: 'center', paddingTop: '70px' }}>
-                      No beacons detected
-                    </div>
-                  ) : (
-                    satDetectionData.irCamera.slice(0, 6).map((det, i) => (
-                      <div 
-                        key={i}
-                        style={{
-                          padding: '6px 8px',
-                          background: '#1e293b',
-                          borderRadius: '3px',
-                          marginBottom: '5px',
-                          fontSize: '11px'
-                        }}
-                      >
-                        <div style={{ fontWeight: '600', color: '#fff', marginBottom: '2px' }}>{det.id}</div>
-                        <div style={{ color: '#94a3b8', fontSize: '10px' }}>
-                          Signal: {(det.beaconStrength * 100).toFixed(0)}%
-                          {det.modulation > 0 ? ` • ${det.modulation}Hz` : ' • Glint'}
+                    ) : (
+                      satDetectionData.starTracker.slice(0, 4).map((det, i) => (
+                        <div 
+                          key={i}
+                          style={{
+                            padding: '4px 6px',
+                            background: '#1e293b',
+                            borderRadius: '3px',
+                            marginBottom: '4px',
+                            fontSize: '10px'
+                          }}
+                        >
+                          <div style={{ fontWeight: '600', color: '#fff', marginBottom: '1px' }}>{det.id}</div>
+                          <div style={{ color: '#94a3b8', fontSize: '9px' }}>
+                            {det.type} • {(det.angularPosition * 180 / Math.PI).toFixed(1)}°
+                          </div>
                         </div>
-                      </div>
-                    ))
-                  )}
+                      ))
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              {/* Range Estimates */}
-              <div>
-                <h3 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '10px', color: '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span>Range Estimates</span>
-                  <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 'normal' }}>
-                    {satDetectionData.rangeEstimates.length} est
-                  </span>
-                </h3>
-                <div style={{ background: '#0f172a', borderRadius: '4px', padding: '10px', height: '280px', overflowY: 'auto' }}>
-                  {satDetectionData.rangeEstimates.length === 0 ? (
-                    <div style={{ color: '#64748b', fontSize: '12px', textAlign: 'center', paddingTop: '120px' }}>
-                      No range estimates
-                    </div>
-                  ) : (
-                    satDetectionData.rangeEstimates.slice(0, 4).map((est, i) => (
-                      <div 
-                        key={i}
-                        style={{
-                          padding: '8px',
-                          background: '#1e293b',
-                          borderRadius: '3px',
-                          marginBottom: '6px',
-                          fontSize: '10px'
-                        }}
-                      >
-                        <div style={{ fontWeight: '600', color: '#fff', marginBottom: '5px', fontSize: '11px' }}>{est.id}</div>
-                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                          <tbody>
-                            <tr>
-                              <td style={{ color: '#94a3b8', padding: '1px 0' }}>Actual:</td>
-                              <td style={{ color: '#fff', textAlign: 'right', padding: '1px 0' }}>
-                                {formatRange(est.actual)}
-                              </td>
-                            </tr>
-                            {est.photometric && (
+                {/* IR Camera */}
+                <div style={{ marginBottom: '12px' }}>
+                  <h3 style={{ fontSize: '12px', fontWeight: '600', marginBottom: '8px', color: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span>IR (850nm)</span>
+                    <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 'normal' }}>
+                      {satDetectionData.irCamera.length} det
+                    </span>
+                  </h3>
+                  <div style={{ background: '#0f172a', borderRadius: '4px', padding: '8px', height: '120px', overflowY: 'auto' }}>
+                    {satDetectionData.irCamera.length === 0 ? (
+                      <div style={{ color: '#64748b', fontSize: '11px', textAlign: 'center', paddingTop: '45px' }}>
+                        No beacons
+                      </div>
+                    ) : (
+                      satDetectionData.irCamera.slice(0, 4).map((det, i) => (
+                        <div 
+                          key={i}
+                          style={{
+                            padding: '4px 6px',
+                            background: '#1e293b',
+                            borderRadius: '3px',
+                            marginBottom: '4px',
+                            fontSize: '10px'
+                          }}
+                        >
+                          <div style={{ fontWeight: '600', color: '#fff', marginBottom: '1px' }}>{det.id}</div>
+                          <div style={{ color: '#94a3b8', fontSize: '9px' }}>
+                            {(det.beaconStrength * 100).toFixed(0)}%
+                            {det.modulation > 0 ? ` • ${det.modulation}Hz` : ' • Glint'}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* Range Estimates */}
+                <div>
+                  <h3 style={{ fontSize: '12px', fontWeight: '600', marginBottom: '8px', color: '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span>Ranges</span>
+                    <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 'normal' }}>
+                      {satDetectionData.rangeEstimates.length}
+                    </span>
+                  </h3>
+                  <div style={{ background: '#0f172a', borderRadius: '4px', padding: '8px', height: '150px', overflowY: 'auto' }}>
+                    {satDetectionData.rangeEstimates.length === 0 ? (
+                      <div style={{ color: '#64748b', fontSize: '11px', textAlign: 'center', paddingTop: '60px' }}>
+                        No estimates
+                      </div>
+                    ) : (
+                      satDetectionData.rangeEstimates.slice(0, 3).map((est, i) => (
+                        <div 
+                          key={i}
+                          style={{
+                            padding: '6px',
+                            background: '#1e293b',
+                            borderRadius: '3px',
+                            marginBottom: '4px',
+                            fontSize: '9px'
+                          }}
+                        >
+                          <div style={{ fontWeight: '600', color: '#fff', marginBottom: '3px', fontSize: '10px' }}>{est.id}</div>
+                          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <tbody>
                               <tr>
-                                <td style={{ color: '#94a3b8', padding: '1px 0' }}>Photo:</td>
-                                <td style={{ color: '#fbbf24', textAlign: 'right', padding: '1px 0' }}>
-                                  {formatRange(est.photometric)} <span style={{color: '#64748b'}}>({calculateError(est.actual, est.photometric)})</span>
+                                <td style={{ color: '#94a3b8', padding: '1px 0', fontSize: '9px' }}>Act:</td>
+                                <td style={{ color: '#fff', textAlign: 'right', padding: '1px 0', fontSize: '9px' }}>
+                                  {formatRange(est.actual)}
                                 </td>
                               </tr>
-                            )}
-                            <tr>
-                              <td style={{ color: '#94a3b8', padding: '1px 0' }}>Geo:</td>
-                              <td style={{ color: '#60a5fa', textAlign: 'right', padding: '1px 0' }}>
-                                {formatRange(est.geometric)} <span style={{color: '#64748b'}}>({calculateError(est.actual, est.geometric)})</span>
-                              </td>
-                            </tr>
-                            <tr>
-                              <td style={{ color: '#94a3b8', padding: '1px 0', fontWeight: '600' }}>Fused:</td>
-                              <td style={{ color: '#22c55e', textAlign: 'right', padding: '1px 0', fontWeight: '600' }}>
-                                {formatRange(est.combined)} <span style={{color: '#64748b', fontWeight: 'normal'}}>({calculateError(est.actual, est.combined)})</span>
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                    ))
-                  )}
+                              {est.photometric && (
+                                <tr>
+                                  <td style={{ color: '#94a3b8', padding: '1px 0', fontSize: '9px' }}>Pho:</td>
+                                  <td style={{ color: '#fbbf24', textAlign: 'right', padding: '1px 0', fontSize: '9px' }}>
+                                    {formatRange(est.photometric)} <span style={{color: '#64748b', fontSize: '8px'}}>({calculateError(est.actual, est.photometric)})</span>
+                                  </td>
+                                </tr>
+                              )}
+                              <tr>
+                                <td style={{ color: '#94a3b8', padding: '1px 0', fontSize: '9px' }}>Geo:</td>
+                                <td style={{ color: '#60a5fa', textAlign: 'right', padding: '1px 0', fontSize: '9px' }}>
+                                  {formatRange(est.geometric)} <span style={{color: '#64748b', fontSize: '8px'}}>({calculateError(est.actual, est.geometric)})</span>
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
+      </div>
+
+      {/* SAT-O row - 4 columns x 2 rows */}
+      <div style={{ marginBottom: '20px' }}>
+        <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '10px', color: '#eab308', paddingLeft: '5px' }}>
+          SAT-O Series (Outer Orbit - FOV Inward)
+        </h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px' }}>
+          {observerSats.slice(3, 11).map((obsIdx, idx) => {
+            const sat = satellites[obsIdx];
+            const satDetectionData = detectionData[obsIdx] || { starTracker: [], irCamera: [], rangeEstimates: [] };
+            
+            const colors = [
+              { name: 'Yellow', color: '#eab308', bg: 'rgba(234, 179, 8, 0.1)' },     // SAT-O1
+              { name: 'Cyan', color: '#06b6d4', bg: 'rgba(6, 182, 212, 0.1)' },       // SAT-O2
+              { name: 'Pink', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.1)' },      // SAT-O3
+              { name: 'Orange', color: '#f97316', bg: 'rgba(249, 115, 22, 0.1)' },    // SAT-O4
+              { name: 'Teal', color: '#14b8a6', bg: 'rgba(20, 184, 166, 0.1)' },      // SAT-O5
+              { name: 'Indigo', color: '#6366f1', bg: 'rgba(99, 102, 241, 0.1)' },    // SAT-O6
+              { name: 'Rose', color: '#f43f5e', bg: 'rgba(244, 63, 94, 0.1)' },       // SAT-O7
+              { name: 'Lime', color: '#84cc16', bg: 'rgba(132, 204, 22, 0.1)' }       // SAT-O8
+            ];
+            const colorTheme = colors[idx];
+
+            return (
+              <div key={obsIdx} style={{ background: '#1e293b', borderRadius: '8px', padding: '15px', border: `2px solid ${colorTheme.color}` }}>
+                <h2 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: colorTheme.color, textAlign: 'center' }}>
+                  {sat.id}
+                </h2>
+
+                {/* Star Tracker */}
+                <div style={{ marginBottom: '12px' }}>
+                  <h3 style={{ fontSize: '12px', fontWeight: '600', marginBottom: '8px', color: '#60a5fa', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span>Star Tracker</span>
+                    <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 'normal' }}>
+                      {satDetectionData.starTracker.length} obj
+                    </span>
+                  </h3>
+                  <div style={{ background: '#0f172a', borderRadius: '4px', padding: '8px', height: '120px', overflowY: 'auto' }}>
+                    {satDetectionData.starTracker.length === 0 ? (
+                      <div style={{ color: '#64748b', fontSize: '11px', textAlign: 'center', paddingTop: '45px' }}>
+                        No objects
+                      </div>
+                    ) : (
+                      satDetectionData.starTracker.slice(0, 4).map((det, i) => (
+                        <div 
+                          key={i}
+                          style={{
+                            padding: '4px 6px',
+                            background: '#1e293b',
+                            borderRadius: '3px',
+                            marginBottom: '4px',
+                            fontSize: '10px'
+                          }}
+                        >
+                          <div style={{ fontWeight: '600', color: '#fff', marginBottom: '1px' }}>{det.id}</div>
+                          <div style={{ color: '#94a3b8', fontSize: '9px' }}>
+                            {det.type} • {(det.angularPosition * 180 / Math.PI).toFixed(1)}°
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* IR Camera */}
+                <div style={{ marginBottom: '12px' }}>
+                  <h3 style={{ fontSize: '12px', fontWeight: '600', marginBottom: '8px', color: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span>IR (850nm)</span>
+                    <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 'normal' }}>
+                      {satDetectionData.irCamera.length} det
+                    </span>
+                  </h3>
+                  <div style={{ background: '#0f172a', borderRadius: '4px', padding: '8px', height: '120px', overflowY: 'auto' }}>
+                    {satDetectionData.irCamera.length === 0 ? (
+                      <div style={{ color: '#64748b', fontSize: '11px', textAlign: 'center', paddingTop: '45px' }}>
+                        No beacons
+                      </div>
+                    ) : (
+                      satDetectionData.irCamera.slice(0, 4).map((det, i) => (
+                        <div 
+                          key={i}
+                          style={{
+                            padding: '4px 6px',
+                            background: '#1e293b',
+                            borderRadius: '3px',
+                            marginBottom: '4px',
+                            fontSize: '10px'
+                          }}
+                        >
+                          <div style={{ fontWeight: '600', color: '#fff', marginBottom: '1px' }}>{det.id}</div>
+                          <div style={{ color: '#94a3b8', fontSize: '9px' }}>
+                            {(det.beaconStrength * 100).toFixed(0)}%
+                            {det.modulation > 0 ? ` • ${det.modulation}Hz` : ' • Glint'}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* Range Estimates */}
+                <div>
+                  <h3 style={{ fontSize: '12px', fontWeight: '600', marginBottom: '8px', color: '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span>Ranges</span>
+                    <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 'normal' }}>
+                      {satDetectionData.rangeEstimates.length}
+                    </span>
+                  </h3>
+                  <div style={{ background: '#0f172a', borderRadius: '4px', padding: '8px', height: '150px', overflowY: 'auto' }}>
+                    {satDetectionData.rangeEstimates.length === 0 ? (
+                      <div style={{ color: '#64748b', fontSize: '11px', textAlign: 'center', paddingTop: '60px' }}>
+                        No estimates
+                      </div>
+                    ) : (
+                      satDetectionData.rangeEstimates.slice(0, 3).map((est, i) => (
+                        <div 
+                          key={i}
+                          style={{
+                            padding: '6px',
+                            background: '#1e293b',
+                            borderRadius: '3px',
+                            marginBottom: '4px',
+                            fontSize: '9px'
+                          }}
+                        >
+                          <div style={{ fontWeight: '600', color: '#fff', marginBottom: '3px', fontSize: '10px' }}>{est.id}</div>
+                          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <tbody>
+                              <tr>
+                                <td style={{ color: '#94a3b8', padding: '1px 0', fontSize: '9px' }}>Act:</td>
+                                <td style={{ color: '#fff', textAlign: 'right', padding: '1px 0', fontSize: '9px' }}>
+                                  {formatRange(est.actual)}
+                                </td>
+                              </tr>
+                              {est.photometric && (
+                                <tr>
+                                  <td style={{ color: '#94a3b8', padding: '1px 0', fontSize: '9px' }}>Pho:</td>
+                                  <td style={{ color: '#fbbf24', textAlign: 'right', padding: '1px 0', fontSize: '9px' }}>
+                                    {formatRange(est.photometric)} <span style={{color: '#64748b', fontSize: '8px'}}>({calculateError(est.actual, est.photometric)})</span>
+                                  </td>
+                                </tr>
+                              )}
+                              <tr>
+                                <td style={{ color: '#94a3b8', padding: '1px 0', fontSize: '9px' }}>Geo:</td>
+                                <td style={{ color: '#60a5fa', textAlign: 'right', padding: '1px 0', fontSize: '9px' }}>
+                                  {formatRange(est.geometric)} <span style={{color: '#64748b', fontSize: '8px'}}>({calculateError(est.actual, est.geometric)})</span>
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Ranging Methods Explanation */}
@@ -1139,16 +1482,292 @@ const SpaceSurveillanceSimulation = () => {
           </div>
         </div>
       </div>
+
+      {/* Range vs Time Plot */}
+      <div style={{ background: '#1e293b', borderRadius: '8px', padding: '25px', marginTop: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+          <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#fff', margin: 0 }}>
+            Range vs Time Plot
+          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <label style={{ color: '#94a3b8', fontSize: '14px' }}>Select Object:</label>
+            <select
+              value={selectedPlotObject}
+              onChange={(e) => {
+                setSelectedPlotObject(e.target.value);
+                setRangeHistory({}); // Clear history when changing object
+              }}
+              style={{
+                padding: '6px 12px',
+                background: '#0f172a',
+                color: '#fff',
+                border: '1px solid #334155',
+                borderRadius: '4px',
+                fontSize: '14px',
+                cursor: 'pointer'
+              }}
+            >
+              <optgroup label="Tracksat Series">
+                {satellites.slice(0, 3).map((sat) => (
+                  <option key={sat.id} value={sat.id}>{sat.id}</option>
+                ))}
+              </optgroup>
+              <optgroup label="SAT-O Series">
+                {satellites.slice(3, 11).map((sat) => (
+                  <option key={sat.id} value={sat.id}>{sat.id}</option>
+                ))}
+              </optgroup>
+              <optgroup label="Inner Orbit Debris">
+                {debris.filter(d => d.orbitType === 'inner').map((deb) => (
+                  <option key={deb.id} value={deb.id}>{deb.id}</option>
+                ))}
+              </optgroup>
+              <optgroup label="Outer Orbit Debris">
+                {debris.filter(d => d.orbitType === 'outer').map((deb) => (
+                  <option key={deb.id} value={deb.id}>{deb.id}</option>
+                ))}
+              </optgroup>
+            </select>
+
+            {/* Plotting toggle button */}
+            <button
+              onClick={() => setIsPlotting(!isPlotting)}
+              style={{
+                padding: '6px 16px',
+                background: isPlotting ? '#dc2626' : '#22c55e',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '500',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              {isPlotting ? <><Pause size={14} /> Stop Recording</> : <><Play size={14} /> Start Recording</>}
+            </button>
+
+            {/* Clear plot button */}
+            <button
+              onClick={() => setRangeHistory({})}
+              style={{
+                padding: '6px 16px',
+                background: '#3b82f6',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '500'
+              }}
+            >
+              Clear Plot
+            </button>
+          </div>
+        </div>
+
+        {/* Plot Area */}
+        <div style={{ background: '#0f172a', borderRadius: '8px', padding: '20px', height: '400px', position: 'relative' }}>
+          {Object.keys(rangeHistory).length === 0 ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#64748b', fontSize: '14px' }}>
+              Waiting for detection of {selectedPlotObject}...
+            </div>
+          ) : (
+            <svg width="100%" height="100%" viewBox="0 0 800 360" style={{ overflow: 'visible' }}>
+              {/* Grid lines */}
+              {[0, 1, 2, 3, 4].map(i => (
+                <line
+                  key={`grid-h-${i}`}
+                  x1="60"
+                  y1={40 + i * 70}
+                  x2="760"
+                  y2={40 + i * 70}
+                  stroke="#334155"
+                  strokeWidth="1"
+                  strokeDasharray="2,2"
+                />
+              ))}
+              {[0, 1, 2, 3, 4, 5, 6].map(i => (
+                <line
+                  key={`grid-v-${i}`}
+                  x1={60 + i * 116.67}
+                  y1="40"
+                  x2={60 + i * 116.67}
+                  y2="320"
+                  stroke="#334155"
+                  strokeWidth="1"
+                  strokeDasharray="2,2"
+                />
+              ))}
+
+              {/* Axes */}
+              <line x1="60" y1="320" x2="760" y2="320" stroke="#94a3b8" strokeWidth="2" />
+              <line x1="60" y1="40" x2="60" y2="320" stroke="#94a3b8" strokeWidth="2" />
+
+              {/* Y-axis label */}
+              <text x="20" y="180" fill="#cbd5e1" fontSize="14" textAnchor="middle" transform="rotate(-90, 20, 180)">
+                Range (km)
+              </text>
+
+              {/* X-axis label */}
+              <text x="410" y="355" fill="#cbd5e1" fontSize="14" textAnchor="middle">
+                Time (s)
+              </text>
+
+              {/* Plot data */}
+              {(() => {
+                // Calculate global min/max for consistent scaling
+                const allData = Object.values(rangeHistory).flat();
+                if (allData.length === 0) return null;
+                
+                const allRanges = allData.map(d => d.actual);
+                const allTimes = allData.map(d => d.time);
+                const globalMinRange = Math.min(...allRanges);
+                const globalMaxRange = Math.max(...allRanges);
+                const globalMinTime = Math.min(...allTimes);
+                const globalMaxTime = Math.max(...allTimes);
+                const rangeSpan = globalMaxRange - globalMinRange || 100;
+                const timeSpan = globalMaxTime - globalMinTime || 10;
+
+                return Object.entries(rangeHistory).map(([key, dataPoints]) => {
+                  if (dataPoints.length < 2) return null;
+
+                  // Extract observer ID by removing the selected object from the key
+                  // Key format: "ObserverId-TargetId"
+                  // Remove the target ID (selectedPlotObject) from the end
+                  const observerId = key.replace(`-${selectedPlotObject}`, '');
+
+                  const colorMap = {
+                    'Tracksat-1': '#22c55e',
+                    'Tracksat-2': '#3b82f6',
+                    'Tracksat-3': '#a855f7',
+                    'SAT-O1': '#eab308',
+                    'SAT-O2': '#06b6d4',
+                    'SAT-O3': '#ec4899',
+                    'SAT-O4': '#f97316',
+                    'SAT-O5': '#14b8a6',
+                    'SAT-O6': '#6366f1',
+                    'SAT-O7': '#f43f5e',
+                    'SAT-O8': '#84cc16'
+                  };
+                  const color = colorMap[observerId] || '#60a5fa';
+
+                  // Create path using global scale - break segments when there are gaps
+                  // If time gap is > 2 seconds, start a new path segment (M instead of L)
+                  const timeGapThreshold = 2; // seconds
+                  const pathData = dataPoints.map((d, i) => {
+                    const x = 60 + ((d.time - globalMinTime) / timeSpan) * 700;
+                    const y = 320 - ((d.actual - globalMinRange) / rangeSpan) * 280;
+                    
+                    // Start new segment if:
+                    // 1. First point
+                    // 2. Time gap from previous point is too large (detection was lost)
+                    if (i === 0) {
+                      return `M ${x} ${y}`;
+                    } else {
+                      const timeDiff = d.time - dataPoints[i - 1].time;
+                      if (timeDiff > timeGapThreshold) {
+                        return `M ${x} ${y}`; // Move without drawing line
+                      } else {
+                        return `L ${x} ${y}`; // Draw line
+                      }
+                    }
+                  }).join(' ');
+
+                  return (
+                    <g key={key}>
+                      <path
+                        d={pathData}
+                        fill="none"
+                        stroke={color}
+                        strokeWidth="2.5"
+                        opacity="0.9"
+                      />
+                      {/* Label */}
+                      <text
+                        x="770"
+                        y={320 - ((dataPoints[dataPoints.length - 1].actual - globalMinRange) / rangeSpan) * 280}
+                        fill={color}
+                        fontSize="12"
+                        fontWeight="600"
+                      >
+                        {observerId}
+                      </text>
+                    </g>
+                  );
+                });
+              })()}
+
+              {/* Y-axis ticks and labels */}
+              {(() => {
+                const allData = Object.values(rangeHistory).flat();
+                if (allData.length === 0) return null;
+                const allRanges = allData.map(d => d.actual);
+                const minRange = Math.min(...allRanges);
+                const maxRange = Math.max(...allRanges);
+                return [0, 1, 2, 3, 4].map(i => {
+                  const range = minRange + (maxRange - minRange) * (i / 4);
+                  return (
+                    <text
+                      key={`y-tick-${i}`}
+                      x="55"
+                      y={320 - i * 70}
+                      fill="#94a3b8"
+                      fontSize="11"
+                      textAnchor="end"
+                    >
+                      {Math.round(range)}
+                    </text>
+                  );
+                });
+              })()}
+
+              {/* X-axis ticks */}
+              {(() => {
+                const allData = Object.values(rangeHistory).flat();
+                if (allData.length === 0) return null;
+                const times = allData.map(d => d.time);
+                const minTime = Math.min(...times);
+                const maxTime = Math.max(...times);
+                return [0, 1, 2, 3, 4, 5, 6].map(i => {
+                  const t = minTime + (maxTime - minTime) * (i / 6);
+                  return (
+                    <text
+                      key={`x-tick-${i}`}
+                      x={60 + i * 116.67}
+                      y="340"
+                      fill="#94a3b8"
+                      fontSize="11"
+                      textAnchor="middle"
+                    >
+                      {Math.round(t)}
+                    </text>
+                  );
+                });
+              })()}
+            </svg>
+          )}
+        </div>
+
+        {/* Legend */}
+        <div style={{ marginTop: '15px', padding: '12px', background: '#0f172a', borderRadius: '6px' }}>
+          <div style={{ fontSize: '12px', color: '#cbd5e1' }}>
+            <strong style={{ color: '#fff' }}>Plot shows:</strong> Actual range from each observer to <strong style={{ color: '#60a5fa' }}>{selectedPlotObject}</strong> over time. 
+            Each colored line represents a different observer satellite detecting the selected object.
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
 
 
 
-
-        // Render the app
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<SpaceSurveillanceSimulation />);
-    </script>
+    // Render the component
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<SpaceSurveillanceSimulation />);
+  </script>
 </body>
 </html>

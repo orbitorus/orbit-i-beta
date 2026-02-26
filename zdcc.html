@@ -1,0 +1,1803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zero Debris Compliance Checker v2</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d0f14;
+  --surface: #13161e;
+  --surface2: #1a1e2a;
+  --surface3: #222736;
+  --border: #2a3045;
+  --border2: #363d55;
+  --pass: #2dd4a0;
+  --partial: #f5a623;
+  --fail: #f0476a;
+  --info: #5b9cf6;
+  --text: #dde3f0;
+  --text-dim: #6b7694;
+  --text-muted: #3d4560;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  min-height: 100vh;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* ── NAV TABS ── */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(13,15,20,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 0;
+}
+
+.nav-brand {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--pass);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 16px 24px 16px 0;
+  border-right: 1px solid var(--border);
+  margin-right: 8px;
+  white-space: nowrap;
+}
+
+.nav-tab {
+  padding: 16px 18px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  background: none;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  font-family: var(--sans);
+}
+.nav-tab:hover { color: var(--text); }
+.nav-tab.active { color: var(--pass); border-bottom-color: var(--pass); }
+
+.nav-spacer { flex: 1; }
+
+.version-badge {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+}
+
+/* ── PAGES ── */
+.page { display: none; }
+.page.active { display: block; }
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 24px 80px;
+}
+
+/* ── HERO ── */
+.hero {
+  padding: 48px 0 32px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 40px;
+}
+
+.hero-eyebrow {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--pass);
+  margin-bottom: 12px;
+}
+
+.hero h1 {
+  font-size: clamp(26px, 4vw, 44px);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.5px;
+  margin-bottom: 12px;
+}
+
+.hero p {
+  color: var(--text-dim);
+  max-width: 560px;
+  font-size: 15px;
+}
+
+.framework-pills {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+.pill {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 4px 10px;
+  border-radius: 3px;
+  letter-spacing: 0.5px;
+  border: 1px solid;
+}
+.pill-green { color: var(--pass); border-color: rgba(45,212,160,0.3); background: rgba(45,212,160,0.06); }
+.pill-blue  { color: var(--info); border-color: rgba(91,156,246,0.3); background: rgba(91,156,246,0.06); }
+.pill-orange{ color: var(--partial); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.06); }
+
+/* ── SECTION HEADERS ── */
+.section-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.section-head-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.section-head::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ── FORM ── */
+.form-block {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 28px;
+  margin-bottom: 16px;
+}
+
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.grid4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 14px; }
+@media(max-width:680px){ .grid2,.grid3,.grid4{ grid-template-columns:1fr; } }
+
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.field input, .field select {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+  padding: 9px 12px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  width: 100%;
+}
+.field input:focus, .field select:focus {
+  border-color: var(--pass);
+  box-shadow: 0 0 0 3px rgba(45,212,160,0.1);
+}
+.field select option { background: var(--surface2); }
+
+.field-hint {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: var(--mono);
+}
+
+.toggle-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.tog {
+  padding: 7px 12px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.tog:hover { border-color: var(--border2); color: var(--text); }
+.tog.on { background: rgba(45,212,160,0.1); border-color: rgba(45,212,160,0.4); color: var(--pass); }
+
+.run-btn {
+  width: 100%;
+  padding: 15px;
+  background: var(--pass);
+  border: none;
+  border-radius: 8px;
+  color: #0a1a14;
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.3px;
+  margin-top: 8px;
+}
+.run-btn:hover { background: #38f0b8; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(45,212,160,0.25); }
+.run-btn:active { transform: translateY(0); }
+
+.gap-mb { margin-bottom: 14px; }
+
+/* ── RESULTS ── */
+#resultsArea { display: none; }
+
+.score-banner {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 28px;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 28px;
+  margin-bottom: 16px;
+}
+
+@media(max-width:600px){ .score-banner{ grid-template-columns:1fr; } }
+
+.score-donut {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  flex-shrink: 0;
+}
+.score-donut svg { transform: rotate(-90deg); }
+.donut-track { fill: none; stroke: var(--surface3); stroke-width: 10; }
+.donut-fill  { fill: none; stroke-width: 10; stroke-linecap: round; transition: stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1); }
+.donut-center {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+.donut-num { font-size: 32px; font-weight: 700; line-height: 1; }
+.donut-pct { font-family: var(--mono); font-size: 10px; color: var(--text-dim); letter-spacing: 1px; }
+
+.score-info h2 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+.score-info p  { color: var(--text-dim); font-size: 13px; line-height: 1.6; }
+
+.verdict-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.risk-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.chip-pass    { background: rgba(45,212,160,0.12); color: var(--pass); border: 1px solid rgba(45,212,160,0.3); }
+.chip-partial { background: rgba(245,166,35,0.12); color: var(--partial); border: 1px solid rgba(245,166,35,0.3); }
+.chip-fail    { background: rgba(240,71,106,0.12); color: var(--fail); border: 1px solid rgba(240,71,106,0.3); }
+.chip-info    { background: rgba(91,156,246,0.12); color: var(--info); border: 1px solid rgba(91,156,246,0.3); }
+
+/* Category cards */
+.cats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+@media(max-width:780px){ .cats-grid{ grid-template-columns:1fr 1fr; } }
+@media(max-width:500px){ .cats-grid{ grid-template-columns:1fr; } }
+
+.cat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.cat-card:hover { border-color: var(--border2); transform: translateY(-1px); }
+.cat-card.expanded { border-color: var(--border2); }
+
+.cat-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
+.cat-icon-name { display: flex; align-items: center; gap: 8px; }
+.cat-icon { font-size: 20px; line-height: 1; }
+.cat-name { font-size: 13px; font-weight: 600; }
+.cat-score-num { font-family: var(--mono); font-size: 20px; font-weight: 700; }
+
+.cat-bar-bg { height: 3px; background: var(--surface3); border-radius: 2px; margin-bottom: 8px; }
+.cat-bar { height: 100%; border-radius: 2px; transition: width 1s cubic-bezier(.4,0,.2,1); width: 0; }
+
+.cat-status-row { display: flex; align-items: center; justify-content: space-between; }
+.cat-finding { font-size: 11px; color: var(--text-dim); line-height: 1.4; flex: 1; margin-right: 8px; }
+
+/* Rule breakdown inside expanded cat */
+.rule-breakdown {
+  display: none;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.cat-card.expanded .rule-breakdown { display: block; }
+
+.rule-row {
+  display: grid;
+  grid-template-columns: 16px 1fr auto auto;
+  gap: 8px;
+  align-items: start;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.rule-row:last-child { border-bottom: none; }
+
+.rule-icon { font-size: 11px; padding-top: 1px; }
+.rule-text { color: var(--text); line-height: 1.5; }
+.rule-ref { font-family: var(--mono); font-size: 10px; color: var(--text-muted); white-space: nowrap; }
+.rule-verdict { font-family: var(--mono); font-size: 10px; font-weight: 700; white-space: nowrap; }
+
+/* Gap & reco panels */
+.panels-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+@media(max-width:680px){ .panels-grid{ grid-template-columns:1fr; } }
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+}
+
+.panel-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-item {
+  display: flex;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  line-height: 1.5;
+  align-items: flex-start;
+}
+.panel-item:last-child { border-bottom: none; padding-bottom: 0; }
+.panel-dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+
+.reset-link {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  display: inline-block;
+  margin-top: 8px;
+}
+.reset-link:hover { color: var(--text); }
+
+/* ── RULES EXPLORER PAGE ── */
+.rules-page-grid {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+@media(max-width:700px){ .rules-page-grid{ grid-template-columns:1fr; } }
+
+.rules-sidebar {
+  position: sticky;
+  top: 60px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.rules-sidebar-item {
+  padding: 12px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-dim);
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.rules-sidebar-item:last-child { border-bottom: none; }
+.rules-sidebar-item:hover { color: var(--text); background: var(--surface2); }
+.rules-sidebar-item.active { color: var(--pass); background: rgba(45,212,160,0.05); }
+.rules-sidebar-item .count {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 10px;
+  background: var(--surface3);
+  padding: 1px 6px;
+  border-radius: 3px;
+  color: var(--text-muted);
+}
+
+.rules-main {}
+
+.rule-group { margin-bottom: 12px; }
+
+.rule-group-header {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px 10px 0 0;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rule-group-icon { font-size: 20px; }
+.rule-group-title { font-size: 14px; font-weight: 700; flex: 1; }
+.rule-group-source {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+}
+
+.rules-table {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  overflow: hidden;
+}
+
+.rules-table-header {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1.5fr;
+  gap: 0;
+  padding: 8px 20px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.rules-table-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1.5fr;
+  gap: 0;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+  align-items: start;
+}
+.rules-table-row:last-child { border-bottom: none; }
+.rules-table-row:hover { background: var(--surface2); }
+
+.rt-rule { font-size: 12px; line-height: 1.5; color: var(--text); }
+.rt-rule strong { color: var(--pass); font-family: var(--mono); font-size: 11px; }
+.rt-threshold { font-family: var(--mono); font-size: 11px; color: var(--partial); }
+.rt-ref { font-family: var(--mono); font-size: 10px; color: var(--text-dim); padding-top: 1px; }
+.rt-applies {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-style: italic;
+  line-height: 1.4;
+}
+
+/* Scoring weight visual */
+.weight-bar-wrap { display: flex; align-items: center; gap: 8px; }
+.weight-bar-bg { flex: 1; height: 4px; background: var(--surface3); border-radius: 2px; }
+.weight-bar-fill { height: 100%; background: var(--info); border-radius: 2px; }
+.weight-num { font-family: var(--mono); font-size: 10px; color: var(--text-dim); width: 28px; text-align: right; }
+
+/* ── SCORING PAGE ── */
+.scoring-table {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.scoring-table-header {
+  display: grid;
+  grid-template-columns: 2fr 80px 1fr 2fr;
+  padding: 10px 20px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  gap: 12px;
+}
+
+.scoring-table-row {
+  display: grid;
+  grid-template-columns: 2fr 80px 1fr 2fr;
+  padding: 13px 20px;
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+  align-items: start;
+}
+.scoring-table-row:last-child { border-bottom: none; }
+.scoring-table-row:hover { background: var(--surface2); }
+
+.st-name { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.st-weight { font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--info); }
+.st-levels { display: flex; flex-direction: column; gap: 3px; }
+.st-level { font-size: 11px; color: var(--text-dim); }
+.st-level span { font-family: var(--mono); }
+.st-rationale { font-size: 12px; color: var(--text-dim); line-height: 1.5; }
+
+@media(max-width:700px){
+  .scoring-table-header,.scoring-table-row{ grid-template-columns:1fr 60px; }
+  .st-levels,.st-rationale{ display:none; }
+}
+
+.callout {
+  background: rgba(45,212,160,0.05);
+  border: 1px solid rgba(45,212,160,0.2);
+  border-radius: 8px;
+  padding: 16px 20px;
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+.callout strong { color: var(--pass); }
+
+.divider { height: 1px; background: var(--border); margin: 28px 0; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-brand">⬡ ZD·CHECK</div>
+  <button class="nav-tab active" onclick="showPage('checker')">🛰 Mission Checker</button>
+  <button class="nav-tab" onclick="showPage('rules')">📋 Rules Explorer</button>
+  <button class="nav-tab" onclick="showPage('scoring')">⚖ Scoring Logic</button>
+  <div class="nav-spacer"></div>
+  <div class="version-badge">RULE-BASED · v2.0 · NO API</div>
+</nav>
+
+<!-- ══════════════════════════════════════════
+     PAGE 1: CHECKER
+══════════════════════════════════════════ -->
+<div class="page active" id="page-checker">
+<div class="container">
+
+  <div class="hero">
+    <div class="hero-eyebrow">Zero Debris Compliance Checker</div>
+    <h1>Mission Health Check</h1>
+    <p>Instant, deterministic compliance scoring against ESA and EU space debris regulations. No AI, no API — pure rule engine.</p>
+    <div class="framework-pills">
+      <span class="pill pill-green">ESA ESSB-ST-U-007 (Oct 2025)</span>
+      <span class="pill pill-green">ESA/ADMIN/IPOL(2023)1</span>
+      <span class="pill pill-blue">EU Space Act Draft 2025</span>
+      <span class="pill pill-orange">Zero Debris Charter</span>
+    </div>
+  </div>
+
+  <!-- FORM -->
+  <div id="formArea">
+
+    <div class="section-head"><span class="section-head-label">01 — Mission Profile</span></div>
+
+    <div class="form-block gap-mb">
+      <div class="grid3" style="margin-bottom:14px">
+        <div class="field">
+          <label>Mission Name</label>
+          <input type="text" id="f_name" placeholder="e.g. EarthWatch-1" />
+        </div>
+        <div class="field">
+          <label>Operator Type</label>
+          <select id="f_operator">
+            <option value="">— Select —</option>
+            <option value="esa">ESA Contribution</option>
+            <option value="eu_agency">EU Member State Agency</option>
+            <option value="eu_commercial">Commercial (EU-registered)</option>
+            <option value="non_eu">Commercial (non-EU)</option>
+            <option value="university">University / Research</option>
+            <option value="defence">Defence</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Number of Spacecraft</label>
+          <input type="number" id="f_num_sats" placeholder="1" min="1" />
+          <span class="field-hint">≥ 25 triggers constellation rules</span>
+        </div>
+      </div>
+
+      <div class="grid4">
+        <div class="field">
+          <label>Orbit Regime</label>
+          <select id="f_orbit" onchange="updateOrbitHints()">
+            <option value="">— Select —</option>
+            <option value="leo">LEO (200–2000 km)</option>
+            <option value="meo">MEO (2000–35,786 km)</option>
+            <option value="geo">GEO (35,786 km)</option>
+            <option value="heo">HEO / Highly Elliptical</option>
+            <option value="lunar">Lunar Orbit</option>
+            <option value="interplanetary">Interplanetary</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Mean Altitude (km)</label>
+          <input type="number" id="f_altitude" placeholder="e.g. 550" />
+        </div>
+        <div class="field">
+          <label>Spacecraft Mass (kg)</label>
+          <input type="number" id="f_mass" placeholder="e.g. 150" />
+        </div>
+        <div class="field">
+          <label>Design Lifetime (years)</label>
+          <input type="number" id="f_lifetime" placeholder="e.g. 5" step="0.5" />
+        </div>
+      </div>
+    </div>
+
+    <div class="section-head"><span class="section-head-label">02 — Post-Mission Disposal</span></div>
+
+    <div class="form-block gap-mb">
+      <div class="grid3" style="margin-bottom:14px">
+        <div class="field">
+          <label>Disposal Strategy</label>
+          <select id="f_disposal">
+            <option value="">— Select —</option>
+            <option value="controlled_reentry">Controlled re-entry (propulsive)</option>
+            <option value="natural_decay">Natural decay (passive)</option>
+            <option value="graveyard">Graveyard orbit (GEO)</option>
+            <option value="self_disposal">Self-disposal capability</option>
+            <option value="none">None planned</option>
+            <option value="tbd">To be defined</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Natural Decay After EoL (years)</label>
+          <input type="number" id="f_decay" placeholder="e.g. 3" step="0.5" />
+          <span class="field-hint">Key threshold: ≤ 5 years (ESSB-ST-U-007)</span>
+        </div>
+        <div class="field">
+          <label>Prob. Successful Disposal (%)</label>
+          <input type="number" id="f_psd" placeholder="e.g. 90" max="100" />
+          <span class="field-hint">Target: ≥ 90%</span>
+        </div>
+      </div>
+
+      <div class="field" style="margin-bottom:14px">
+        <label>Passivation at End-of-Life</label>
+        <div class="toggle-row" id="tog_passivation">
+          <button class="tog" data-val="none" onclick="togSelect(this,'tog_passivation')">Not planned</button>
+          <button class="tog" data-val="partial" onclick="togSelect(this,'tog_passivation')">Partial passivation</button>
+          <button class="tog" data-val="full" onclick="togSelect(this,'tog_passivation')">Full passivation planned</button>
+          <button class="tog" data-val="verified" onclick="togSelect(this,'tog_passivation')">Verified & compliant</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Propellant Passivation</label>
+        <div class="toggle-row" id="tog_proppass">
+          <button class="tog" data-val="no_propulsion" onclick="togSelect(this,'tog_proppass')">No propulsion</button>
+          <button class="tog" data-val="not_planned" onclick="togSelect(this,'tog_proppass')">Not planned</button>
+          <button class="tog" data-val="planned" onclick="togSelect(this,'tog_proppass')">Planned</button>
+          <button class="tog" data-val="verified" onclick="togSelect(this,'tog_proppass')">Verified</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-head"><span class="section-head-label">03 — Manoeuvring & Collision Avoidance</span></div>
+
+    <div class="form-block gap-mb">
+      <div class="field" style="margin-bottom:14px">
+        <label>Manoeuvring Capability</label>
+        <div class="toggle-row" id="tog_manoeuvre">
+          <button class="tog" data-val="none" onclick="togSelect(this,'tog_manoeuvre')">None</button>
+          <button class="tog" data-val="limited" onclick="togSelect(this,'tog_manoeuvre')">Raise/lower orbit only</button>
+          <button class="tog" data-val="cola" onclick="togSelect(this,'tog_manoeuvre')">Collision avoidance capable</button>
+          <button class="tog" data-val="full" onclick="togSelect(this,'tog_manoeuvre')">Full manoeuvre capability</button>
+        </div>
+      </div>
+
+      <div class="grid3">
+        <div class="field">
+          <label>Collision Avoidance Data Sharing</label>
+          <select id="f_data_sharing">
+            <option value="">— Select —</option>
+            <option value="none">None</option>
+            <option value="passive">Passive only (receive alerts)</option>
+            <option value="active">Active sharing with operators</option>
+            <option value="full_stm">Full STM data sharing</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Conjunction Screening Frequency</label>
+          <select id="f_screening">
+            <option value="">— Select —</option>
+            <option value="none">Not performed</option>
+            <option value="monthly">Monthly</option>
+            <option value="weekly">Weekly</option>
+            <option value="daily">Daily or more frequent</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Collision Prob. Threshold for Action</label>
+          <select id="f_cola_threshold">
+            <option value="">— Select —</option>
+            <option value="none">No threshold defined</option>
+            <option value="1e3">≤ 1:1,000</option>
+            <option value="1e4">≤ 1:10,000 (compliant)</option>
+            <option value="1e5">≤ 1:100,000</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-head"><span class="section-head-label">04 — Design & Re-entry Safety</span></div>
+
+    <div class="form-block gap-mb">
+      <div class="grid4">
+        <div class="field">
+          <label>Design for Demise</label>
+          <select id="f_dfd">
+            <option value="">— Select —</option>
+            <option value="none">No consideration</option>
+            <option value="partial">Partial (some components)</option>
+            <option value="full">Full DfD applied</option>
+            <option value="controlled">Controlled re-entry (DfD N/A)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Casualty Risk (Ec)</label>
+          <select id="f_casualty">
+            <option value="">— Select —</option>
+            <option value="not_assessed">Not assessed</option>
+            <option value="compliant">≤ 1:10,000 ✓</option>
+            <option value="marginal">1:10,000 – 1:1,000</option>
+            <option value="non_compliant">> 1:1,000 ✗</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Design for Removal (DfR)</label>
+          <select id="f_dfr">
+            <option value="">— Select —</option>
+            <option value="none">None</option>
+            <option value="considered">Considered in design</option>
+            <option value="implemented">Docking features implemented</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Space Debris Mitigation Plan</label>
+          <select id="f_sdmp">
+            <option value="">— Select —</option>
+            <option value="none">None</option>
+            <option value="draft">Draft / In progress</option>
+            <option value="approved">Approved SDMP</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-head"><span class="section-head-label">05 — EU Space Act & Environmental</span></div>
+
+    <div class="form-block gap-mb">
+      <div class="grid3">
+        <div class="field">
+          <label>Trackability / TLE Provision</label>
+          <select id="f_trackability">
+            <option value="">— Select —</option>
+            <option value="none">Not addressed</option>
+            <option value="partial">Partially addressed</option>
+            <option value="full">Full trackability ensured</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Life Cycle Assessment (LCA)</label>
+          <select id="f_lca">
+            <option value="">— Select —</option>
+            <option value="none">Not performed</option>
+            <option value="planned">Planned</option>
+            <option value="completed">Completed</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Cybersecurity Assessment</label>
+          <select id="f_cyber">
+            <option value="">— Select —</option>
+            <option value="none">Not performed</option>
+            <option value="partial">Basic assessment</option>
+            <option value="full">Full risk assessment</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <button class="run-btn" onclick="runCheck()">Run Compliance Check →</button>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="resultsArea">
+    <div class="score-banner" id="scoreBanner">
+      <div class="score-donut">
+        <svg viewBox="0 0 120 120" width="120" height="120">
+          <circle class="donut-track" cx="60" cy="60" r="50"/>
+          <circle class="donut-fill" id="donutFill" cx="60" cy="60" r="50"
+            stroke-dasharray="314.2" stroke-dashoffset="314.2"/>
+        </svg>
+        <div class="donut-center">
+          <div class="donut-num" id="scoreNum">0</div>
+          <div class="donut-pct">/ 100</div>
+        </div>
+      </div>
+      <div class="score-info">
+        <div id="verdictChip" class="verdict-chip">—</div>
+        <h2 id="scoreTitle">—</h2>
+        <p id="scoreSummary">—</p>
+      </div>
+    </div>
+
+    <div class="cats-grid" id="catsGrid"></div>
+
+    <div class="panels-grid">
+      <div class="panel">
+        <div class="panel-title">⚠ Gaps & Non-Compliances</div>
+        <div id="gapsList"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">→ Recommendations</div>
+        <div id="recosList"></div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-bottom:16px" id="waiverPanel">
+      <div class="panel-title">⚡ Formal Waivers / Deviations Likely Required</div>
+      <div id="waiversList"></div>
+    </div>
+
+    <span class="reset-link" onclick="doReset()">← Run a new analysis</span>
+  </div>
+
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     PAGE 2: RULES EXPLORER
+══════════════════════════════════════════ -->
+<div class="page" id="page-rules">
+<div class="container">
+
+  <div class="hero">
+    <div class="hero-eyebrow">Rules Explorer</div>
+    <h1>Full Rule Catalogue</h1>
+    <p>Every rule used by the compliance engine, with its source document, threshold, and applicability conditions. What you see here is exactly what runs the checker.</p>
+  </div>
+
+  <div class="rules-page-grid">
+    <div class="rules-sidebar">
+      <div class="rules-sidebar-item active" onclick="filterRules('all',this)">All Rules <span class="count" id="cnt_all">—</span></div>
+      <div class="rules-sidebar-item" onclick="filterRules('disposal',this)">🗑 Post-Mission Disposal <span class="count" id="cnt_disposal">—</span></div>
+      <div class="rules-sidebar-item" onclick="filterRules('cola',this)">🛰 Collision Avoidance <span class="count" id="cnt_cola">—</span></div>
+      <div class="rules-sidebar-item" onclick="filterRules('passivation',this)">🔒 Passivation & Safety <span class="count" id="cnt_passivation">—</span></div>
+      <div class="rules-sidebar-item" onclick="filterRules('design',this)">🔧 Design & Re-entry <span class="count" id="cnt_design">—</span></div>
+      <div class="rules-sidebar-item" onclick="filterRules('eu',this)">🇪🇺 EU Space Act <span class="count" id="cnt_eu">—</span></div>
+      <div class="rules-sidebar-item" onclick="filterRules('zd',this)">🌍 Zero Debris Charter <span class="count" id="cnt_zd">—</span></div>
+    </div>
+
+    <div class="rules-main" id="rulesMain"></div>
+  </div>
+
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     PAGE 3: SCORING LOGIC
+══════════════════════════════════════════ -->
+<div class="page" id="page-scoring">
+<div class="container">
+
+  <div class="hero">
+    <div class="hero-eyebrow">Scoring Logic</div>
+    <h1>How the Score is Calculated</h1>
+    <p>The overall score is a weighted average of 6 category scores. Each category is built from individual rule checks. Full transparency — no black box.</p>
+  </div>
+
+  <div class="callout">
+    <strong>Formula:</strong> Overall Score = Σ (Category Score × Weight) / Σ Weights<br>
+    Each category score = average of its individual rule scores (0, 50, or 100 per rule).<br>
+    <strong>PASS</strong> = 100 pts · <strong>PARTIAL</strong> = 50 pts · <strong>FAIL</strong> = 0 pts · <strong>N/A</strong> = excluded from average.
+  </div>
+
+  <div class="section-head"><span class="section-head-label">Category Weights</span></div>
+
+  <div class="scoring-table">
+    <div class="scoring-table-header">
+      <div>Category</div>
+      <div>Weight</div>
+      <div>Score Levels</div>
+      <div>Rationale</div>
+    </div>
+    <div class="scoring-table-row">
+      <div class="st-name">🗑 Post-Mission Disposal</div>
+      <div class="st-weight">25%</div>
+      <div class="st-levels">
+        <div class="st-level">PASS: <span>decay ≤5yr, PSD ≥90%</span></div>
+        <div class="st-level">PARTIAL: <span>decay 5–25yr or PSD 80–90%</span></div>
+        <div class="st-level">FAIL: <span>none planned / decay >25yr</span></div>
+      </div>
+      <div class="st-rationale">Highest weight — disposal is the core Zero Debris principle and the primary determinant of long-term orbit sustainability.</div>
+    </div>
+    <div class="scoring-table-row">
+      <div class="st-name">🛰 Collision Avoidance & STM</div>
+      <div class="st-weight">20%</div>
+      <div class="st-levels">
+        <div class="st-level">PASS: <span>COLA capable, threshold ≤1:10k, full data sharing</span></div>
+        <div class="st-level">PARTIAL: <span>some capability, passive data sharing</span></div>
+        <div class="st-level">FAIL: <span>no manoeuvre, no screening</span></div>
+      </div>
+      <div class="st-rationale">Critical for active debris risk management, especially for high-traffic LEO orbits and constellation operations.</div>
+    </div>
+    <div class="scoring-table-row">
+      <div class="st-name">🔒 Passivation & Safety</div>
+      <div class="st-weight">20%</div>
+      <div class="st-levels">
+        <div class="st-level">PASS: <span>full passivation + casualty risk ≤1:10k</span></div>
+        <div class="st-level">PARTIAL: <span>partial passivation or risk marginal</span></div>
+        <div class="st-level">FAIL: <span>no passivation, SDMP absent</span></div>
+      </div>
+      <div class="st-rationale">Passivation prevents on-orbit explosions (a major debris generation event). Casualty risk is a long-standing mandatory requirement.</div>
+    </div>
+    <div class="scoring-table-row">
+      <div class="st-name">🔧 Design & Re-entry</div>
+      <div class="st-weight">15%</div>
+      <div class="st-levels">
+        <div class="st-level">PASS: <span>DfD or controlled re-entry, DfR considered</span></div>
+        <div class="st-level">PARTIAL: <span>partial DfD</span></div>
+        <div class="st-level">FAIL: <span>no consideration</span></div>
+      </div>
+      <div class="st-rationale">Design choices made early determine end-of-life options. DfR is increasingly important as ADR services emerge.</div>
+    </div>
+    <div class="scoring-table-row">
+      <div class="st-name">🇪🇺 EU Space Act Alignment</div>
+      <div class="st-weight">10%</div>
+      <div class="st-levels">
+        <div class="st-level">PASS: <span>trackable, LCA done, cyber assessed</span></div>
+        <div class="st-level">PARTIAL: <span>some elements addressed</span></div>
+        <div class="st-level">FAIL: <span>none addressed</span></div>
+      </div>
+      <div class="st-rationale">Lower weight as EU Space Act is still a draft (2025). Weighted to flag awareness but not penalise pre-2030 missions heavily.</div>
+    </div>
+    <div class="scoring-table-row">
+      <div class="st-name">🌍 Zero Debris Charter</div>
+      <div class="st-weight">10%</div>
+      <div class="st-levels">
+        <div class="st-level">PASS: <span>net-zero contribution, SDMP present</span></div>
+        <div class="st-level">PARTIAL: <span>intent but incomplete</span></div>
+        <div class="st-level">FAIL: <span>no alignment</span></div>
+      </div>
+      <div class="st-rationale">Charter is voluntary but signals responsible operator status. Increasingly referenced in procurement and licensing decisions.</div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+  <div class="section-head"><span class="section-head-label">Risk Classification (ESSB-ST-U-007)</span></div>
+
+  <div class="scoring-table">
+    <div class="scoring-table-header" style="grid-template-columns:1fr 1fr 1fr">
+      <div>Risk Class</div><div>Criteria</div><div>Additional Requirements Triggered</div>
+    </div>
+    <div class="scoring-table-row" style="grid-template-columns:1fr 1fr 1fr">
+      <div style="color:var(--pass);font-weight:700;font-family:var(--mono)">MEDIUM</div>
+      <div class="st-rationale">Natural decay ≤ 5yr AND cumulative collision prob &lt; 1×10⁻³</div>
+      <div class="st-rationale">Standard passivation, basic COLA screening</div>
+    </div>
+    <div class="scoring-table-row" style="grid-template-columns:1fr 1fr 1fr">
+      <div style="color:var(--partial);font-weight:700;font-family:var(--mono)">HIGH</div>
+      <div class="st-rationale">Decay 5–25yr OR cumulative collision prob &gt; 1×10⁻³</div>
+      <div class="st-rationale">Recurrent manoeuvre capability required, enhanced COLA</div>
+    </div>
+    <div class="scoring-table-row" style="grid-template-columns:1fr 1fr 1fr">
+      <div style="color:var(--fail);font-weight:700;font-family:var(--mono)">VERY HIGH</div>
+      <div class="st-rationale">Decay &gt; 25yr AND cumulative collision prob &gt; 1×10⁻³</div>
+      <div class="st-rationale">Design for Removal required, DG waiver needed for non-compliance</div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// RULE DEFINITIONS — Edit these to update the entire engine
+// ═══════════════════════════════════════════════════════════
+const RULES = [
+  // ── DISPOSAL ──
+  { id:'d1', cat:'disposal', icon:'🗑', weight:3,
+    name:'LEO Post-Mission Disposal ≤ 5 years',
+    threshold:'≤ 5 yr natural decay',
+    ref:'ESSB-ST-U-007 §5.2',
+    applies:'All LEO missions',
+    check: (f) => {
+      if (!['leo'].includes(f.orbit)) return null;
+      const d = parseFloat(f.decay);
+      if (isNaN(d)) return {s:'partial', note:'Decay time not provided'};
+      if (d <= 5) return {s:'pass', note:`${d} yr decay — meets 5-year rule`};
+      if (d <= 25) return {s:'partial', note:`${d} yr decay — exceeds 5-yr rule (old 25-yr rule met)`};
+      return {s:'fail', note:`${d} yr decay — exceeds 25-yr rule. Major non-compliance.`};
+    }
+  },
+  { id:'d2', cat:'disposal', icon:'🗑', weight:3,
+    name:'Probability of Successful Disposal ≥ 90%',
+    threshold:'PSD ≥ 90%',
+    ref:'ESSB-ST-U-007 §5.3',
+    applies:'LEO/MEO missions with active disposal',
+    check: (f) => {
+      if (!['leo','meo'].includes(f.orbit)) return null;
+      if (['none','tbd'].includes(f.disposal)) return {s:'fail', note:'No disposal strategy — PSD cannot be met'};
+      const p = parseFloat(f.psd);
+      if (isNaN(p)) return {s:'partial', note:'PSD not assessed'};
+      if (p >= 90) return {s:'pass', note:`PSD = ${p}% — meets ≥90% target`};
+      if (p >= 80) return {s:'partial', note:`PSD = ${p}% — below 90% target`};
+      return {s:'fail', note:`PSD = ${p}% — significantly below target`};
+    }
+  },
+  { id:'d3', cat:'disposal', icon:'🗑', weight:2,
+    name:'Disposal Strategy Defined',
+    threshold:'Strategy must be documented',
+    ref:'ESA/ADMIN/IPOL(2023)1 §3',
+    applies:'All missions',
+    check: (f) => {
+      if (!f.disposal || f.disposal === '') return {s:'partial', note:'Not selected'};
+      if (f.disposal === 'none') return {s:'fail', note:'No disposal strategy — non-compliant'};
+      if (f.disposal === 'tbd') return {s:'partial', note:'TBD — must be defined before PDR'};
+      if (['controlled_reentry','self_disposal'].includes(f.disposal)) return {s:'pass', note:'Active disposal strategy defined'};
+      if (f.disposal === 'natural_decay') return {s:'partial', note:'Natural decay — must verify 5-year rule'};
+      if (f.disposal === 'graveyard') return {s:'pass', note:'Graveyard orbit — verify no constellation crossings'};
+      return {s:'partial', note:'Strategy defined — details TBC'};
+    }
+  },
+  { id:'d4', cat:'disposal', icon:'🗑', weight:2,
+    name:'GEO Graveyard — No Constellation Crossing',
+    threshold:'Graveyard must not cross known constellations',
+    ref:'ESSB-ST-U-007 §6.1',
+    applies:'GEO missions using graveyard orbit',
+    check: (f) => {
+      if (f.orbit !== 'geo') return null;
+      if (f.disposal !== 'graveyard') return null;
+      return {s:'partial', note:'Graveyard planned — must verify no crossing with active GEO slots/constellations (manual check required)'};
+    }
+  },
+  { id:'d5', cat:'disposal', icon:'🗑', weight:2,
+    name:'Constellation LEO Apogee ≤ 375 km (natural decay)',
+    threshold:'Apogee ≤ 375 km for natural decay option in constellations',
+    ref:'ESSB-ST-U-007 §5.2.3',
+    applies:'Constellations (≥25 sats) using natural decay in LEO',
+    check: (f) => {
+      const n = parseInt(f.num_sats) || 1;
+      if (n < 25) return null;
+      if (f.orbit !== 'leo') return null;
+      if (f.disposal !== 'natural_decay') return null;
+      const alt = parseFloat(f.altitude);
+      if (isNaN(alt)) return {s:'partial', note:'Altitude not specified — cannot verify 375 km rule'};
+      if (alt <= 375) return {s:'pass', note:`${alt} km — below 375 km threshold for constellation natural decay`};
+      return {s:'fail', note:`${alt} km — exceeds 375 km limit for constellation natural decay. Use active deorbit.`};
+    }
+  },
+  { id:'d6', cat:'disposal', icon:'🗑', weight:1,
+    name:'Lunar Orbit — No Uncontrolled MROs',
+    threshold:'No mission-related objects left in unstable lunar orbits',
+    ref:'ESSB-ST-U-007 §8',
+    applies:'Lunar orbit missions',
+    check: (f) => {
+      if (f.orbit !== 'lunar') return null;
+      return {s:'partial', note:'Lunar mission — must confirm no uncontrolled MROs and breakup prob < 1:1000 (manual verification needed)'};
+    }
+  },
+
+  // ── COLA ──
+  { id:'c1', cat:'cola', icon:'🛰', weight:3,
+    name:'Collision Avoidance Manoeuvre Capability',
+    threshold:'Required for High/Very High risk objects and constellations',
+    ref:'ESSB-ST-U-007 §7.1',
+    applies:'High/Very-High risk LEO, all constellations',
+    check: (f) => {
+      const m = f.manoeuvre;
+      if (!m) return {s:'partial', note:'Manoeuvre capability not specified'};
+      if (['cola','full'].includes(m)) return {s:'pass', note:'COLA-capable — meets manoeuvre requirement'};
+      if (m === 'limited') return {s:'partial', note:'Limited manoeuvre — may not meet COLA requirement for high-risk objects'};
+      const n = parseInt(f.num_sats) || 1;
+      if (n >= 25) return {s:'fail', note:'Constellation with no manoeuvre capability — non-compliant'};
+      const d = parseFloat(f.decay);
+      if (!isNaN(d) && d > 5) return {s:'fail', note:'High/Very-high risk object with no manoeuvre — deviaton required'};
+      return {s:'partial', note:'No manoeuvre — acceptable only for short-lived low-risk objects'};
+    }
+  },
+  { id:'c2', cat:'cola', icon:'🛰', weight:2,
+    name:'Collision Probability Threshold for Action ≤ 1:10,000',
+    threshold:'Pc threshold ≤ 1×10⁻⁴',
+    ref:'ESSB-ST-U-007 §7.2',
+    applies:'All manoeuvrable spacecraft',
+    check: (f) => {
+      if (f.manoeuvre === 'none' || !f.manoeuvre) return null;
+      const t = f.cola_threshold;
+      if (!t) return {s:'partial', note:'No threshold defined'};
+      if (t === 'none') return {s:'fail', note:'No Pc threshold — non-compliant'};
+      if (['1e4','1e5'].includes(t)) return {s:'pass', note:'Pc threshold ≤ 1:10,000 — compliant'};
+      return {s:'partial', note:'Pc threshold > 1:10,000 — below requirement'};
+    }
+  },
+  { id:'c3', cat:'cola', icon:'🛰', weight:2,
+    name:'Orbital Data Sharing for STM',
+    threshold:'Active data sharing with operators/SSA providers',
+    ref:'ESSB-ST-U-007 §7.3 / EU Space Act Art.45',
+    applies:'All missions',
+    check: (f) => {
+      const d = f.data_sharing;
+      if (!d) return {s:'partial', note:'Data sharing approach not defined'};
+      if (d === 'none') return {s:'fail', note:'No data sharing — non-compliant with STM best practices'};
+      if (d === 'passive') return {s:'partial', note:'Passive only — active sharing expected under new requirements'};
+      if (['active','full_stm'].includes(d)) return {s:'pass', note:'Active data sharing — meets best practices'};
+      return {s:'partial', note:'Partial'};
+    }
+  },
+  { id:'c4', cat:'cola', icon:'🛰', weight:1,
+    name:'Conjunction Screening Frequency',
+    threshold:'Frequent screening — daily recommended for LEO',
+    ref:'ESSB-ST-U-007 §7.1',
+    applies:'All manoeuvrable LEO missions',
+    check: (f) => {
+      if (f.orbit !== 'leo') return null;
+      const s = f.screening;
+      if (!s) return {s:'partial', note:'Screening frequency not defined'};
+      if (s === 'none') return {s:'fail', note:'No conjunction screening'};
+      if (s === 'daily') return {s:'pass', note:'Daily screening — best practice'};
+      if (s === 'weekly') return {s:'partial', note:'Weekly — more frequent recommended for LEO'};
+      return {s:'partial', note:'Monthly screening — insufficient for active LEO'};
+    }
+  },
+  { id:'c5', cat:'cola', icon:'🛰', weight:2,
+    name:'Recurrent Manoeuvre Capability in GEO',
+    threshold:'Periodic station-keeping and COLA in GEO',
+    ref:'ESSB-ST-U-007 §6.2',
+    applies:'GEO missions',
+    check: (f) => {
+      if (f.orbit !== 'geo') return null;
+      const m = f.manoeuvre;
+      if (['cola','full'].includes(m)) return {s:'pass', note:'Recurrent manoeuvre capability confirmed'};
+      if (m === 'limited') return {s:'partial', note:'Limited — GEO requires full recurrent capability'};
+      return {s:'fail', note:'No manoeuvre capability in GEO — non-compliant'};
+    }
+  },
+
+  // ── PASSIVATION ──
+  { id:'p1', cat:'passivation', icon:'🔒', weight:3,
+    name:'Full Passivation at End-of-Life',
+    threshold:'All stored energy sources must be passivated',
+    ref:'ESSB-ST-U-007 §4 / ISO 24113',
+    applies:'All missions',
+    check: (f) => {
+      const p = f.passivation;
+      if (!p) return {s:'partial', note:'Passivation plan not stated'};
+      if (p === 'verified') return {s:'pass', note:'Passivation verified and compliant'};
+      if (p === 'full') return {s:'pass', note:'Full passivation planned'};
+      if (p === 'partial') return {s:'partial', note:'Partial passivation — all energy sources must be addressed'};
+      return {s:'fail', note:'No passivation planned — non-compliant. Risk of on-orbit explosion.'};
+    }
+  },
+  { id:'p2', cat:'passivation', icon:'🔒', weight:2,
+    name:'Propellant Passivation',
+    threshold:'Residual propellant must be vented/neutralised',
+    ref:'ESSB-ST-U-007 §4.2',
+    applies:'All propulsive missions',
+    check: (f) => {
+      const p = f.proppass;
+      if (!p || p === 'no_propulsion') return null;
+      if (p === 'verified') return {s:'pass', note:'Propellant passivation verified'};
+      if (p === 'planned') return {s:'partial', note:'Planned — must be verified before launch'};
+      return {s:'fail', note:'Propellant passivation not planned — non-compliant'};
+    }
+  },
+  { id:'p3', cat:'passivation', icon:'🔒', weight:3,
+    name:'Casualty Risk ≤ 1:10,000 (Ec)',
+    threshold:'Ec < 1×10⁻⁴ per re-entry event',
+    ref:'ESSB-ST-U-007 §5.5',
+    applies:'All re-entering spacecraft (uncontrolled)',
+    check: (f) => {
+      if (f.disposal === 'controlled_reentry') return {s:'pass', note:'Controlled re-entry — casualty risk criterion met by design'};
+      const c = f.casualty;
+      if (!c) return {s:'partial', note:'Casualty risk not assessed'};
+      if (c === 'not_assessed') return {s:'partial', note:'Casualty risk not assessed — required analysis'};
+      if (c === 'compliant') return {s:'pass', note:'Ec ≤ 1:10,000 — compliant'};
+      if (c === 'marginal') return {s:'partial', note:'Ec marginal — design changes needed'};
+      return {s:'fail', note:'Ec > 1:1,000 — non-compliant. Design for Demise or controlled re-entry required.'};
+    }
+  },
+  { id:'p4', cat:'passivation', icon:'🔒', weight:2,
+    name:'Space Debris Mitigation Plan (SDMP)',
+    threshold:'SDMP required for all ESA missions',
+    ref:'ESA/ADMIN/IPOL(2023)1',
+    applies:'All ESA missions / ESA-funded contributions',
+    check: (f) => {
+      if (!['esa','eu_agency'].includes(f.operator)) return null;
+      const s = f.sdmp;
+      if (!s) return {s:'partial', note:'SDMP status not specified'};
+      if (s === 'approved') return {s:'pass', note:'Approved SDMP — compliant'};
+      if (s === 'draft') return {s:'partial', note:'Draft SDMP — must be approved before launch'};
+      return {s:'fail', note:'No SDMP — required for ESA missions at all phases'};
+    }
+  },
+
+  // ── DESIGN ──
+  { id:'g1', cat:'design', icon:'🔧', weight:2,
+    name:'Design for Demise (DfD)',
+    threshold:'DfD required when casualty risk cannot be met otherwise',
+    ref:'ESSB-ST-U-007 §5.5.2',
+    applies:'Missions with uncontrolled re-entry and mass >1 kg',
+    check: (f) => {
+      if (f.disposal === 'controlled_reentry') return {s:'pass', note:'Controlled re-entry — DfD not required'};
+      const mass = parseFloat(f.mass);
+      if (!isNaN(mass) && mass < 1) return null; // negligible casualty risk
+      const d = f.dfd;
+      if (!d) return {s:'partial', note:'DfD approach not stated'};
+      if (['full','controlled'].includes(d)) return {s:'pass', note:'DfD or controlled re-entry applied'};
+      if (d === 'partial') return {s:'partial', note:'Partial DfD — verify casualty risk is met'};
+      return {s:'fail', note:'No DfD consideration — casualty risk may be non-compliant'};
+    }
+  },
+  { id:'g2', cat:'design', icon:'🔧', weight:1,
+    name:'Design for Removal (DfR)',
+    threshold:'Required for High/Very-High risk objects in protected regions',
+    ref:'ESSB-ST-U-007 §5.6',
+    applies:'High/Very-high risk objects, ADR-targetable missions',
+    check: (f) => {
+      const d = parseFloat(f.decay);
+      const dfr = f.dfr;
+      const isHighRisk = !isNaN(d) && d > 5;
+      if (!isHighRisk) return null;
+      if (!dfr) return {s:'partial', note:'DfR not addressed for high-risk object'};
+      if (dfr === 'implemented') return {s:'pass', note:'DfR features implemented'};
+      if (dfr === 'considered') return {s:'partial', note:'DfR considered — implementation recommended'};
+      return {s:'fail', note:'DfR not considered for high-risk object — deviation may be required'};
+    }
+  },
+  { id:'g3', cat:'design', icon:'🔧', weight:2,
+    name:'Controlled Re-entry for High-Mass Spacecraft',
+    threshold:'Controlled re-entry required if DfD cannot achieve Ec ≤ 1:10,000',
+    ref:'ESSB-ST-U-007 §5.5',
+    applies:'Spacecraft with mass > 1000 kg in LEO',
+    check: (f) => {
+      const mass = parseFloat(f.mass);
+      if (isNaN(mass) || mass <= 1000) return null;
+      if (f.disposal === 'controlled_reentry') return {s:'pass', note:'Controlled re-entry planned for high-mass spacecraft'};
+      if (f.dfd === 'full') return {s:'partial', note:'Full DfD planned — verify Ec can be achieved for this mass'};
+      return {s:'fail', note:`Mass ${mass} kg — casualty risk likely requires controlled re-entry or full DfD`};
+    }
+  },
+
+  // ── EU ──
+  { id:'e1', cat:'eu', icon:'🇪🇺', weight:2,
+    name:'Trackability / Space Object Registration',
+    threshold:'Objects must be trackable; TLE/state vectors shared',
+    ref:'EU Space Act Draft 2025 Art. 22',
+    applies:'All EU operators (mandatory from 2030)',
+    check: (f) => {
+      const t = f.trackability;
+      if (!t) return {s:'partial', note:'Trackability not addressed'};
+      if (t === 'full') return {s:'pass', note:'Full trackability ensured'};
+      if (t === 'partial') return {s:'partial', note:'Partially addressed — full compliance required from 2030'};
+      return {s:'fail', note:'Trackability not addressed — mandatory under EU Space Act'};
+    }
+  },
+  { id:'e2', cat:'eu', icon:'🇪🇺', weight:1,
+    name:'Life Cycle Assessment (Environmental)',
+    threshold:'LCA required to quantify environmental footprint',
+    ref:'EU Space Act Draft 2025 Art. 58',
+    applies:'EU operators (from 2030)',
+    check: (f) => {
+      const l = f.lca;
+      if (!l) return {s:'partial', note:'LCA not addressed'};
+      if (l === 'completed') return {s:'pass', note:'LCA completed'};
+      if (l === 'planned') return {s:'partial', note:'LCA planned — must complete before launch for full compliance'};
+      return {s:'fail', note:'No LCA — required under EU Space Act for environmental accountability'};
+    }
+  },
+  { id:'e3', cat:'eu', icon:'🇪🇺', weight:1,
+    name:'Cybersecurity Risk Assessment',
+    threshold:'Risk assessment for space infrastructure cyber threats',
+    ref:'EU Space Act Draft 2025 Art. 35',
+    applies:'EU operators (from 2030)',
+    check: (f) => {
+      const c = f.cyber;
+      if (!c) return {s:'partial', note:'Cybersecurity not addressed'};
+      if (c === 'full') return {s:'pass', note:'Full cybersecurity risk assessment performed'};
+      if (c === 'partial') return {s:'partial', note:'Basic assessment — full risk assessment required'};
+      return {s:'fail', note:'No cybersecurity assessment — required under EU Space Act'};
+    }
+  },
+  { id:'e4', cat:'eu', icon:'🇪🇺', weight:1,
+    name:'Market Access — Non-EU Operators',
+    threshold:'Non-EU operators must meet EU equivalent standards for market access',
+    ref:'EU Space Act Draft 2025 Art. 8',
+    applies:'Non-EU commercial operators',
+    check: (f) => {
+      if (f.operator !== 'non_eu') return null;
+      return {s:'partial', note:'Non-EU operator — must demonstrate equivalent standards compliance for EU market access from 2030'};
+    }
+  },
+
+  // ── ZERO DEBRIS ──
+  { id:'z1', cat:'zd', icon:'🌍', weight:2,
+    name:'Net-Zero Debris Contribution by 2030',
+    threshold:'Mission must not increase net debris population',
+    ref:'Zero Debris Charter Principle 1',
+    applies:'All missions targeting operations post-2030',
+    check: (f) => {
+      const d = parseFloat(f.decay);
+      const psd = parseFloat(f.psd);
+      const hasDisposal = !['none','tbd'].includes(f.disposal) && f.disposal;
+      if (!hasDisposal) return {s:'fail', note:'No disposal strategy — cannot achieve net-zero debris contribution'};
+      if (!isNaN(d) && d <= 5 && !isNaN(psd) && psd >= 90) return {s:'pass', note:'Short decay + high PSD — net-zero compatible'};
+      if (!isNaN(d) && d <= 5) return {s:'partial', note:'Short decay but PSD uncertain — net-zero likely achievable'};
+      return {s:'partial', note:'Disposal planned but net-zero contribution not fully demonstrated'};
+    }
+  },
+  { id:'z2', cat:'zd', icon:'🌍', weight:1,
+    name:'Responsible Operator Standards',
+    threshold:'SDMP + active COLA + data sharing as minimum',
+    ref:'Zero Debris Charter Principle 3',
+    applies:'All Charter signatories / aspirants',
+    check: (f) => {
+      const hasSdmp = f.sdmp === 'approved' || f.sdmp === 'draft';
+      const hasCola = ['cola','full'].includes(f.manoeuvre);
+      const hasSharing = ['active','full_stm'].includes(f.data_sharing);
+      const score = [hasSdmp, hasCola, hasSharing].filter(Boolean).length;
+      if (score === 3) return {s:'pass', note:'SDMP + COLA + data sharing — responsible operator standards met'};
+      if (score >= 1) return {s:'partial', note:`${score}/3 responsible operator criteria met`};
+      return {s:'fail', note:'None of the responsible operator minimum criteria met'};
+    }
+  },
+  { id:'z3', cat:'zd', icon:'🌍', weight:1,
+    name:'Technology Contribution to Zero Debris',
+    threshold:'Missions should advance debris mitigation technology',
+    ref:'Zero Debris Charter Principle 5',
+    applies:'All missions',
+    check: (f) => {
+      const advanced = f.disposal === 'controlled_reentry' || f.dfr === 'implemented' || f.dfd === 'full';
+      if (advanced) return {s:'pass', note:'Mission incorporates advanced debris mitigation technology'};
+      const basic = f.passivation === 'full' || f.passivation === 'verified';
+      if (basic) return {s:'partial', note:'Basic mitigation in place — advanced tech contribution not demonstrated'};
+      return {s:'fail', note:'No notable contribution to debris mitigation technology'};
+    }
+  }
+];
+
+// ══════════════════════
+// CATEGORY DEFINITIONS
+// ══════════════════════
+const CATEGORIES = [
+  { id:'disposal',    icon:'🗑', name:'Post-Mission Disposal',       weight:25 },
+  { id:'cola',        icon:'🛰', name:'Collision Avoidance & STM',   weight:20 },
+  { id:'passivation', icon:'🔒', name:'Passivation & Safety',        weight:20 },
+  { id:'design',      icon:'🔧', name:'Design & Re-entry',           weight:15 },
+  { id:'eu',          icon:'🇪🇺', name:'EU Space Act Alignment',     weight:10 },
+  { id:'zd',          icon:'🌍', name:'Zero Debris Charter',         weight:10 }
+];
+
+// ══════════════════════
+// TOGGLE HELPERS
+// ══════════════════════
+const toggleState = {};
+
+function togSelect(btn, groupId) {
+  document.querySelectorAll(`#${groupId} .tog`).forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  toggleState[groupId] = btn.dataset.val;
+}
+
+function getToggle(groupId) { return toggleState[groupId] || ''; }
+
+function gv(id) {
+  const el = document.getElementById(id);
+  return el ? el.value.trim() : '';
+}
+
+function updateOrbitHints() {}
+
+// ══════════════════════
+// MAIN CHECK ENGINE
+// ══════════════════════
+function runCheck() {
+  // Collect form values
+  const f = {
+    name: gv('f_name') || 'Mission',
+    operator: gv('f_operator'),
+    num_sats: gv('f_num_sats') || '1',
+    orbit: gv('f_orbit'),
+    altitude: gv('f_altitude'),
+    mass: gv('f_mass'),
+    lifetime: gv('f_lifetime'),
+    disposal: gv('f_disposal'),
+    decay: gv('f_decay'),
+    psd: gv('f_psd'),
+    passivation: getToggle('tog_passivation'),
+    proppass: getToggle('tog_proppass'),
+    manoeuvre: getToggle('tog_manoeuvre'),
+    data_sharing: gv('f_data_sharing'),
+    screening: gv('f_screening'),
+    cola_threshold: gv('f_cola_threshold'),
+    dfd: gv('f_dfd'),
+    casualty: gv('f_casualty'),
+    dfr: gv('f_dfr'),
+    sdmp: gv('f_sdmp'),
+    trackability: gv('f_trackability'),
+    lca: gv('f_lca'),
+    cyber: gv('f_cyber')
+  };
+
+  if (!f.orbit) { alert('Please select an Orbit Regime to continue.'); return; }
+
+  // Run all rules
+  const ruleResults = {};
+  RULES.forEach(r => {
+    ruleResults[r.id] = r.check(f);
+  });
+
+  // Score per category
+  const catScores = {};
+  CATEGORIES.forEach(cat => {
+    const catRules = RULES.filter(r => r.cat === cat.id);
+    let total = 0, count = 0;
+    catRules.forEach(r => {
+      const res = ruleResults[r.id];
+      if (res === null) return; // N/A
+      const pts = res.s === 'pass' ? 100 : res.s === 'partial' ? 50 : 0;
+      total += pts * r.weight;
+      count += r.weight;
+    });
+    catScores[cat.id] = count > 0 ? Math.round(total / count) : null;
+  });
+
+  // Overall weighted score
+  let totalWeighted = 0, totalWeight = 0;
+  CATEGORIES.forEach(cat => {
+    if (catScores[cat.id] !== null) {
+      totalWeighted += catScores[cat.id] * cat.weight;
+      totalWeight += cat.weight;
+    }
+  });
+  const overall = totalWeight > 0 ? Math.round(totalWeighted / totalWeight) : 0;
+
+  // Risk classification
+  const decay = parseFloat(f.decay);
+  let riskClass = 'UNKNOWN';
+  if (!isNaN(decay)) {
+    if (decay <= 5) riskClass = 'MEDIUM';
+    else if (decay <= 25) riskClass = 'HIGH';
+    else riskClass = 'VERY HIGH';
+  }
+  if (f.orbit === 'geo') riskClass = 'GEO (separate rules)';
+  if (f.orbit === 'lunar') riskClass = 'LUNAR';
+
+  // Verdict
+  let verdict, verdictClass, summary;
+  if (overall >= 85) {
+    verdict = '✓ COMPLIANT'; verdictClass = 'chip-pass';
+    summary = `${f.name} demonstrates strong alignment with current Zero Debris requirements. Minor gaps may remain — review recommendations to achieve full compliance.`;
+  } else if (overall >= 65) {
+    verdict = '◑ MOSTLY COMPLIANT'; verdictClass = 'chip-partial';
+    summary = `${f.name} meets many core requirements but has notable gaps. Targeted improvements to disposal and/or collision avoidance are recommended before mission approval.`;
+  } else if (overall >= 40) {
+    verdict = '△ PARTIALLY COMPLIANT'; verdictClass = 'chip-partial';
+    summary = `${f.name} has significant compliance gaps. Several formal deviations or design changes will be required. Early engagement with the SDMA Board is strongly recommended.`;
+  } else {
+    verdict = '✗ NON-COMPLIANT'; verdictClass = 'chip-fail';
+    summary = `${f.name} does not meet current Zero Debris requirements in multiple critical areas. Major design or operational changes are needed. Director General approval required for any deviations.`;
+  }
+
+  // Gaps, recommendations, waivers
+  const gaps = [], recos = [], waivers = [];
+
+  RULES.forEach(r => {
+    const res = ruleResults[r.id];
+    if (!res) return;
+    if (res.s === 'fail') {
+      gaps.push({ text: res.note, ref: r.ref });
+      recos.push({ text: getRecommendation(r.id, f), ref: r.ref });
+      if (['d1','d2','p3','c1'].includes(r.id)) {
+        waivers.push(`Formal deviation/waiver required: ${r.name} (${r.ref})`);
+      }
+    } else if (res.s === 'partial') {
+      recos.push({ text: getPartialRecommendation(r.id, f, res.note), ref: r.ref });
+    }
+  });
+
+  renderResults({ overall, catScores, ruleResults, verdict, verdictClass, summary, riskClass, gaps, recos, waivers, f });
+}
+
+function getRecommendation(ruleId, f) {
+  const map = {
+    'd1': `Reduce post-mission orbital lifetime to ≤ 5 years. Consider propulsive deorbit, deploying at lower altitude (< 400 km for passive decay), or self-disposal capability.`,
+    'd2': `Increase Probability of Successful Disposal to ≥ 90%. Add redundancy to deorbit system, increase propellant margin, or use controlled re-entry as primary disposal.`,
+    'd3': `Define a disposal strategy immediately. TBD is not acceptable past Preliminary Design Review (PDR).`,
+    'd5': `For constellation natural decay, lower apogee to ≤ 375 km or switch to active propulsive deorbit.`,
+    'c1': `Add collision avoidance manoeuvre capability. For high-risk objects and constellations, this is mandatory under ESSB-ST-U-007.`,
+    'c2': `Define and implement a Pc threshold ≤ 1:10,000 for collision avoidance action in operational procedures.`,
+    'c3': `Implement active orbital data sharing with SSA providers (e.g. ESA's Space Surveillance and Tracking service). Passive-only is insufficient under new STM requirements.`,
+    'p1': `Develop and verify a full passivation plan covering all stored energy sources (batteries, pressure vessels, propellant). Required for all missions.`,
+    'p3': `Perform casualty risk analysis. If Ec > 1:10,000, implement Design for Demise or switch to controlled re-entry.`,
+    'p4': `Prepare a Space Debris Mitigation Plan (SDMP) for independent review by ESA's Safety Office (TEC-QI). Required at all mission phases.`,
+    'g1': `Apply Design for Demise principles: use aluminium/titanium structures, avoid refractory materials, verify components burn up at > 80 km altitude.`,
+    'g2': `Incorporate Design for Removal features: standardised docking interface, grappling points, or passive capture aids for future ADR missions.`,
+    'e1': `Ensure spacecraft is trackable: provide TLE/state vectors to space surveillance networks. Contact ESA SST or CSpOC for registration.`,
+    'z1': `To achieve net-zero debris contribution: reduce decay time to ≤ 5 years AND achieve PSD ≥ 90%.`,
+    'z2': `Meet responsible operator minimum standards: (1) produce SDMP, (2) implement COLA capability, (3) share orbital data actively.`,
+  };
+  return map[ruleId] || `Review ${ruleId} requirement and update mission design accordingly.`;
+}
+
+function getPartialRecommendation(ruleId, f, note) {
+  return `[${ruleId.toUpperCase()}] ${note} — Review and update to achieve full compliance.`;
+}
+
+// ══════════════════════
+// RENDER RESULTS
+// ══════════════════════
+function renderResults({ overall, catScores, ruleResults, verdict, verdictClass, summary, riskClass, gaps, recos, waivers, f }) {
+  document.getElementById('formArea').style.display = 'none';
+  const ra = document.getElementById('resultsArea');
+  ra.style.display = 'block';
+
+  // Score ring
+  const scoreColor = overall >= 85 ? 'var(--pass)' : overall >= 50 ? 'var(--partial)' : 'var(--fail)';
+  const donut = document.getElementById('donutFill');
+  donut.style.stroke = scoreColor;
+  const circ = 314.2;
+  setTimeout(() => { donut.style.strokeDashoffset = circ - (circ * overall / 100); }, 50);
+
+  // Animate number
+  let cur = 0;
+  const numEl = document.getElementById('scoreNum');
+  numEl.style.color = scoreColor;
+  const iv = setInterval(() => {
+    cur = Math.min(cur + 2, overall);
+    numEl.textContent = cur;
+    if (cur >= overall) clearInterval(iv);
+  }, 18);
+
+  // Verdict
+  const vc = document.getElementById('verdictChip');
+  vc.textContent = verdict;
+  vc.className = `verdict-chip ${verdictClass}`;
+
+  const riskColor = riskClass === 'MEDIUM' ? 'chip-pass' : riskClass === 'HIGH' ? 'chip-partial' : 'chip-fail';
+  document.getElementById('scoreTitle').innerHTML = `${f.name} <span class="risk-chip ${riskColor}">${riskClass} RISK</span>`;
+  document.getElementById('scoreSummary').textContent = summary;
+
+  // Category cards
+  const grid = document.getElementById('catsGrid');
+  grid.innerHTML = '';
+  CATEGORIES.forEach(cat => {
+    const sc = catScores[cat.id];
+    if (sc === null) return;
+    const color = sc >= 75 ? 'var(--pass)' : sc >= 45 ? 'var(--partial)' : 'var(--fail)';
+    const statusText = sc >= 75 ? 'PASS' : sc >= 45 ? 'PARTIAL' : 'FAIL';
+    const chipCls = sc >= 75 ? 'chip-pass' : sc >= 45 ? 'chip-partial' : 'chip-fail';
+
+    // Build rule rows for this category
+    const catRules = RULES.filter(r => r.cat === cat.id);
+    let ruleRowsHtml = '';
+    catRules.forEach(r => {
+      const res = ruleResults[r.id];
+      if (res === null) {
+        ruleRowsHtml += `<div class="rule-row"><span class="rule-icon" style="color:var(--text-muted)">—</span><span class="rule-text" style="color:var(--text-dim)">${r.name}</span><span class="rule-ref">${r.ref}</span><span class="rule-verdict" style="color:var(--text-muted)">N/A</span></div>`;
+      } else {
+        const ri = res.s === 'pass' ? '✓' : res.s === 'partial' ? '◑' : '✗';
+        const rc = res.s === 'pass' ? 'var(--pass)' : res.s === 'partial' ? 'var(--partial)' : 'var(--fail)';
+        const rv = res.s.toUpperCase();
+        ruleRowsHtml += `<div class="rule-row"><span class="rule-icon" style="color:${rc}">${ri}</span><div><div class="rule-text">${r.name}</div><div style="font-size:11px;color:var(--text-dim);margin-top:2px">${res.note}</div></div><span class="rule-ref">${r.ref}</span><span class="rule-verdict" style="color:${rc}">${rv}</span></div>`;
+      }
+    });
+
+    const card = document.createElement('div');
+    card.className = 'cat-card';
+    card.innerHTML = `
+      <div class="cat-top">
+        <div class="cat-icon-name"><span class="cat-icon">${cat.icon}</span><span class="cat-name">${cat.name}</span></div>
+        <span class="cat-score-num" style="color:${color}">${sc}</span>
+      </div>
+      <div class="cat-bar-bg"><div class="cat-bar" style="background:${color}" data-w="${sc}"></div></div>
+      <div class="cat-status-row">
+        <span class="cat-finding">Click to see rule breakdown</span>
+        <span class="verdict-chip ${chipCls}" style="font-size:10px;padding:2px 8px">${statusText}</span>
+      </div>
+      <div class="rule-breakdown">${ruleRowsHtml}</div>
+    `;
+    card.addEventListener('click', () => card.classList.toggle('expanded'));
+    grid.appendChild(card);
+    setTimeout(() => { card.querySelector('.cat-bar').style.width = sc + '%'; }, 100);
+  });
+
+  // Gaps
+  const gl = document.getElementById('gapsList');
+  gl.innerHTML = gaps.length
+    ? gaps.map(g => `<div class="panel-item"><div class="panel-dot" style="background:var(--fail)"></div><div><div>${g.text}</div><div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-top:2px">${g.ref}</div></div></div>`).join('')
+    : '<div class="panel-item" style="color:var(--pass)">✓ No critical gaps identified</div>';
+
+  // Recos
+  const rl = document.getElementById('recosList');
+  const uniqueRecos = recos.filter((r,i,a) => a.findIndex(x=>x.text===r.text)===i).slice(0,8);
+  rl.innerHTML = uniqueRecos.length
+    ? uniqueRecos.map(r => `<div class="panel-item"><div class="panel-dot" style="background:var(--partial)"></div><div><div>${r.text}</div><div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-top:2px">${r.ref}</div></div></div>`).join('')
+    : '<div class="panel-item" style="color:var(--pass)">✓ No specific recommendations — maintain current approach</div>';
+
+  // Waivers
+  const wp = document.getElementById('waiverPanel');
+  const wl = document.getElementById('waiversList');
+  if (waivers.length) {
+    wp.style.display = 'block';
+    wl.innerHTML = waivers.map(w => `<div class="panel-item"><div class="panel-dot" style="background:var(--fail)"></div><div>${w}</div></div>`).join('');
+  } else {
+    wp.style.display = 'none';
+  }
+
+  ra.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function doReset() {
+  document.getElementById('resultsArea').style.display = 'none';
+  document.getElementById('formArea').style.display = 'block';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ══════════════════════
+// PAGE NAVIGATION
+// ══════════════════════
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(`page-${id}`).classList.add('active');
+  event.target.classList.add('active');
+  if (id === 'rules') renderRulesExplorer('all');
+}
+
+// ══════════════════════
+// RULES EXPLORER
+// ══════════════════════
+let currentFilter = 'all';
+
+function filterRules(cat, el) {
+  currentFilter = cat;
+  document.querySelectorAll('.rules-sidebar-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+  renderRulesExplorer(cat);
+}
+
+function renderRulesExplorer(filter) {
+  // Update counts
+  CATEGORIES.forEach(cat => {
+    const el = document.getElementById(`cnt_${cat.id}`);
+    if (el) el.textContent = RULES.filter(r => r.cat === cat.id).length;
+  });
+  const allEl = document.getElementById('cnt_all');
+  if (allEl) allEl.textContent = RULES.length;
+
+  const main = document.getElementById('rulesMain');
+  if (!main) return;
+  main.innerHTML = '';
+
+  const cats = filter === 'all' ? CATEGORIES : CATEGORIES.filter(c => c.id === filter);
+
+  cats.forEach(cat => {
+    const catRules = RULES.filter(r => r.cat === cat.id);
+    if (!catRules.length) return;
+
+    const group = document.createElement('div');
+    group.className = 'rule-group';
+    group.innerHTML = `
+      <div class="rule-group-header">
+        <span class="rule-group-icon">${cat.icon}</span>
+        <span class="rule-group-title">${cat.name}</span>
+        <span class="rule-group-source">Weight: ${cat.weight}% of overall score</span>
+      </div>
+      <div class="rules-table">
+        <div class="rules-table-header">
+          <div>Rule</div><div>Threshold</div><div>Source Reference</div><div>Applies To</div>
+        </div>
+        ${catRules.map(r => `
+          <div class="rules-table-row">
+            <div class="rt-rule"><strong>[${r.id.toUpperCase()}]</strong> ${r.name}<br>
+              <div class="weight-bar-wrap" style="margin-top:5px">
+                <span style="font-family:var(--mono);font-size:9px;color:var(--text-muted)">WEIGHT</span>
+                <div class="weight-bar-bg"><div class="weight-bar-fill" style="width:${r.weight*20}%"></div></div>
+                <span class="weight-num">${r.weight}/5</span>
+              </div>
+            </div>
+            <div class="rt-threshold">${r.threshold}</div>
+            <div class="rt-ref">${r.ref}</div>
+            <div class="rt-applies">${r.applies}</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+    main.appendChild(group);
+  });
+}
+
+// Init rules explorer counts on load
+window.addEventListener('load', () => {
+  CATEGORIES.forEach(cat => {
+    const el = document.getElementById(`cnt_${cat.id}`);
+    if (el) el.textContent = RULES.filter(r => r.cat === cat.id).length;
+  });
+  const allEl = document.getElementById('cnt_all');
+  if (allEl) allEl.textContent = RULES.length;
+});
+</script>
+</body>
+</html>

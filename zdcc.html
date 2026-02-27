@@ -1414,16 +1414,17 @@ const RULES = [
   },
   { id:'p4', cat:'passivation', icon:'🔒', weight:2,
     name:'Space Debris Mitigation Plan (SDMP)',
-    threshold:'SDMP required for all ESA missions',
-    ref:'ESA/ADMIN/IPOL(2023)1',
-    applies:'All ESA missions / ESA-funded contributions',
+    threshold:'SDMP (or equivalent) required for all licensed operators',
+    ref:'ESA/ADMIN/IPOL(2023)1 / JAXA JMR-016 / UK Space Industry Act / French Space Operations Act',
+    applies:'All operators — mandatory under most national licensing regimes',
     check: (f) => {
-      if (!['esa','eu_agency'].includes(f.operator)) return null;
       const s = f.sdmp;
       if (!s) return {s:'partial', note:'SDMP status not specified'};
       if (s === 'approved') return {s:'pass', note:'Approved SDMP — compliant'};
       if (s === 'draft') return {s:'partial', note:'Draft SDMP — must be approved before launch'};
-      return {s:'fail', note:'No SDMP — required for ESA missions at all phases'};
+      const isUniversity = f.operator === 'university';
+      if (isUniversity) return {s:'partial', note:'No SDMP — recommended for all missions; check if required by your launch licence'};
+      return {s:'fail', note:'No SDMP — required by most national licensing regimes before launch'};
     }
   },
 

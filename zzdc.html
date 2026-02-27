@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Zero Debris Compliance Checker v2</title>
+<title>Zero Debris Compliance Checker v3</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -625,7 +625,7 @@ body {
   <button class="nav-tab" onclick="showPage('rules')">📋 Rules Explorer</button>
   <button class="nav-tab" onclick="showPage('scoring')">⚖ Scoring Logic</button>
   <div class="nav-spacer"></div>
-  <div class="version-badge">RULE-BASED · v2.0 · NO API</div>
+  <div class="version-badge">RULE-BASED · v3.0 · NO API</div>
 </nav>
 
 <!-- ══════════════════════════════════════════
@@ -643,6 +643,8 @@ body {
       <span class="pill pill-green">ESA/ADMIN/IPOL(2023)1</span>
       <span class="pill pill-blue">EU Space Act Draft 2025</span>
       <span class="pill pill-orange">Zero Debris Charter</span>
+      <span class="pill pill-orange">Japan CA Guidelines (Feb 2025)</span>
+      <span class="pill pill-orange">JAXA JMR-016 (Dec 2022)</span>
     </div>
   </div>
 
@@ -766,7 +768,7 @@ body {
         </div>
       </div>
 
-      <div class="grid3">
+      <div class="grid3" style="margin-bottom:14px">
         <div class="field">
           <label>Collision Avoidance Data Sharing</label>
           <select id="f_data_sharing">
@@ -796,6 +798,107 @@ body {
             <option value="1e4">≤ 1:10,000 (compliant)</option>
             <option value="1e5">≤ 1:100,000</option>
           </select>
+        </div>
+      </div>
+
+      <div class="grid3" style="margin-bottom:14px">
+        <div class="field">
+          <label>COLA Management Plan Status</label>
+          <select id="f_cola_plan">
+            <option value="">— Select —</option>
+            <option value="none">None</option>
+            <option value="draft">Draft / In progress</option>
+            <option value="approved">Approved before launch</option>
+          </select>
+          <span class="field-hint">Required: Japan CA §5.2.1 / JMR-016 §5.1.1.3</span>
+        </div>
+        <div class="field">
+          <label>Dedicated COLA Team / POC</label>
+          <select id="f_cola_team">
+            <option value="">— Select —</option>
+            <option value="none">Not established</option>
+            <option value="informal">Informal / shared responsibility</option>
+            <option value="formal">Formal team with named POC</option>
+          </select>
+          <span class="field-hint">Required: JMR-016 §5.1.1.2 / Japan CA §4.1</span>
+        </div>
+        <div class="field">
+          <label>Propellant Reserved for COLA (margin)</label>
+          <select id="f_cola_propellant">
+            <option value="">— Select —</option>
+            <option value="none">No propulsion / no margin reserved</option>
+            <option value="partial">Some margin but not specifically sized</option>
+            <option value="sized">Explicitly sized for full mission COLA</option>
+          </select>
+          <span class="field-hint">Required: Japan CA §5.1.2.3 / JMR-016 §4.1(3)</span>
+        </div>
+      </div>
+
+      <div class="grid3" style="margin-bottom:14px">
+        <div class="field">
+          <label>Satellite Radar Trackability</label>
+          <select id="f_radar_track">
+            <option value="">— Select —</option>
+            <option value="below_threshold">Below threshold (LEO &lt;10 cm / HEO &lt;50 cm)</option>
+            <option value="beacon_only">Below threshold but carries beacon/reflector</option>
+            <option value="compliant">Meets size threshold naturally</option>
+          </select>
+          <span class="field-hint">Required: Japan CA §5.1.2.1 — LEO ≥10 cm, HEO ≥50 cm</span>
+        </div>
+        <div class="field">
+          <label>Autonomous Manoeuvre Ground Override</label>
+          <select id="f_auto_override">
+            <option value="">— Select —</option>
+            <option value="no_autonomous">No autonomous manoeuvring</option>
+            <option value="no_override">Autonomous — no ground override</option>
+            <option value="override_capable">Autonomous — ground can interrupt/cancel</option>
+            <option value="pre_notified">Autonomous — pre-notified to SSA + override</option>
+          </select>
+          <span class="field-hint">Required: Japan CA §5.2.4</span>
+        </div>
+        <div class="field">
+          <label>Anomaly Reporting Procedure</label>
+          <select id="f_anomaly_report">
+            <option value="">— Select —</option>
+            <option value="none">None defined</option>
+            <option value="internal">Internal only</option>
+            <option value="external">External notification to affected operators</option>
+            <option value="full">Full procedure incl. SSA & public if needed</option>
+          </select>
+          <span class="field-hint">Required: Japan CA §4.3.2 / JMR-016 §6.3</span>
+        </div>
+      </div>
+
+      <div class="grid3">
+        <div class="field">
+          <label>Orbit Selection Rationale</label>
+          <select id="f_orbit_selection">
+            <option value="">— Select —</option>
+            <option value="none">Not documented</option>
+            <option value="partial">Considered but not formally documented</option>
+            <option value="documented">Formally documented avoiding debris zones</option>
+          </select>
+          <span class="field-hint">Required: Japan CA §5.1.1 / JMR-016 §4.1(1)</span>
+        </div>
+        <div class="field">
+          <label>Post-TCA Status Monitoring</label>
+          <select id="f_post_tca">
+            <option value="">— Select —</option>
+            <option value="none">Not planned</option>
+            <option value="informal">Informal check if available</option>
+            <option value="formal">Formal pass scheduled after TCA</option>
+          </select>
+          <span class="field-hint">Required: JMR-016 §6.3.1⑥</span>
+        </div>
+        <div class="field">
+          <label>Three-Level Risk Escalation Process</label>
+          <select id="f_risk_levels">
+            <option value="">— Select —</option>
+            <option value="none">No defined escalation levels</option>
+            <option value="basic">Basic (single threshold only)</option>
+            <option value="tiered">Tiered levels with defined actions per level</option>
+          </select>
+          <span class="field-hint">MONITOR/URGENT/CRITICAL: JMR-016 §6.2.2</span>
         </div>
       </div>
     </div>
@@ -948,6 +1051,9 @@ body {
       <div class="rules-sidebar-item" onclick="filterRules('design',this)">🔧 Design & Re-entry <span class="count" id="cnt_design">—</span></div>
       <div class="rules-sidebar-item" onclick="filterRules('eu',this)">🇪🇺 EU Space Act <span class="count" id="cnt_eu">—</span></div>
       <div class="rules-sidebar-item" onclick="filterRules('zd',this)">🌍 Zero Debris Charter <span class="count" id="cnt_zd">—</span></div>
+      <div style="padding:12px 16px;font-size:10px;color:var(--text-muted);font-family:var(--mono);line-height:1.5;border-top:1px solid var(--border)">
+        🇯🇵 Rules c6–c14 sourced from Japan CA Guidelines (Feb 2025) &amp; JAXA JMR-016 (Dec 2022)
+      </div>
     </div>
 
     <div class="rules-main" id="rulesMain"></div>
@@ -997,11 +1103,11 @@ body {
       <div class="st-name">🛰 Collision Avoidance & STM</div>
       <div class="st-weight">20%</div>
       <div class="st-levels">
-        <div class="st-level">PASS: <span>COLA capable, threshold ≤1:10k, full data sharing</span></div>
-        <div class="st-level">PARTIAL: <span>some capability, passive data sharing</span></div>
-        <div class="st-level">FAIL: <span>no manoeuvre, no screening</span></div>
+        <div class="st-level">PASS: <span>COLA plan, team, Pc ≤1:10k, tiered levels</span></div>
+        <div class="st-level">PARTIAL: <span>some capability, no formal plan</span></div>
+        <div class="st-level">FAIL: <span>no manoeuvre, no plan, no screening</span></div>
       </div>
-      <div class="st-rationale">Critical for active debris risk management, especially for high-traffic LEO orbits and constellation operations.</div>
+      <div class="st-rationale">Largest single rule group (14 rules). Covers hardware capability, operational procedures, organisational requirements, and reporting. Expanded in v3 with Japan CA Guidelines and JAXA JMR-016 operational rules.</div>
     </div>
     <div class="scoring-table-row">
       <div class="st-name">🔒 Passivation & Safety</div>
@@ -1046,7 +1152,35 @@ body {
   </div>
 
   <div class="divider"></div>
-  <div class="section-head"><span class="section-head-label">Risk Classification (ESSB-ST-U-007)</span></div>
+  <div class="section-head"><span class="section-head-label">JAXA JMR-016 Collision Risk Levels</span></div>
+
+  <div class="callout" style="margin-bottom:16px">
+    JMR-016 defines risk by combining <strong>Probability of Collision (Pc)</strong> and <strong>time remaining to TCA</strong>. Both parameters must be used — a high Pc far from TCA may not trigger action, while a moderate Pc close to TCA may. This is the operational standard for all JAXA-operated spacecraft and referenced by the Japan Cabinet Office licensing guidelines.
+  </div>
+
+  <div class="scoring-table" style="margin-bottom:16px">
+    <div class="scoring-table-header" style="grid-template-columns:1fr 1fr 1fr 1fr">
+      <div>Level</div><div>Name</div><div>Criteria</div><div>Required Action</div>
+    </div>
+    <div class="scoring-table-row" style="grid-template-columns:1fr 1fr 1fr 1fr">
+      <div style="color:var(--info);font-weight:700;font-family:var(--mono)">LEVEL 1</div>
+      <div class="st-rationale" style="font-weight:600">MONITOR</div>
+      <div class="st-rationale">Pc ≥ 1×10⁻⁵ · Period: 5 days before TCA to first AOS after TCA · Applies to all spacecraft incl. non-manoeuvrable</div>
+      <div class="st-rationale">CA team reports to COLA team and CMO. All orgs monitor trend. No manoeuvre yet required.</div>
+    </div>
+    <div class="scoring-table-row" style="grid-template-columns:1fr 1fr 1fr 1fr">
+      <div style="color:var(--partial);font-weight:700;font-family:var(--mono)">LEVEL 2</div>
+      <div class="st-rationale" style="font-weight:600">URGENT</div>
+      <div class="st-rationale">Pc ≥ 1×10⁻⁴ (N≤2 days) or Pc ≥ 1×10⁻⁵ (N>2 days) · Manoeuvrable spacecraft only</div>
+      <div class="st-rationale">Primary decision meeting held. Manoeuvre plan prepared. Mandatory manoeuvre if Pc ≥ 1×10⁻³. Coordinate with secondary object operator if contactable.</div>
+    </div>
+    <div class="scoring-table-row" style="grid-template-columns:1fr 1fr 1fr 1fr">
+      <div style="color:var(--fail);font-weight:700;font-family:var(--mono)">LEVEL 3</div>
+      <div class="st-rationale" style="font-weight:600">CRITICAL</div>
+      <div class="st-rationale">Pc ≥ 1×10⁻³ AND manoeuvre cannot be executed · Or: Pc ≥ 1×10⁻³ within 2 days TCA for non-manoeuvrable</div>
+      <div class="st-rationale">Maximum possible action. Crisis Management Office fully activated. Public notification considered. Agency-wide response.</div>
+    </div>
+  </div>
 
   <div class="scoring-table">
     <div class="scoring-table-header" style="grid-template-columns:1fr 1fr 1fr">
@@ -1434,6 +1568,126 @@ const RULES = [
       if (basic) return {s:'partial', note:'Basic mitigation in place — advanced tech contribution not demonstrated'};
       return {s:'fail', note:'No notable contribution to debris mitigation technology'};
     }
+  },
+
+  // ── JAPAN / JAXA COLA OPERATIONS ──
+  { id:'c6', cat:'cola', icon:'🛰', weight:2,
+    name:'Satellite Radar Trackability (Size or Beacon)',
+    threshold:'LEO ≥ 10 cm diameter; HEO/GEO ≥ 50 cm; else beacon required',
+    ref:'Japan CA Guidelines §5.1.2.1 / NASA CARA Handbook',
+    applies:'All Earth-orbit missions',
+    check: (f) => {
+      const t = f.radar_track;
+      if (!t) return {s:'partial', note:'Radar trackability not assessed'};
+      if (t === 'compliant') return {s:'pass', note:'Satellite meets size threshold — trackable by ground radar'};
+      if (t === 'beacon_only') return {s:'partial', note:'Below threshold but beacon/reflector carried — partially mitigated'};
+      return {s:'fail', note:'Below size threshold with no identification device — SSA cataloguing at risk'};
+    }
+  },
+  { id:'c7', cat:'cola', icon:'🛰', weight:2,
+    name:'Dedicated COLA Team with Named Point of Contact',
+    threshold:'Formal organisation with identified POC required',
+    ref:'Japan CA Guidelines §4.1 / JAXA JMR-016 §5.1.1.2',
+    applies:'All licensed satellite operators',
+    check: (f) => {
+      const t = f.cola_team;
+      if (!t) return {s:'partial', note:'COLA team status not specified'};
+      if (t === 'formal') return {s:'pass', note:'Formal COLA team with named POC established'};
+      if (t === 'informal') return {s:'partial', note:'Informal arrangement — formal team with POC required for licensing'};
+      return {s:'fail', note:'No COLA team or POC defined — non-compliant with Japan CA Guidelines §4.1'};
+    }
+  },
+  { id:'c8', cat:'cola', icon:'🛰', weight:3,
+    name:'Collision Avoidance Management Plan (CAMP)',
+    threshold:'Documented and approved plan required before launch',
+    ref:'JAXA JMR-016 §5.1.1.3 / Japan CA Guidelines §5.2.1',
+    applies:'All licensed satellite operators',
+    check: (f) => {
+      const p = f.cola_plan;
+      if (!p) return {s:'partial', note:'COLA plan status not specified'};
+      if (p === 'approved') return {s:'pass', note:'COLA Management Plan approved — compliant'};
+      if (p === 'draft') return {s:'partial', note:'Draft plan — must be approved before launch'};
+      return {s:'fail', note:'No COLA Management Plan — required before operations begin (JMR-016 §5.1.1.3)'};
+    }
+  },
+  { id:'c9', cat:'cola', icon:'🛰', weight:2,
+    name:'Propellant Margin Reserved for COLA Manoeuvres',
+    threshold:'Sufficient propellant for expected COLA manoeuvres over full mission life',
+    ref:'Japan CA Guidelines §5.1.2.3 / JAXA JMR-016 §4.1(3)',
+    applies:'All manoeuvrable spacecraft',
+    check: (f) => {
+      if (f.manoeuvre === 'none' || !f.manoeuvre) return null;
+      const p = f.cola_propellant;
+      if (!p || p === 'none') return {s:'fail', note:'No propellant margin reserved for COLA — manoeuvre capability may be unavailable when needed'};
+      if (p === 'sized') return {s:'pass', note:'COLA propellant margin explicitly sized for full mission — compliant'};
+      return {s:'partial', note:'Some margin exists but not specifically sized for COLA — quantify and document'};
+    }
+  },
+  { id:'c10', cat:'cola', icon:'🛰', weight:2,
+    name:'Anomaly Reporting to Affected Operators',
+    threshold:'Notify relevant operators and SSA providers of anomalies affecting COLA capability',
+    ref:'Japan CA Guidelines §4.3.2 / JAXA JMR-016 §6.3',
+    applies:'All satellite operators',
+    check: (f) => {
+      const a = f.anomaly_report;
+      if (!a) return {s:'partial', note:'Anomaly reporting procedure not defined'};
+      if (a === 'full') return {s:'pass', note:'Full anomaly reporting procedure including SSA and public notification — compliant'};
+      if (a === 'external') return {s:'pass', note:'External notification procedure to affected operators defined'};
+      if (a === 'internal') return {s:'partial', note:'Internal only — external notification to affected operators and SSA required'};
+      return {s:'fail', note:'No anomaly reporting procedure — non-compliant with Japan CA Guidelines §4.3.2'};
+    }
+  },
+  { id:'c11', cat:'cola', icon:'🛰', weight:2,
+    name:'Autonomous Manoeuvre — Ground Override Capability',
+    threshold:'Autonomous COLA must allow ground interruption; pre-notify SSA of planned manoeuvres',
+    ref:'Japan CA Guidelines §5.2.4',
+    applies:'Spacecraft with autonomous orbital control',
+    check: (f) => {
+      const a = f.auto_override;
+      if (!a || a === 'no_autonomous') return null;
+      if (a === 'pre_notified') return {s:'pass', note:'Autonomous manoeuvres pre-notified to SSA and ground override capable — compliant'};
+      if (a === 'override_capable') return {s:'partial', note:'Ground override possible but SSA pre-notification not confirmed'};
+      return {s:'fail', note:'Autonomous manoeuvres with no ground override — non-compliant. Ground must be able to interrupt per Japan CA §5.2.4'};
+    }
+  },
+  { id:'c12', cat:'cola', icon:'🛰', weight:1,
+    name:'Post-TCA Status Monitoring and Reporting',
+    threshold:'Satellite status must be confirmed after each conjunction event',
+    ref:'JAXA JMR-016 §6.3.1⑥ / §6.3.2④',
+    applies:'All satellites after conjunction events',
+    check: (f) => {
+      const p = f.post_tca;
+      if (!p) return {s:'partial', note:'Post-TCA monitoring approach not defined'};
+      if (p === 'formal') return {s:'pass', note:'Formal post-TCA pass scheduled — status confirmation procedure in place'};
+      if (p === 'informal') return {s:'partial', note:'Informal check — formal scheduled pass recommended per JMR-016'};
+      return {s:'fail', note:'No post-TCA monitoring — required to confirm satellite status and release risk level'};
+    }
+  },
+  { id:'c13', cat:'cola', icon:'🛰', weight:2,
+    name:'Three-Level Risk Escalation (MONITOR / URGENT / CRITICAL)',
+    threshold:'Tiered risk levels with defined Pc thresholds and actions per level',
+    ref:'JAXA JMR-016 §6.2.2 — L1: Pc≥1e-5, L2: Pc≥1e-4, L3: Pc≥1e-3',
+    applies:'All spacecraft with COLA operations',
+    check: (f) => {
+      const r = f.risk_levels;
+      if (!r) return {s:'partial', note:'Risk escalation process not defined'};
+      if (r === 'tiered') return {s:'pass', note:'Tiered risk levels with defined Pc thresholds and response actions — compliant with JMR-016'};
+      if (r === 'basic') return {s:'partial', note:'Basic single threshold — implement tiered MONITOR/URGENT/CRITICAL levels per JMR-016'};
+      return {s:'fail', note:'No defined risk escalation — required by JMR-016 §6.2.2 for structured collision avoidance response'};
+    }
+  },
+  { id:'c14', cat:'cola', icon:'🛰', weight:1,
+    name:'Operational Orbit Selection Avoids High-Debris Regions',
+    threshold:'Orbit rationale documented; avoids constellation bands and debris concentrations',
+    ref:'Japan CA Guidelines §5.1.1 / JAXA JMR-016 §4.1(1)',
+    applies:'All missions in design phase',
+    check: (f) => {
+      const o = f.orbit_selection;
+      if (!o) return {s:'partial', note:'Orbit selection rationale not documented'};
+      if (o === 'documented') return {s:'pass', note:'Orbit selection formally documented avoiding high-debris regions'};
+      if (o === 'partial') return {s:'partial', note:'Considered but not formally documented — formalise in mission design documentation'};
+      return {s:'fail', note:'Orbit selection rationale absent — must document consideration of debris environment per Japan CA §5.1.1'};
+    }
   }
 ];
 
@@ -1491,6 +1745,15 @@ function runCheck() {
     data_sharing: gv('f_data_sharing'),
     screening: gv('f_screening'),
     cola_threshold: gv('f_cola_threshold'),
+    cola_plan: gv('f_cola_plan'),
+    cola_team: gv('f_cola_team'),
+    cola_propellant: gv('f_cola_propellant'),
+    radar_track: gv('f_radar_track'),
+    auto_override: gv('f_auto_override'),
+    anomaly_report: gv('f_anomaly_report'),
+    orbit_selection: gv('f_orbit_selection'),
+    post_tca: gv('f_post_tca'),
+    risk_levels: gv('f_risk_levels'),
     dfd: gv('f_dfd'),
     casualty: gv('f_casualty'),
     dfr: gv('f_dfr'),
@@ -1597,6 +1860,15 @@ function getRecommendation(ruleId, f) {
     'e1': `Ensure spacecraft is trackable: provide TLE/state vectors to space surveillance networks. Contact ESA SST or CSpOC for registration.`,
     'z1': `To achieve net-zero debris contribution: reduce decay time to ≤ 5 years AND achieve PSD ≥ 90%.`,
     'z2': `Meet responsible operator minimum standards: (1) produce SDMP, (2) implement COLA capability, (3) share orbital data actively.`,
+    'c6': `Install a radar reflector, optical beacon, or active identification device if spacecraft dimensions are below the trackability threshold (LEO < 10 cm, HEO/GEO < 50 cm). Reference NASA CARA Handbook for device specifications.`,
+    'c7': `Establish a formal COLA team with a named point of contact published in the Conjunction Data Message metadata field. Designate a COLA operator, CA analyst liaison, and crisis management contact per JAXA JMR-016 §5.1.1.2.`,
+    'c8': `Prepare a Collision Avoidance Management Plan (CAMP) before launch covering: SSA service subscription, conjunction assessment timeline, decision criteria (primary/final decision meeting times), and escalation procedures. Obtain approval from your Safety Review Board per JMR-016 §5.1.1.3.`,
+    'c9': `Size and document a dedicated propellant budget for COLA manoeuvres across the full mission life. Account for expected increases in conjunction frequency as LEO population grows. Document in propellant budget ICD per Japan CA Guidelines §5.1.2.3.`,
+    'c10': `Define and document an anomaly reporting procedure specifying: trigger events (malfunction, loss of control, breakup), notification chain (SSA provider, affected operators, public if wide impact), and response timeline. Publish contact information in CDM metadata per Japan CA Guidelines §4.3.2.`,
+    'c11': `Update autonomous manoeuvre system to: (1) pre-notify planned manoeuvres to SSA service and ground with sufficient lead time, (2) implement ground interrupt/cancel command capability, (3) ensure planned manoeuvres execute as notified unless ground updates received. Per Japan CA Guidelines §5.2.4.`,
+    'c12': `Schedule a formal ground contact pass after each conjunction TCA to confirm satellite status. If anomaly detected, activate anomaly reporting procedure. Define Level 2/3 release criteria in COLA Management Plan per JMR-016 §6.3.1⑥.`,
+    'c13': `Implement JMR-016 three-level risk escalation: Level 1 MONITOR (Pc ≥ 1×10⁻⁵, 5 days to TCA) — watch brief; Level 2 URGENT (Pc ≥ 1×10⁻⁴) — prepare manoeuvre; Level 3 CRITICAL (Pc ≥ 1×10⁻³, cannot manoeuvre) — crisis response. Define primary and final decision meeting times in COLA Management Plan.`,
+    'c14': `Document orbit selection rationale addressing: (1) avoidance of dense debris regions, (2) interference with large constellation operational bands, (3) ISS orbit avoidance, (4) selection of orbit with minimum expected conjunction frequency for mission objectives. Include in mission design documentation per Japan CA Guidelines §5.1.1.`,
   };
   return map[ruleId] || `Review ${ruleId} requirement and update mission design accordingly.`;
 }

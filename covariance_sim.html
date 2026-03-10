@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SSA Covariance Ellipsoid Simulator — RTN Frame</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700;900&display=swap');
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  :root{
+    --radar:#38bdf8; --optical:#fb923c;
+    --bg:#07080f; --surface:rgba(255,255,255,0.03);
+    --border:rgba(255,255,255,0.07); --text:#ccc; --muted:#555;
+    --colR:#ff4d6d; --colT:#4ade80; --colN:#a78bfa; --colL:#fde047;
+  }
+  body{background:var(--bg);color:var(--text);font-family:'Share Tech Mono',monospace;min-height:100vh;padding:16px 10px 30px;}
+
+  /* header */
+  header{text-align:center;margin-bottom:14px;}
+  .sub{font-size:9px;letter-spacing:.38em;color:var(--radar);margin-bottom:5px;text-transform:uppercase;}
+  header h1{font-family:'Orbitron',sans-serif;font-size:clamp(13px,2.8vw,19px);font-weight:900;letter-spacing:.06em;
+    background:linear-gradient(90deg,#38bdf8,#fb923c);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  header p{font-size:9px;color:var(--muted);margin-top:5px;}
+
+  /* legend */
+  .legend{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:0 auto 14px;max-width:740px;}
+  .li{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.07);border-radius:5px;padding:4px 9px;font-size:9px;}
+  .ld{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+
+  /* panels */
+  .panels{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;align-items:flex-start;max-width:760px;margin:0 auto;}
+  .panel{width:340px;border-radius:13px;padding:13px 12px;}
+  .panel.radar  {background:rgba(56,189,248,0.04);border:1px solid rgba(56,189,248,0.15);}
+  .panel.optical{background:rgba(251,146,60,0.04);border:1px solid rgba(251,146,60,0.15);}
+
+  .ph{display:flex;align-items:center;gap:7px;margin-bottom:10px;}
+  .hdot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+  .hdot.r{background:var(--radar);box-shadow:0 0 8px var(--radar);}
+  .hdot.o{background:var(--optical);box-shadow:0 0 8px var(--optical);}
+  .ptitle{font-size:11px;font-weight:bold;letter-spacing:.15em;}
+  .ptitle.r{color:var(--radar);} .ptitle.o{color:var(--optical);}
+  .badge{margin-left:auto;font-size:8px;padding:2px 7px;border-radius:4px;}
+  .badge.r{color:var(--radar);background:rgba(56,189,248,0.1);}
+  .badge.o{color:var(--optical);background:rgba(251,146,60,0.1);}
+
+  canvas{border-radius:9px;display:block;cursor:grab;touch-action:none;width:100%;}
+  canvas:active{cursor:grabbing;}
+
+  /* pills */
+  .pills{display:flex;gap:4px;margin:7px 0;}
+  .pill{flex:1;background:var(--surface);border-radius:5px;padding:5px 4px;text-align:center;}
+  .pill .pl{font-size:7.5px;color:var(--muted);letter-spacing:.06em;}
+  .pill .pv{font-size:10px;font-weight:bold;margin-top:2px;}
+
+  /* sliders */
+  .sliders{border-top:1px solid rgba(255,255,255,0.06);padding-top:10px;}
+  .sr{margin-bottom:10px;}
+  .st{display:flex;justify-content:space-between;margin-bottom:3px;}
+  .sl{font-size:8.5px;color:#777;text-transform:uppercase;letter-spacing:.05em;}
+  .sv{font-size:10px;font-weight:bold;}
+  input[type=range]{width:100%;height:3px;cursor:pointer;-webkit-appearance:none;appearance:none;
+    background:rgba(255,255,255,0.1);border-radius:2px;outline:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;cursor:pointer;border:none;}
+  .hint{font-size:8px;color:#3a3a4a;margin-top:2px;font-style:italic;}
+  .radar-range::-webkit-slider-thumb{background:var(--radar);box-shadow:0 0 5px var(--radar);}
+  .optical-range::-webkit-slider-thumb{background:var(--optical);box-shadow:0 0 5px var(--optical);}
+  #sLosEl::-webkit-slider-thumb,#sLosAz::-webkit-slider-thumb{
+    -webkit-appearance:none;width:13px;height:13px;border-radius:50%;cursor:pointer;border:none;
+    background:#fde047;box-shadow:0 0 6px #fde047;}
+  #sZoom::-webkit-slider-thumb{
+    -webkit-appearance:none;width:13px;height:13px;border-radius:50%;cursor:pointer;border:none;
+    background:#86efac;box-shadow:0 0 6px #86efac;}
+  #sSLosEl::-webkit-slider-thumb,#sSLosAz::-webkit-slider-thumb,
+  #sSAp::-webkit-slider-thumb,#sSRng::-webkit-slider-thumb{
+    -webkit-appearance:none;width:13px;height:13px;border-radius:50%;cursor:pointer;border:none;
+    background:#a78bfa;box-shadow:0 0 6px #a78bfa;}
+
+  .insight{border-radius:7px;padding:8px 10px;margin-top:8px;font-size:8.5px;line-height:1.75;}
+  .insight.r{background:rgba(56,189,248,0.06);color:#7dd3fc;}
+  .insight.o{background:rgba(251,146,60,0.06);color:#fdba74;}
+
+  /* LOS control */
+  .los-box{max-width:720px;margin:10px auto 0;background:rgba(253,224,71,0.04);
+    border:1px solid rgba(253,224,71,0.2);border-radius:9px;padding:10px 14px;}
+  .los-title{font-size:9px;color:var(--colL);letter-spacing:.1em;font-weight:bold;margin-bottom:8px;}
+  .los-sliders{display:flex;gap:14px;flex-wrap:wrap;}
+  .los-sliders>div{flex:1;min-width:150px;}
+  #losInfo{font-size:8.5px;color:#555;line-height:1.9;margin-top:8px;}
+
+  /* fusion */
+  .fusion{max-width:720px;margin:10px auto 0;
+    background:linear-gradient(120deg,rgba(56,189,248,0.05),rgba(251,146,60,0.05));
+    border:1px solid var(--border);border-radius:9px;padding:10px 14px;
+    font-size:9px;color:#666;line-height:1.9;}
+  .fusion strong{color:#aaa;letter-spacing:.08em;}
+  .cr{color:var(--colR);} .ct{color:var(--colT);} .cn{color:var(--colN);}
+  .cl{color:var(--colL);} .cg{color:#86efac;}
+  .crad{color:var(--radar);} .copt{color:var(--optical);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="sub">SSA · Covariance Ellipsoid Simulator · RTN Frame</div>
+  <h1>RADAR vs OPTICAL — UNCERTAINTY IN RTN</h1>
+  <p>Drag either ellipsoid to rotate both · Sliders reshape uncertainty · LOS controls change viewing geometry</p>
+</header>
+
+<div class="legend">
+  <div class="li"><div class="ld" style="background:var(--colR)"></div><span style="color:var(--colR)">R — Radial</span><span style="color:#444">&nbsp;(Earth→Sat)</span></div>
+  <div class="li"><div class="ld" style="background:var(--colT)"></div><span style="color:var(--colT)">T — Transverse</span><span style="color:#444">&nbsp;(In-track / Velocity ▶)</span></div>
+  <div class="li"><div class="ld" style="background:var(--colN)"></div><span style="color:var(--colN)">N — Normal</span><span style="color:#444">&nbsp;(Cross-track)</span></div>
+  <div class="li"><div class="ld" style="background:var(--colL);box-shadow:0 0 6px var(--colL)"></div><span style="color:var(--colL)">LOS</span><span style="color:#444">&nbsp;(Sensor→Sat line-of-sight)</span></div>
+</div>
+
+<div class="panels">
+
+  <!-- RADAR -->
+  <div class="panel radar">
+    <div class="ph">
+      <div class="hdot r"></div>
+      <span class="ptitle r">RADAR</span>
+      <span class="badge r">PANCAKE · OBLATE</span>
+    </div>
+    <canvas id="radarCanvas" width="316" height="272"></canvas>
+    <div class="pills">
+      <div class="pill"><div class="pl">σR Radial</div><div class="pv" id="rR" style="color:var(--colR)">—</div></div>
+      <div class="pill"><div class="pl">σT In-track</div><div class="pv" id="rT" style="color:var(--colT)">—</div></div>
+      <div class="pill"><div class="pl">σN Cross-trk</div><div class="pv" id="rN" style="color:var(--colN)">—</div></div>
+      <div class="pill"><div class="pl">Flat ratio</div><div class="pv" id="rAsp" style="color:#7dd3fc">—</div></div>
+    </div>
+    <div class="sliders">
+      <div class="sr">
+        <div class="st"><span class="sl">Beamwidth</span><span class="sv" id="vBeam" style="color:var(--radar)">1.5°</span></div>
+        <input type="range" class="radar-range" id="sBeam" min="0.3" max="6" step="0.1" value="1.5"/>
+        <div class="hint">Wider beam → larger σT / σN footprint → fatter pancake in T-N plane</div>
+      </div>
+      <div class="sr">
+        <div class="st"><span class="sl">Range error σR</span><span class="sv" id="vRangeErr" style="color:var(--radar)">0.10 km</span></div>
+        <input type="range" class="radar-range" id="sRangeErr" min="0.01" max="1.0" step="0.01" value="0.1"/>
+        <div class="hint">Direct range measurement → controls Radial (R) thickness</div>
+      </div>
+      <div class="sr">
+        <div class="st"><span class="sl">Target range</span><span class="sv" id="vRadarDist" style="color:#7dd3fc">800 km</span></div>
+        <input type="range" class="radar-range" id="sRadarDist" min="200" max="2000" step="50" value="800"/>
+        <div class="hint">Farther → beam footprint grows → wider σT / σN</div>
+      </div>
+    </div>
+    <div class="insight r">
+      <b>Radar: tight along LOS (c·τ/2), wide perpendicular (beamwidth × range).</b>
+      Pancake thin axis follows LOS → change LOS azimuth to see the pancake tilt in RTN.
+    </div>
+  </div>
+
+  <!-- OPTICAL -->
+  <div class="panel optical">
+    <div class="ph">
+      <div class="hdot o"></div>
+      <span class="ptitle o">OPTICAL</span>
+      <span class="badge o">CIGAR · PROLATE</span>
+    </div>
+    <canvas id="opticalCanvas" width="316" height="272"></canvas>
+    <div class="pills">
+      <div class="pill"><div class="pl">σR Radial</div><div class="pv" id="oR" style="color:var(--colR)">—</div></div>
+      <div class="pill"><div class="pl">σT In-track</div><div class="pv" id="oT" style="color:var(--colT)">—</div></div>
+      <div class="pill"><div class="pl">σN Cross-trk</div><div class="pv" id="oN" style="color:var(--colN)">—</div></div>
+      <div class="pill"><div class="pl">Elongation</div><div class="pv" id="oAsp" style="color:#fdba74">—</div></div>
+    </div>
+    <div class="sliders">
+      <div class="sr">
+        <div class="st"><span class="sl">Aperture diameter</span><span class="sv" id="vAperture" style="color:var(--optical)">0.50 m</span></div>
+        <input type="range" class="optical-range" id="sAperture" min="0.1" max="2.5" step="0.05" value="0.5"/>
+        <div class="hint">Larger aperture → finer angular resolution → thinner cigar</div>
+      </div>
+      <div class="sr">
+        <div class="st"><span class="sl">Atmospheric seeing</span><span class="sv" id="vSeeing" style="color:var(--optical)">2.0"</span></div>
+        <input type="range" class="optical-range" id="sSeeing" min="0.5" max="5.0" step="0.1" value="2.0"/>
+        <div class="hint">Poor seeing → blurred PSF → wider transverse uncertainty</div>
+      </div>
+      <div class="sr">
+        <div class="st"><span class="sl">Target range</span><span class="sv" id="vOptDist" style="color:#fdba74">1000 km</span></div>
+        <input type="range" class="optical-range" id="sOptDist" min="300" max="2000" step="50" value="1000"/>
+        <div class="hint">Range unobserved → LOS uncertainty scales with distance</div>
+      </div>
+    </div>
+    <div class="insight o">
+      <b>Optical measures angles only</b> — range entirely unobserved.
+      LOS uncertainty projects onto RTN axes based on geometry →
+      <b>prolate cigar aligned with LOS direction</b>
+    </div>
+  </div>
+</div>
+
+<!-- LOS geometry control -->
+<div style="max-width:720px;margin:12px auto 0;background:rgba(253,224,71,0.05);
+  border:1px solid rgba(253,224,71,0.25);border-radius:10px;padding:12px 16px;">
+
+  <div style="font-size:9px;color:#fde047;letter-spacing:.1em;font-weight:bold;margin-bottom:10px;">
+    ◈ LOS VIEWING GEOMETRY — sensor line-of-sight direction in RTN frame
+  </div>
+
+  <div style="display:flex;gap:16px;flex-wrap:wrap;">
+
+    <!-- elevation -->
+    <div style="flex:1;min-width:160px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+        <span style="font-size:9px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;">LOS Elevation (from orbital plane)</span>
+        <span style="font-size:11px;font-weight:bold;color:#fde047;font-family:monospace;" id="vLosEl">20°</span>
+      </div>
+      <input type="range" id="sLosEl" min="0" max="90" step="1" value="20"
+        style="width:100%;accent-color:#fde047;cursor:pointer;height:3px;
+               -webkit-appearance:none;appearance:none;
+               background:rgba(253,224,71,0.2);border-radius:2px;outline:none;"/>
+      <div style="font-size:8px;color:#555;margin-top:3px;font-style:italic;">
+        0° = LOS in orbital plane · 90° = pure N (cross-track)
+      </div>
+    </div>
+
+    <!-- azimuth -->
+    <div style="flex:1;min-width:160px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+        <span style="font-size:9px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;">LOS Azimuth in orbital plane (R→T)</span>
+        <span style="font-size:11px;font-weight:bold;color:#fde047;font-family:monospace;" id="vLosAz">0°</span>
+      </div>
+      <input type="range" id="sLosAz" min="-180" max="180" step="1" value="0"
+        style="width:100%;accent-color:#fde047;cursor:pointer;height:3px;
+               -webkit-appearance:none;appearance:none;
+               background:rgba(253,224,71,0.2);border-radius:2px;outline:none;"/>
+      <div style="font-size:8px;color:#555;margin-top:3px;font-style:italic;">
+        0° = pure R (ground sensor below sat) · ±90° = In-track · ±180° = anti-radial
+      </div>
+    </div>
+
+  </div>
+
+  <div id="losInfo" style="font-size:8.5px;color:#666;line-height:1.9;margin-top:10px;
+    padding-top:8px;border-top:1px solid rgba(253,224,71,0.1);">—</div>
+</div>
+
+<!-- Fusion -->
+<div class="fusion">
+  <strong>FUSION INSIGHT · </strong>
+  <span class="crad">Radar</span> tightly constrains <span class="cr">σ<sub>R</sub> (Radial)</span> but is poor in
+  <span class="ct">σ<sub>T</sub></span> / <span class="cn">σ<sub>N</sub></span>.
+  <span class="copt">Optical</span> constrains <span class="ct">σ<sub>T</sub></span> and <span class="cn">σ<sub>N</sub></span>
+  well but has huge <span class="cr">σ<sub>R</sub></span> along the <span class="cl">LOS</span>.
+  The <span class="cl">LOS azimuth &amp; elevation</span> sliders show how sensor geometry determines
+  which RTN axes are observable. Fusing both → joint covariance collapses to a <span class="cg"><b>compact sphere</b></span>.
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     FUSED ELLIPSOID SECTION
+     ══════════════════════════════════════════════════════ -->
+<div style="max-width:820px;margin:18px auto 0;padding:0 8px;box-sizing:border-box;">
+
+  <!-- section header -->
+  <div style="text-align:center;margin-bottom:14px;">
+    <div style="font-size:9px;letter-spacing:.35em;color:#86efac;margin-bottom:4px;">BAYESIAN COVARIANCE FUSION</div>
+    <div style="font-family:'Orbitron',sans-serif;font-size:16px;font-weight:900;letter-spacing:.06em;
+      background:linear-gradient(90deg,#38bdf8,#86efac,#fb923c);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">
+      GROUND + SPACE FUSED UNCERTAINTY
+    </div>
+    <div style="font-size:9px;color:#555;margin-top:5px;">
+      Drag to rotate · Space-based sensor LOS is independent of ground LOS above
+    </div>
+  </div>
+
+  <!-- ── TWO-COLUMN LAYOUT ── -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;">
+
+    <!-- ═══ LEFT COLUMN: fused canvas panel ═══ -->
+    <div style="background:rgba(134,239,172,0.04);border:1px solid rgba(134,239,172,0.18);
+      border-radius:13px;padding:13px 12px;">
+
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px;">
+        <div style="width:9px;height:9px;border-radius:50%;background:#86efac;box-shadow:0 0 8px #86efac;flex-shrink:0;"></div>
+        <span style="font-size:11px;font-weight:bold;letter-spacing:.15em;color:#86efac;">FUSED COVARIANCE</span>
+        <span style="margin-left:auto;font-size:8px;color:#86efac;background:rgba(134,239,172,0.1);padding:2px 7px;border-radius:4px;">BAYESIAN</span>
+      </div>
+
+      <!-- layer checkboxes -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:9px;">
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:9px;
+          background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.25);
+          border-radius:5px;padding:5px 8px;color:#38bdf8;user-select:none;">
+          <input type="checkbox" id="cbRadar" checked
+            style="accent-color:#38bdf8;width:11px;height:11px;cursor:pointer;flex-shrink:0;"/>
+          Ground Radar
+        </label>
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:9px;
+          background:rgba(251,146,60,0.08);border:1px solid rgba(251,146,60,0.25);
+          border-radius:5px;padding:5px 8px;color:#fb923c;user-select:none;">
+          <input type="checkbox" id="cbOptGnd" checked
+            style="accent-color:#fb923c;width:11px;height:11px;cursor:pointer;flex-shrink:0;"/>
+          Ground Optical
+        </label>
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:9px;
+          background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.25);
+          border-radius:5px;padding:5px 8px;color:#a78bfa;user-select:none;">
+          <input type="checkbox" id="cbOptSpc" checked
+            style="accent-color:#a78bfa;width:11px;height:11px;cursor:pointer;flex-shrink:0;"/>
+          Space Optical
+        </label>
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:9px;
+          background:rgba(134,239,172,0.08);border:1px solid rgba(134,239,172,0.25);
+          border-radius:5px;padding:5px 8px;color:#86efac;user-select:none;">
+          <input type="checkbox" id="cbFused" checked
+            style="accent-color:#86efac;width:11px;height:11px;cursor:pointer;flex-shrink:0;"/>
+          Fused Result
+        </label>
+      </div>
+
+      <canvas id="fusedCanvas" width="356" height="300"
+        style="border-radius:9px;display:block;cursor:grab;touch-action:none;width:100%;
+               border:1px solid rgba(134,239,172,0.15);"></canvas>
+
+      <!-- zoom slider -->
+      <div style="margin:9px 0 5px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+          <span style="font-size:9px;color:#777;text-transform:uppercase;letter-spacing:.06em;">🔍 Zoom</span>
+          <span style="font-size:10px;font-weight:bold;color:#86efac;font-family:monospace;" id="vZoom">1.0×</span>
+        </div>
+        <input type="range" id="sZoom" min="0.5" max="8" step="0.1" value="1.0"
+          style="width:100%;accent-color:#86efac;cursor:pointer;height:3px;
+                 -webkit-appearance:none;appearance:none;
+                 background:rgba(134,239,172,0.2);border-radius:2px;outline:none;"/>
+        <div style="font-size:8px;color:#3a3a4a;margin-top:2px;font-style:italic;">
+          Zoom in to resolve the fused ellipsoid inside the larger individual ghosts
+        </div>
+      </div>
+
+      <!-- fused stats pills -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:8px 0;">
+        <div style="background:rgba(255,255,255,0.03);border-radius:5px;padding:5px 4px;text-align:center;">
+          <div style="font-size:7px;color:#555;letter-spacing:.04em;">σR Radial</div>
+          <div style="font-size:10px;font-weight:bold;margin-top:2px;color:#ff4d6d;" id="fR">—</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.03);border-radius:5px;padding:5px 4px;text-align:center;">
+          <div style="font-size:7px;color:#555;letter-spacing:.04em;">σT In-track</div>
+          <div style="font-size:10px;font-weight:bold;margin-top:2px;color:#4ade80;" id="fT">—</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.03);border-radius:5px;padding:5px 4px;text-align:center;">
+          <div style="font-size:7px;color:#555;letter-spacing:.04em;">σN Cross-trk</div>
+          <div style="font-size:10px;font-weight:bold;margin-top:2px;color:#a78bfa;" id="fN">—</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.03);border-radius:5px;padding:5px 4px;text-align:center;">
+          <div style="font-size:7px;color:#555;letter-spacing:.04em;">Vol↓</div>
+          <div style="font-size:10px;font-weight:bold;margin-top:2px;color:#86efac;" id="fVol">—</div>
+        </div>
+      </div>
+
+      <div style="background:rgba(134,239,172,0.06);border-radius:7px;padding:8px 10px;
+        font-size:8.5px;color:#86efac;line-height:1.75;">
+        <b>P<sub>fused</sub><sup>-1</sup> = P<sub>radar</sub><sup>-1</sup> + P<sub>opt,gnd</sub><sup>-1</sup> + P<sub>opt,spc</sub><sup>-1</sup></b><br>
+        Each checked sensor adds <b>information (1/σ²)</b> along its observable RTN axes.
+        Uncheck sensors to see each one's contribution.
+      </div>
+    </div>
+
+    <!-- ═══ RIGHT COLUMN: space-based optical parameters ═══ -->
+    <div style="background:rgba(167,139,250,0.04);border:1px solid rgba(167,139,250,0.2);
+      border-radius:13px;padding:13px 12px;">
+
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:14px;">
+        <div style="width:9px;height:9px;border-radius:50%;background:#a78bfa;box-shadow:0 0 8px #a78bfa;flex-shrink:0;"></div>
+        <span style="font-size:11px;font-weight:bold;letter-spacing:.12em;color:#a78bfa;">SPACE-BASED OPTICAL</span>
+      </div>
+
+      <!-- 2×2 grid of sliders for compact layout -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;">
+
+        <!-- Space LOS elevation -->
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+            <span style="font-size:8px;color:#888;text-transform:uppercase;letter-spacing:.05em;">LOS Elevation</span>
+            <span style="font-size:11px;font-weight:bold;color:#a78bfa;font-family:monospace;" id="vSLosEl">90°</span>
+          </div>
+          <input type="range" id="sSLosEl" min="0" max="90" step="1" value="90"
+            style="width:100%;accent-color:#a78bfa;cursor:pointer;height:3px;
+                   -webkit-appearance:none;appearance:none;
+                   background:rgba(167,139,250,0.2);border-radius:2px;outline:none;"/>
+          <div style="font-size:7.5px;color:#3a3a4a;margin-top:3px;font-style:italic;line-height:1.4;">
+            90° = nadir (above sat)<br>0° = in orbital plane
+          </div>
+        </div>
+
+        <!-- Space LOS azimuth -->
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+            <span style="font-size:8px;color:#888;text-transform:uppercase;letter-spacing:.05em;">LOS Azimuth</span>
+            <span style="font-size:11px;font-weight:bold;color:#a78bfa;font-family:monospace;" id="vSLosAz">90°</span>
+          </div>
+          <input type="range" id="sSLosAz" min="-180" max="180" step="1" value="90"
+            style="width:100%;accent-color:#a78bfa;cursor:pointer;height:3px;
+                   -webkit-appearance:none;appearance:none;
+                   background:rgba(167,139,250,0.2);border-radius:2px;outline:none;"/>
+          <div style="font-size:7.5px;color:#3a3a4a;margin-top:3px;font-style:italic;line-height:1.4;">
+            ±90° = in-track view<br>0° = radial (below)
+          </div>
+        </div>
+
+        <!-- Space aperture -->
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+            <span style="font-size:8px;color:#888;text-transform:uppercase;letter-spacing:.05em;">Aperture</span>
+            <span style="font-size:11px;font-weight:bold;color:#a78bfa;font-family:monospace;" id="vSAp">0.30 m</span>
+          </div>
+          <input type="range" id="sSAp" min="0.05" max="1.0" step="0.05" value="0.3"
+            style="width:100%;accent-color:#a78bfa;cursor:pointer;height:3px;
+                   -webkit-appearance:none;appearance:none;
+                   background:rgba(167,139,250,0.2);border-radius:2px;outline:none;"/>
+          <div style="font-size:7.5px;color:#3a3a4a;margin-top:3px;font-style:italic;line-height:1.4;">
+            No atmospheric blur<br>→ diffraction limited
+          </div>
+        </div>
+
+        <!-- Space range -->
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+            <span style="font-size:8px;color:#888;text-transform:uppercase;letter-spacing:.05em;">Range</span>
+            <span style="font-size:11px;font-weight:bold;color:#a78bfa;font-family:monospace;" id="vSRng">200 km</span>
+          </div>
+          <input type="range" id="sSRng" min="50" max="1000" step="50" value="200"
+            style="width:100%;accent-color:#a78bfa;cursor:pointer;height:3px;
+                   -webkit-appearance:none;appearance:none;
+                   background:rgba(167,139,250,0.2);border-radius:2px;outline:none;"/>
+          <div style="font-size:7.5px;color:#3a3a4a;margin-top:3px;font-style:italic;line-height:1.4;">
+            Closer range →<br>tighter σ<sub>trans</sub>
+          </div>
+        </div>
+
+      </div><!-- end 2×2 grid -->
+
+      <!-- space LOS readout -->
+      <div id="sLosInfo" style="font-size:8px;color:#666;margin-top:12px;padding-top:10px;
+        border-top:1px solid rgba(167,139,250,0.15);line-height:1.9;">—</div>
+
+      <!-- geometry explanation -->
+      <div style="background:rgba(167,139,250,0.07);border-radius:7px;padding:10px 11px;margin-top:10px;
+        font-size:8.5px;color:#c4b5fd;line-height:1.8;">
+        <b>Why space-based LOS differs from ground:</b><br>
+        A space sensor in a nearby orbit can view the target from <b>any RTN angle</b> —
+        including pure in-track (±T) or cross-track (N) geometries that are
+        geometrically impossible from the ground.
+        This fills in the RTN axes that ground sensors leave unobserved.<br><br>
+        <b>Key insight:</b> Set Space LOS azimuth = ±90° (in-track) to see the fused σ<sub>T</sub>
+        collapse — the axis ground sensors struggle with most.
+      </div>
+
+    </div><!-- end right column -->
+  </div><!-- end two-column grid -->
+
+  <!-- fusion math explanation -->
+  <div style="margin-top:12px;background:linear-gradient(135deg,rgba(56,189,248,0.05),rgba(134,239,172,0.05),rgba(251,146,60,0.05));
+    border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:14px 16px;font-size:9px;color:#777;line-height:2.0;">
+
+    <div style="color:#bbb;font-weight:bold;letter-spacing:.1em;margin-bottom:8px;">
+      ◈ HOW INFORMATION FUSION WORKS IN RTN
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
+      <div>
+        <div style="color:#38bdf8;font-weight:bold;margin-bottom:4px;">① Ground Radar</div>
+        Tight along ground-LOS (range), wide perpendicular.
+        Typically strong <span style="color:#ff4d6d">σR</span> constraint when LOS ≈ Radial.
+        Weak in <span style="color:#4ade80">σT</span> and <span style="color:#a78bfa">σN</span>.
+      </div>
+      <div>
+        <div style="color:#fb923c;font-weight:bold;margin-bottom:4px;">② Ground Optical</div>
+        Tight in angle (T, N), huge along ground-LOS.
+        Complements radar — constrains the axes radar misses,
+        but adds large <span style="color:#ff4d6d">σR</span> uncertainty.
+      </div>
+      <div>
+        <div style="color:#a78bfa;font-weight:bold;margin-bottom:4px;">③ Space Optical</div>
+        Closer range → tighter σ<sub>trans</sub>. No atmosphere.
+        Unique geometry (e.g. pure in-track LOS) constrains
+        <span style="color:#4ade80">σT</span> directly — impossible from ground.
+      </div>
+      <div>
+        <div style="color:#86efac;font-weight:bold;margin-bottom:4px;">④ Fused Result</div>
+        P<sup>-1</sup><sub>fused</sub> = Σ P<sup>-1</sup><sub>i</sub> — information adds.
+        Volume shrinks as <b>∝ 1/√(det P<sub>fused</sub>)</b>.
+        Shape becomes compact when sensors cover all 3 RTN axes.
+      </div>
+    </div>
+  </div>
+
+</div><!-- end fused section -->
+
+<script>
+const TWO_PI=Math.PI*2, DEG=Math.PI/180;
+// Default view: R→down, T→left, N→out of screen at rx=0,ry=0
+// Achieved by remapping basis vectors in scene space:
+//   R = [0,+1, 0]  → screen-y = down ✓
+//   T = [-1,0, 0]  → screen-x = left ✓
+//   N = [0, 0,-1]  → z < 0 = toward viewer ✓
+const rot={rx:0, ry:0};
+
+const RTN=[
+  {v:[0, 1, 0], col:'#ff4d6d', lbl:'R  Radial'},
+  {v:[-1, 0, 0], col:'#4ade80', lbl:'T  In-track'},
+  {v:[0, 0,-1], col:'#a78bfa', lbl:'N  Cross-track'},
+];
+
+function rotP(x,y,z,rx,ry){
+  const y1=y*Math.cos(rx)-z*Math.sin(rx),z1=y*Math.sin(rx)+z*Math.cos(rx);
+  const x2=x*Math.cos(ry)+z1*Math.sin(ry);
+  return [x2,y1,-x*Math.sin(ry)+z1*Math.cos(ry)];
+}
+function prj(x,y,z,cx,cy,fov=310){const s=fov/(fov+z);return[cx+x*s,cy+y*s,s];}
+
+function buildWF(a,b,c,seg=24){
+  const L=[];
+  for(let i=0;i<=seg;i++){
+    const phi=(i/seg)*Math.PI,r=[];
+    for(let j=0;j<=seg;j++){const t=(j/seg)*TWO_PI;r.push([a*Math.sin(phi)*Math.cos(t),b*Math.sin(phi)*Math.sin(t),c*Math.cos(phi)]);}
+    L.push(r);
+  }
+  for(let j=0;j<seg;j+=4){
+    const t=(j/seg)*TWO_PI,m=[];
+    for(let i=0;i<=seg;i++){const phi=(i/seg)*Math.PI;m.push([a*Math.sin(phi)*Math.cos(t),b*Math.sin(phi)*Math.sin(t),c*Math.cos(phi)]);}
+    L.push(m);
+  }
+  return L;
+}
+
+function arrow(ctx,x1,y1,x2,y2,col,lbl,lw=1.8,dash=false){
+  const dx=x2-x1,dy=y2-y1,len=Math.sqrt(dx*dx+dy*dy);
+  if(len<2)return;
+  const ux=dx/len,uy=dy/len,hL=10,hW=5;
+  ctx.save();
+  ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=lw;
+  ctx.setLineDash(dash?[5,4]:[]);
+  ctx.shadowBlur=8;ctx.shadowColor=col;
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.moveTo(x2,y2);
+  ctx.lineTo(x2-ux*hL-uy*hW,y2-uy*hL+ux*hW);
+  ctx.lineTo(x2-ux*hL+uy*hW,y2-uy*hL-ux*hW);
+  ctx.closePath();ctx.fill();
+  ctx.shadowBlur=0;
+  if(lbl){ctx.font='bold 9px "Share Tech Mono",monospace';ctx.fillStyle=col;ctx.fillText(lbl,x2+ux*5+4,y2+uy*5+4);}
+  ctx.restore();
+}
+
+function getLOS(){
+  const el=parseFloat(document.getElementById('sLosEl').value)*DEG;
+  const az=parseFloat(document.getElementById('sLosAz').value)*DEG;
+  const ce=Math.cos(el);
+  return[ce*Math.cos(az), ce*Math.sin(az), Math.sin(el)];
+}
+
+// ── Build a rotation matrix that maps local Z → direction (lx,ly,lz) ──
+// Used to orient the optical cigar along the LOS in RTN space
+function makeLOSRotMatrix(lx,ly,lz){
+  // local Z of cigar → LOS direction
+  // find perpendicular u via cross product with a non-parallel vector
+  let ux,uy,uz;
+  if(Math.abs(lx)<0.9){const l=Math.sqrt(1-lx*lx);ux=0;uy=-lz/l;uz=ly/l;}
+  else{const l=Math.sqrt(1-ly*ly);ux=lz/l;uy=0;uz=-lx/l;}
+  // second perp = LOS × u
+  const vx=ly*uz-lz*uy, vy=lz*ux-lx*uz, vz=lx*uy-ly*ux;
+  // columns: u, v, los  → 3×3 row-major
+  return[ux,vx,lx, uy,vy,ly, uz,vz,lz];
+}
+function applyMat(M,x,y,z){
+  return[M[0]*x+M[1]*y+M[2]*z, M[3]*x+M[4]*y+M[5]*z, M[6]*x+M[7]*y+M[8]*z];
+}
+
+function drawScene(canvas, params, hexCol, glowCol, isOpt){
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height,cx=W/2,cy=H/2;
+  ctx.clearRect(0,0,W,H);
+
+  const bg=ctx.createRadialGradient(cx,cy,0,cx,cy,W*.72);
+  bg.addColorStop(0,'#0d0f1a');bg.addColorStop(1,'#050508');
+  ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+
+  ctx.strokeStyle='rgba(255,255,255,0.022)';ctx.lineWidth=1;
+  for(let x=0;x<W;x+=20){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=20){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+
+  const {rx,ry}=rot;
+  const los=getLOS();
+
+  // scene scale — use correct fields for each sensor type
+  const maxD = isOpt
+    ? Math.max(params.sigLOS, params.sigTrans)
+    : Math.max(params.sigCross, params.sigRange);
+  const L=maxD*1.65;
+
+  // RTN → scene coords: R→down, T→left, N→toward viewer
+  const rtnToScene=(r,t,n)=>[-t, r, n];
+
+  // ── RTN axes (dashed arrows) ──
+  RTN.forEach(({v,col,lbl})=>{
+    const[rx2,ry2,rz2]=rotP(v[0]*L,v[1]*L,v[2]*L,rx,ry);
+    const[px,py]=prj(rx2,ry2,rz2,cx,cy);
+    arrow(ctx,cx,cy,px,py,col,lbl,1.5,true);
+  });
+
+  // ── velocity label near T axis tip ──
+  {
+    const vl=L*0.60;
+    const sc=rtnToScene(0,vl,0);
+    const[rx2,ry2,rz2]=rotP(sc[0],sc[1],sc[2],rx,ry);
+    const[px,py]=prj(rx2,ry2,rz2,cx,cy);
+    ctx.save();ctx.font='bold 8px "Share Tech Mono",monospace';
+    ctx.fillStyle='rgba(74,222,128,0.75)';
+    ctx.fillText('▶ velocity',px+4,py-8);ctx.restore();
+  }
+
+  // ── LOS vector (yellow solid arrow) ──
+  const lL=L*1.12;
+  const losSc=rtnToScene(los[0]*lL,los[1]*lL,los[2]*lL);
+  const[lrx,lry,lrz]=rotP(losSc[0],losSc[1],losSc[2],rx,ry);
+  const[lpx,lpy]=prj(lrx,lry,lrz,cx,cy);
+  arrow(ctx,cx,cy,lpx,lpy,'#fde047','LOS',2.3,false);
+  const sx=cx-(lpx-cx)*0.15, sy=cy-(lpy-cy)*0.15;
+  ctx.save();ctx.font='8px "Share Tech Mono",monospace';ctx.fillStyle='rgba(253,224,71,0.4)';
+  ctx.fillText('sensor',sx-14,sy-5);ctx.restore();
+
+  // ── ellipsoid wireframe ──
+  // Both sensors built in LOS-aligned local frame, then rotated via makeLOSRotMatrix
+  // Radar  PANCAKE : local Z = sigRange (thin, along LOS), local X/Y = sigCross (wide)
+  // Optical CIGAR  : local Z = sigLOS   (long, along LOS), local X/Y = sigTrans (thin)
+  const M=makeLOSRotMatrix(los[0],los[1],los[2]);
+  const rawWF = isOpt
+    ? buildWF(params.sigTrans, params.sigTrans,    params.sigLOS,   28)
+    : buildWF(params.sigCross, params.sigCross*0.78, params.sigRange, 26);
+
+  const wfPoints=rawWF.map(ring=>ring.map(pt=>{
+    const[rr,tt,nn]=applyMat(M,pt[0],pt[1],pt[2]);
+    const sc=rtnToScene(rr,tt,nn);
+    const[rx2,ry2,rz2]=rotP(sc[0],sc[1],sc[2],rx,ry);
+    const[px,py,s]=prj(rx2,ry2,rz2,cx,cy);
+    return{px,py,s};
+  }));
+
+  wfPoints.forEach(ring=>{
+    for(let i=0;i<ring.length-1;i++){
+      const a=Math.max(0.07,Math.min(0.82,ring[i].s*0.88));
+      const hx=Math.round(a*255).toString(16).padStart(2,'0');
+      ctx.beginPath();ctx.moveTo(ring[i].px,ring[i].py);ctx.lineTo(ring[i+1].px,ring[i+1].py);
+      ctx.strokeStyle=hexCol+hx;ctx.lineWidth=1;
+      ctx.shadowBlur=5;ctx.shadowColor=glowCol;ctx.stroke();ctx.shadowBlur=0;
+    }
+  });
+
+  // centre dot
+  ctx.beginPath();ctx.arc(cx,cy,3.5,0,TWO_PI);
+  ctx.fillStyle='#fff';ctx.shadowBlur=10;ctx.shadowColor='#fff';ctx.fill();ctx.shadowBlur=0;
+}
+
+// ── compute sensor params ──
+function getRadarParams(){
+  const bw  =parseFloat(document.getElementById('sBeam').value);
+  const rerr=parseFloat(document.getElementById('sRangeErr').value);
+  const dist=parseFloat(document.getElementById('sRadarDist').value);
+  // sigRange: tight — direct range measurement along LOS
+  const sigRange=Math.min(50,Math.max(2,rerr*14));
+  // sigCross: wide — beamwidth × range, perpendicular to LOS
+  const sigCross=Math.min(140,Math.max(6,dist*Math.tan(bw*DEG)*0.9));
+  return{sigRange, sigCross};
+}
+
+function getOpticalParams(){
+  const ap  =parseFloat(document.getElementById('sAperture').value);
+  const see =parseFloat(document.getElementById('sSeeing').value);
+  const dist=parseFloat(document.getElementById('sOptDist').value);
+  const angRes=(see*4.85e-6)/ap;
+  // sigTrans = angular uncertainty × range  (small — optical knows angles well)
+  const sigTrans=Math.min(60,Math.max(2, angRes*dist*4500));
+  // sigLOS   = range uncertainty along LOS  (huge — range entirely unobserved)
+  const sigLOS  =Math.min(250,Math.max(40, dist*0.20));
+  return{sigTrans, sigLOS};
+}
+
+function updateStats(){
+  const r=getRadarParams(), o=getOpticalParams();
+  const l=getLOS();
+  const lR=Math.abs(l[0]),lT=Math.abs(l[1]),lN=Math.abs(l[2]);
+
+  // Radar RTN projections: LOS direction = tight axis, cross-LOS = wide axes
+  const rProjR = lR*r.sigRange + (1-lR)*r.sigCross;
+  const rProjT = lT*r.sigRange + (1-lT)*r.sigCross;
+  const rProjN = lN*r.sigRange + (1-lN)*r.sigCross*0.78;
+  document.getElementById('rR').textContent=rProjR.toFixed(1)+' km';
+  document.getElementById('rT').textContent=rProjT.toFixed(1)+' km';
+  document.getElementById('rN').textContent=rProjN.toFixed(1)+' km';
+  document.getElementById('rAsp').textContent=(r.sigCross/r.sigRange).toFixed(1)+':1';
+
+  // Optical RTN projections
+  const oR=(lR*o.sigLOS+(1-lR)*o.sigTrans);
+  const oT=(lT*o.sigLOS+(1-lT)*o.sigTrans);
+  const oN=(lN*o.sigLOS+(1-lN)*o.sigTrans);
+  document.getElementById('oR').textContent=oR.toFixed(1)+' km';
+  document.getElementById('oT').textContent=oT.toFixed(1)+' km';
+  document.getElementById('oN').textContent=oN.toFixed(1)+' km';
+  document.getElementById('oAsp').textContent=(o.sigLOS/o.sigTrans).toFixed(1)+':1';
+
+  const pR=(l[0]*100).toFixed(0),pT=(l[1]*100).toFixed(0),pN=(l[2]*100).toFixed(0);
+  document.getElementById('losInfo').innerHTML=
+    `LOS in RTN: `+
+    `<span style="color:#ff4d6d">R=${pR}%</span>&nbsp;`+
+    `<span style="color:#4ade80">T=${pT}%</span>&nbsp;`+
+    `<span style="color:#a78bfa">N=${pN}%</span>`+
+    `&nbsp;·&nbsp;`+
+    `<span style="color:#38bdf8">Radar σ<sub>range</sub>=${r.sigRange.toFixed(1)} km · σ<sub>cross</sub>=${r.sigCross.toFixed(0)} km</span>`+
+    `&nbsp;·&nbsp;`+
+    `<span style="color:#fb923c">Optical σ<sub>LOS</sub>=${o.sigLOS.toFixed(0)} km · σ<sub>trans</sub>=${o.sigTrans.toFixed(1)} km</span>`;
+}
+
+const rC=document.getElementById('radarCanvas');
+const oC=document.getElementById('opticalCanvas');
+const fC=document.getElementById('fusedCanvas');
+
+// ── space-based optical params ──
+function getSpaceOpticalParams(){
+  const ap  =parseFloat(document.getElementById('sSAp').value);
+  const dist=parseFloat(document.getElementById('sSRng').value);
+  const el  =parseFloat(document.getElementById('sSLosEl').value)*DEG;
+  const az  =parseFloat(document.getElementById('sSLosAz').value)*DEG;
+  // No atmospheric seeing in space → pure diffraction-limited
+  const angRes = 1.22e-6 / ap;  // rad, diffraction limit λ~550nm
+  const sigTrans = Math.min(40, Math.max(0.5, angRes*dist*3000));
+  const sigLOS   = Math.min(200, Math.max(20, dist*0.18));
+  const ce=Math.cos(el);
+  const los=[ce*Math.cos(az), ce*Math.sin(az), Math.sin(el)];
+  return{sigTrans, sigLOS, los};
+}
+
+// ── Bayesian inverse-covariance fusion in RTN ──
+// Each sensor's covariance in RTN is a diagonal approximation:
+//   P = diag(sigR², sigT², sigN²)
+// Information matrix I = P⁻¹ = diag(1/sigR², 1/sigT², 1/sigN²)
+// Fused information: I_fused = I_radar + I_opt_ground + I_opt_space
+// Fused covariance: P_fused = I_fused⁻¹
+//
+// For LOS-aligned sensors, the diagonal covariance in RTN is approximated by
+// projecting the LOS-frame uncertainties onto each RTN axis.
+function sensorRTNVariances(sigAlong, sigPerp, los){
+  // Along-LOS variance projected onto each RTN axis
+  // Var_R = (losR*sigAlong)² + (√(1-losR²)*sigPerp)²  etc.
+  const lR=los[0], lT=los[1], lN=los[2];
+  const varR = lR*lR*sigAlong*sigAlong + (1-lR*lR)*sigPerp*sigPerp;
+  const varT = lT*lT*sigAlong*sigAlong + (1-lT*lT)*sigPerp*sigPerp;
+  const varN = lN*lN*sigAlong*sigAlong + (1-lN*lN)*sigPerp*sigPerp;
+  return{varR, varT, varN};
+}
+
+// checkbox helpers
+const cb=id=>document.getElementById(id).checked;
+
+function computeFusedRTN(){
+  const r  = getRadarParams();
+  const o  = getOpticalParams();
+  const sp = getSpaceOpticalParams();
+  const gLos = getLOS();
+
+  const rv = sensorRTNVariances(r.sigRange, r.sigCross, gLos);
+  const ov = sensorRTNVariances(o.sigLOS,   o.sigTrans, gLos);
+  const sv = sensorRTNVariances(sp.sigLOS,  sp.sigTrans, sp.los);
+
+  // Only include checked sensors in fusion
+  const iR = (cb('cbRadar')?1/rv.varR:0) + (cb('cbOptGnd')?1/ov.varR:0) + (cb('cbOptSpc')?1/sv.varR:0);
+  const iT = (cb('cbRadar')?1/rv.varT:0) + (cb('cbOptGnd')?1/ov.varT:0) + (cb('cbOptSpc')?1/sv.varT:0);
+  const iN = (cb('cbRadar')?1/rv.varN:0) + (cb('cbOptGnd')?1/ov.varN:0) + (cb('cbOptSpc')?1/sv.varN:0);
+
+  // Guard against zero information (no sensors checked)
+  const sigR = iR>0 ? 1/Math.sqrt(iR) : 999;
+  const sigT = iT>0 ? 1/Math.sqrt(iT) : 999;
+  const sigN = iN>0 ? 1/Math.sqrt(iN) : 999;
+
+  return{sigR, sigT, sigN};
+}
+
+// ── draw fused ellipsoid — respects checkboxes and zoom ──
+function drawFusedScene(canvas, sigR, sigT, sigN){
+  const ctx  = canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height, cx=W/2, cy=H/2;
+  ctx.clearRect(0,0,W,H);
+
+  // background
+  const bg=ctx.createRadialGradient(cx,cy,0,cx,cy,W*.72);
+  bg.addColorStop(0,'#0d1a10'); bg.addColorStop(1,'#050508');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+
+  // grid
+  ctx.strokeStyle='rgba(255,255,255,0.022)'; ctx.lineWidth=1;
+  for(let x=0;x<W;x+=20){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=20){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+
+  const {rx,ry}=rot;
+  const rtnToScene=(r,t,n)=>[-t,r,n];
+
+  // ── zoom: scale everything by zoom factor ──
+  const zoom = parseFloat(document.getElementById('sZoom').value);
+
+  // Axis length based on the UNZOOMED largest individual sensor (so ghosts stay in frame)
+  const r  = getRadarParams();
+  const o  = getOpticalParams();
+  const sp = getSpaceOpticalParams();
+  const gLos=getLOS();
+  const MG=makeLOSRotMatrix(gLos[0],gLos[1],gLos[2]);
+  const MS=makeLOSRotMatrix(sp.los[0],sp.los[1],sp.los[2]);
+
+  // Compute unscaled extent for axis sizing
+  const rv = sensorRTNVariances(r.sigRange,r.sigCross,gLos);
+  const ov = sensorRTNVariances(o.sigLOS,o.sigTrans,gLos);
+  const sv = sensorRTNVariances(sp.sigLOS,sp.sigTrans,sp.los);
+  const rawMax = Math.max(
+    Math.sqrt(Math.max(rv.varR,rv.varT,rv.varN)),
+    Math.sqrt(Math.max(ov.varR,ov.varT,ov.varN)),
+    Math.sqrt(Math.max(sv.varR,sv.varT,sv.varN))
+  );
+  const L = rawMax * 1.65 * zoom;
+
+  // ── RTN axes ──
+  RTN.forEach(({v,col,lbl})=>{
+    const[rx2,ry2,rz2]=rotP(v[0]*L,v[1]*L,v[2]*L,rx,ry);
+    const[px,py]=prj(rx2,ry2,rz2,cx,cy);
+    arrow(ctx,cx,cy,px,py,col,lbl,1.5,true);
+  });
+
+  // velocity label
+  {
+    const sc=rtnToScene(0,L*0.60,0);
+    const[rx2,ry2,rz2]=rotP(sc[0],sc[1],sc[2],rx,ry);
+    const[px,py]=prj(rx2,ry2,rz2,cx,cy);
+    ctx.save();ctx.font='bold 8px "Share Tech Mono",monospace';
+    ctx.fillStyle='rgba(74,222,128,0.75)';
+    ctx.fillText('▶ velocity',px+4,py-8);ctx.restore();
+  }
+
+  // ── helper: draw one wireframe ellipsoid (LOS-aligned or RTN-aligned) ──
+  function drawEllipsoid(aSz,bSz,cSz,mat,hexColor,lineW,glowCol,seg=20){
+    const wf=buildWF(aSz*zoom,bSz*zoom,cSz*zoom,seg);
+    wf.forEach(ring=>{
+      for(let i=0;i<ring.length-1;i++){
+        const fn=(pt)=>{
+          const[rr,tt,nn]=mat?applyMat(mat,pt[0],pt[1],pt[2]):[pt[0],pt[1],pt[2]];
+          const sc=rtnToScene(rr,tt,nn);
+          const[rx2,ry2,rz2]=rotP(sc[0],sc[1],sc[2],rx,ry);
+          return prj(rx2,ry2,rz2,cx,cy);
+        };
+        const[px,py,s]=fn(ring[i]);
+        const[px2,py2]=fn(ring[i+1]);
+        const alpha=Math.max(0.08,Math.min(0.85,s*0.9));
+        const hx=Math.round(alpha*255).toString(16).padStart(2,'0');
+        ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px2,py2);
+        ctx.strokeStyle=hexColor+hx;ctx.lineWidth=lineW;
+        if(glowCol){ctx.shadowBlur=6;ctx.shadowColor=glowCol;}
+        ctx.stroke();ctx.shadowBlur=0;
+      }
+    });
+  }
+
+  // ── Ground radar ghost ──
+  if(cb('cbRadar'))
+    drawEllipsoid(r.sigCross, r.sigCross*0.78, r.sigRange, MG, '#38bdf8', 1.1, '#38bdf8', 20);
+
+  // ── Ground optical ghost ──
+  if(cb('cbOptGnd'))
+    drawEllipsoid(o.sigTrans, o.sigTrans, o.sigLOS, MG, '#fb923c', 1.1, '#fb923c', 20);
+
+  // ── Space optical ghost ──
+  if(cb('cbOptSpc'))
+    drawEllipsoid(sp.sigTrans, sp.sigTrans, sp.sigLOS, MS, '#a78bfa', 1.1, '#a78bfa', 20);
+
+  // ── Fused ellipsoid — bright green, axis-aligned in RTN (no LOS matrix needed) ──
+  if(cb('cbFused'))
+    drawEllipsoid(sigR, sigT, sigN, null, '#86efac', 2.0, '#86efac', 28);
+
+  // ── LOS arrows (scale with zoom so they stay visible) ──
+  const lL=L*1.08;
+  // Ground LOS (yellow)
+  {
+    const losSc=rtnToScene(gLos[0]*lL,gLos[1]*lL,gLos[2]*lL);
+    const[lrx,lry,lrz]=rotP(losSc[0],losSc[1],losSc[2],rx,ry);
+    const[lpx,lpy]=prj(lrx,lry,lrz,cx,cy);
+    arrow(ctx,cx,cy,lpx,lpy,'#fde047','Gnd LOS',1.8,false);
+  }
+  // Space LOS (violet)
+  {
+    const losSc=rtnToScene(sp.los[0]*lL,sp.los[1]*lL,sp.los[2]*lL);
+    const[lrx,lry,lrz]=rotP(losSc[0],losSc[1],losSc[2],rx,ry);
+    const[lpx,lpy]=prj(lrx,lry,lrz,cx,cy);
+    arrow(ctx,cx,cy,lpx,lpy,'#a78bfa','Spc LOS',1.8,false);
+  }
+
+  // centre dot
+  ctx.beginPath();ctx.arc(cx,cy,3.5,0,TWO_PI);
+  ctx.fillStyle='#fff';ctx.shadowBlur=10;ctx.shadowColor='#fff';ctx.fill();ctx.shadowBlur=0;
+
+  // ── zoom indicator badge ──
+  if(zoom>1.05){
+    ctx.save();
+    ctx.fillStyle='rgba(134,239,172,0.12)';
+    ctx.strokeStyle='rgba(134,239,172,0.35)';
+    ctx.lineWidth=1;
+    ctx.beginPath();ctx.roundRect(W-62,6,56,18,4);ctx.fill();ctx.stroke();
+    ctx.font='bold 9px "Share Tech Mono",monospace';
+    ctx.fillStyle='#86efac';
+    ctx.textAlign='center';
+    ctx.fillText('ZOOM '+zoom.toFixed(1)+'×',W-34,18);
+    ctx.restore();
+  }
+}
+
+function updateFusedStats(){
+  const f=computeFusedRTN();
+  const r=getRadarParams(), o=getOpticalParams(), sp=getSpaceOpticalParams();
+  const gLos=getLOS();
+
+  // individual worst-case RTN sigmas for volume comparison
+  const rv=sensorRTNVariances(r.sigRange,r.sigCross,gLos);
+  const ov=sensorRTNVariances(o.sigLOS,o.sigTrans,gLos);
+  const sv=sensorRTNVariances(sp.sigLOS,sp.sigTrans,sp.los);
+
+  // Volume ratio: fused vs best individual sensor
+  const volFused=f.sigR*f.sigT*f.sigN;
+  const volBest =Math.min(
+    Math.sqrt(rv.varR*rv.varT*rv.varN),
+    Math.sqrt(ov.varR*ov.varT*ov.varN),
+    Math.sqrt(sv.varR*sv.varT*sv.varN)
+  );
+  const reduction=(1 - volFused/volBest)*100;
+
+  document.getElementById('fR').textContent=f.sigR.toFixed(1)+' km';
+  document.getElementById('fT').textContent=f.sigT.toFixed(1)+' km';
+  document.getElementById('fN').textContent=f.sigN.toFixed(1)+' km';
+  document.getElementById('fVol').textContent=reduction.toFixed(0)+'% ↓';
+
+  // space LOS info
+  const sl=sp.los;
+  document.getElementById('sLosInfo').innerHTML=
+    `Space LOS in RTN: `+
+    `<span style="color:#ff4d6d">R=${(sl[0]*100).toFixed(0)}%</span>&nbsp;`+
+    `<span style="color:#4ade80">T=${(sl[1]*100).toFixed(0)}%</span>&nbsp;`+
+    `<span style="color:#a78bfa">N=${(sl[2]*100).toFixed(0)}%</span>`+
+    `&nbsp;·&nbsp;σ<sub>trans</sub>=${sp.sigTrans.toFixed(2)} km&nbsp;`+
+    `σ<sub>LOS</sub>=${sp.sigLOS.toFixed(0)} km`;
+}
+
+function renderAll(){
+  const r=getRadarParams(), o=getOpticalParams();
+  const f=computeFusedRTN();
+  drawScene(rC, r, '#38bdf8','#38bdf8', false);
+  drawScene(oC, o, '#fb923c','#fb923c', true);
+  drawFusedScene(fC, f.sigR, f.sigT, f.sigN);
+  updateStats();
+  updateFusedStats();
+}
+
+function attachDrag(c){
+  let d=false,lx=0,ly=0;
+  const s=(x,y)=>{d=true;lx=x;ly=y;};
+  const m=(x,y)=>{if(!d)return;rot.ry+=(x-lx)*.013;rot.rx+=(y-ly)*.013;lx=x;ly=y;renderAll();};
+  const e=()=>{d=false;};
+  c.addEventListener('mousedown',ev=>s(ev.clientX,ev.clientY));
+  c.addEventListener('mousemove',ev=>m(ev.clientX,ev.clientY));
+  c.addEventListener('mouseup',e);c.addEventListener('mouseleave',e);
+  c.addEventListener('touchstart',ev=>{ev.preventDefault();s(ev.touches[0].clientX,ev.touches[0].clientY);},{passive:false});
+  c.addEventListener('touchmove', ev=>{ev.preventDefault();m(ev.touches[0].clientX,ev.touches[0].clientY);},{passive:false});
+  c.addEventListener('touchend',e);
+}
+
+const SM=[
+  ['sBeam',     'vBeam',     v=>v.toFixed(1)+'°'],
+  ['sRangeErr', 'vRangeErr', v=>v.toFixed(2)+' km'],
+  ['sRadarDist','vRadarDist',v=>Math.round(v)+' km'],
+  ['sAperture', 'vAperture', v=>v.toFixed(2)+' m'],
+  ['sSeeing',   'vSeeing',   v=>v.toFixed(1)+'"'],
+  ['sOptDist',  'vOptDist',  v=>Math.round(v)+' km'],
+  ['sLosEl',    'vLosEl',    v=>Math.round(v)+'°'],
+  ['sLosAz',    'vLosAz',    v=>Math.round(v)+'°'],
+  ['sSLosEl',   'vSLosEl',   v=>Math.round(v)+'°'],
+  ['sSLosAz',   'vSLosAz',   v=>Math.round(v)+'°'],
+  ['sSAp',      'vSAp',      v=>v.toFixed(2)+' m'],
+  ['sSRng',     'vSRng',     v=>Math.round(v)+' km'],
+  ['sZoom',     'vZoom',     v=>v.toFixed(1)+'×'],
+];
+SM.forEach(([id,vid,fmt])=>{
+  const el=document.getElementById(id);
+  el.addEventListener('input',()=>{document.getElementById(vid).textContent=fmt(parseFloat(el.value));renderAll();});
+});
+
+// checkboxes trigger re-render
+['cbRadar','cbOptGnd','cbOptSpc','cbFused'].forEach(id=>{
+  document.getElementById(id).addEventListener('change', renderAll);
+});
+
+attachDrag(rC); attachDrag(oC); attachDrag(fC);
+renderAll();
+</script>
+</body>
+</html>

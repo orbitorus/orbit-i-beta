@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Epistemic Model for SSA — Interactive Visualiser</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── Reset & tokens ─────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #0d0f14;
+  --bg2:       #13161d;
+  --bg3:       #1a1e28;
+  --bg4:       #222636;
+  --border:    rgba(255,255,255,0.08);
+  --border2:   rgba(255,255,255,0.14);
+  --text:      #e8eaf0;
+  --text2:     #9a9db0;
+  --text3:     #5a5e72;
+  --accent:    #4f8ef7;
+  --accent2:   #7b61ff;
+  --green:     #34d399;
+  --amber:     #fbbf24;
+  --red:       #f87171;
+  --teal:      #22d3ee;
+  --ha:        #34d399;
+  --hb:        #fbbf24;
+  --hc:        #4f8ef7;
+  --hu:        #a78bfa;
+  --font-head: 'Syne', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+  --radius:    10px;
+  --radius-lg: 14px;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────── */
+.site-header {
+  padding: 40px 40px 0;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(79,142,247,0.06) 0%, transparent 100%);
+}
+.header-inner { max-width: 1100px; margin: 0 auto; padding-bottom: 28px; }
+.header-tag {
+  font-family: var(--font-mono);
+  font-size: 11px; letter-spacing: .12em;
+  color: var(--accent); text-transform: uppercase;
+  margin-bottom: 10px; display: block;
+}
+.header-title {
+  font-family: var(--font-head);
+  font-size: clamp(24px, 4vw, 38px);
+  font-weight: 700; line-height: 1.15;
+  color: var(--text); margin-bottom: 10px;
+}
+.header-title span { color: var(--accent); }
+.header-desc {
+  font-size: 14px; color: var(--text2);
+  max-width: 600px; line-height: 1.7;
+}
+.header-pills { display: flex; gap: 8px; margin-top: 18px; flex-wrap: wrap; }
+.pill {
+  font-family: var(--font-mono); font-size: 10px;
+  padding: 4px 10px; border-radius: 20px; letter-spacing: .06em;
+  border: 1px solid var(--border2); color: var(--text2);
+  background: var(--bg3);
+}
+.pill.active { border-color: var(--accent); color: var(--accent); background: rgba(79,142,247,0.08); }
+
+/* ── Layout ─────────────────────────────────────────────────────────── */
+.app-wrap { max-width: 1100px; margin: 0 auto; padding: 32px 40px 60px; display: flex; gap: 24px; }
+
+/* ── Sidebar ─────────────────────────────────────────────────────────── */
+.sidebar { width: 200px; flex-shrink: 0; }
+.sidebar-label {
+  font-family: var(--font-mono); font-size: 10px;
+  letter-spacing: .1em; color: var(--text3);
+  text-transform: uppercase; margin-bottom: 12px; display: block;
+}
+.step-btn {
+  display: block; width: 100%; text-align: left;
+  padding: 10px 14px; margin-bottom: 4px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); cursor: pointer;
+  transition: all .18s; line-height: 1.4;
+}
+.step-btn:hover { border-color: var(--border2); background: var(--bg3); }
+.step-btn.active {
+  background: rgba(79,142,247,0.1);
+  border-color: rgba(79,142,247,0.4);
+}
+.step-num {
+  font-family: var(--font-mono); font-size: 9px;
+  letter-spacing: .08em; text-transform: uppercase;
+  color: var(--text3); display: block; margin-bottom: 3px;
+}
+.step-btn.active .step-num { color: var(--accent); }
+.step-name { font-size: 12px; color: var(--text2); font-weight: 500; }
+.step-btn.active .step-name { color: var(--text); }
+.step-btn.full-btn {
+  margin-top: 12px;
+  background: rgba(79,142,247,0.06);
+  border-color: rgba(79,142,247,0.2);
+}
+.step-btn.full-btn.active {
+  background: rgba(79,142,247,0.18);
+  border-color: rgba(79,142,247,0.5);
+}
+.sidebar-note {
+  margin-top: 18px; padding: 12px 14px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); font-size: 11px;
+  color: var(--text3); line-height: 1.6;
+}
+
+/* ── Main ────────────────────────────────────────────────────────────── */
+.main { flex: 1; min-width: 0; }
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* ── Cards ───────────────────────────────────────────────────────────── */
+.card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 20px 22px;
+  margin-bottom: 12px;
+}
+.card-title {
+  font-family: var(--font-head); font-size: 17px;
+  font-weight: 700; color: var(--text); margin-bottom: 5px;
+}
+.card-sub { font-size: 13px; color: var(--text2); line-height: 1.65; }
+
+/* ── Insight boxes ───────────────────────────────────────────────────── */
+.insight {
+  border-left: 3px solid var(--accent);
+  background: rgba(79,142,247,0.07);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 12px 16px; margin-bottom: 12px;
+  font-size: 13px; color: #93b8f8; line-height: 1.65;
+}
+.insight-title { font-weight: 500; color: var(--accent); margin-bottom: 3px; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; font-family: var(--font-mono); }
+
+.warn-box {
+  border-left: 3px solid var(--amber);
+  background: rgba(251,191,36,0.07);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 12px 16px; margin-bottom: 12px;
+  font-size: 13px; color: #fcd675; line-height: 1.65;
+}
+.warn-title { font-weight: 500; color: var(--amber); margin-bottom: 3px; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; font-family: var(--font-mono); }
+
+.success-box {
+  border-left: 3px solid var(--green);
+  background: rgba(52,211,153,0.07);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 12px 16px; margin-bottom: 12px;
+  font-size: 13px; color: #6ee7b7; line-height: 1.65;
+}
+.success-title { font-weight: 500; color: var(--green); margin-bottom: 3px; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; font-family: var(--font-mono); }
+
+.danger-box {
+  border-left: 3px solid var(--red);
+  background: rgba(248,113,113,0.07);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 12px 16px; margin-bottom: 12px;
+  font-size: 13px; color: #fca5a5; line-height: 1.65;
+}
+
+/* ── Interactive card ────────────────────────────────────────────────── */
+.interactive-card {
+  background: var(--bg3); border: 1px solid var(--border2);
+  border-radius: var(--radius-lg); padding: 20px 22px;
+  margin-bottom: 12px;
+}
+.section-lbl {
+  font-family: var(--font-mono); font-size: 10px;
+  letter-spacing: .1em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 12px; display: block;
+}
+
+/* ── Bars ────────────────────────────────────────────────────────────── */
+.bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
+.bar-label { font-size: 11px; width: 130px; flex-shrink: 0; line-height: 1.3; font-family: var(--font-mono); }
+.bar-track { flex: 1; height: 8px; background: var(--bg4); border-radius: 4px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 4px; transition: width .4s cubic-bezier(.4,0,.2,1); }
+.bar-val { font-family: var(--font-mono); font-size: 11px; width: 44px; text-align: right; flex-shrink: 0; }
+
+/* ── Controls ────────────────────────────────────────────────────────── */
+.ctrl { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.ctrl-label { font-size: 11px; color: var(--text2); font-family: var(--font-mono); }
+.ctrl input[type=range] {
+  width: 120px; accent-color: var(--accent);
+  cursor: pointer;
+}
+.btn {
+  padding: 7px 14px; font-size: 11px; font-weight: 500;
+  border-radius: var(--radius); cursor: pointer; border: 1px solid transparent;
+  margin-right: 4px; margin-bottom: 4px; font-family: var(--font-body);
+  transition: all .15s; letter-spacing: .01em;
+}
+.btn-det  { background: rgba(52,211,153,0.12); color: var(--green); border-color: rgba(52,211,153,0.25); }
+.btn-det:hover { background: rgba(52,211,153,0.2); }
+.btn-miss { background: rgba(248,113,113,0.12); color: var(--red); border-color: rgba(248,113,113,0.25); }
+.btn-miss:hover { background: rgba(248,113,113,0.2); }
+.btn-warn { background: rgba(251,191,36,0.12); color: var(--amber); border-color: rgba(251,191,36,0.25); }
+.btn-warn:hover { background: rgba(251,191,36,0.2); }
+.btn-neu  { background: var(--bg4); color: var(--text2); border-color: var(--border2); }
+.btn-neu:hover { border-color: var(--border2); color: var(--text); }
+.btn-info { background: rgba(79,142,247,0.12); color: var(--accent); border-color: rgba(79,142,247,0.3); }
+.btn-info:hover { background: rgba(79,142,247,0.2); }
+
+/* ── Table ───────────────────────────────────────────────────────────── */
+table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 6px; }
+td, th { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+th { font-family: var(--font-mono); font-size: 10px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; }
+td:last-child, th:last-child { text-align: right; font-family: var(--font-mono); }
+tr:last-child td { border-bottom: none; }
+
+/* ── Disclosures ─────────────────────────────────────────────────────── */
+.disc { margin-bottom: 6px; }
+.disc summary {
+  font-family: var(--font-mono); font-size: 10px;
+  letter-spacing: .08em; text-transform: uppercase;
+  color: var(--text3); cursor: pointer; user-select: none;
+  padding: 9px 14px; background: var(--bg2);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  list-style: none; display: flex; align-items: center; gap: 8px;
+  transition: all .15s;
+}
+.disc summary:hover { color: var(--text2); border-color: var(--border2); }
+.disc summary::-webkit-details-marker { display: none; }
+.disc summary::before { content: '▶'; font-size: 8px; transition: transform .2s; display: inline-block; color: var(--text3); }
+.disc[open] summary::before { transform: rotate(90deg); }
+.disc[open] summary { border-radius: var(--radius) var(--radius) 0 0; border-bottom-color: transparent; }
+.disc-inner {
+  padding: 14px 16px; background: var(--bg2);
+  border: 1px solid var(--border); border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+  font-size: 12px; color: var(--text2); line-height: 1.75;
+}
+.disc-inner li { margin-left: 16px; margin-bottom: 4px; }
+.disc-inner strong { color: var(--text); }
+
+/* ── Misc ────────────────────────────────────────────────────────────── */
+.divider { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+.lbl { font-size: 11px; color: var(--text3); margin-bottom: 6px; margin-top: 10px; font-family: var(--font-mono); }
+.mono { font-family: var(--font-mono); font-size: 12px; color: var(--text2); line-height: 1.95; }
+.ha  { color: var(--ha); }  .hb { color: var(--hb); }
+.hc  { color: var(--hc); }  .hu { color: var(--hu); }
+.dead { color: var(--text3); text-decoration: line-through; }
+.good { color: var(--green); } .bad { color: var(--red); }
+
+.badge {
+  display: inline-block; font-size: 10px; padding: 2px 8px;
+  border-radius: 12px; font-family: var(--font-mono);
+  font-weight: 500; margin-right: 4px;
+}
+.badge-green { background: rgba(52,211,153,0.15); color: var(--green); }
+.badge-red   { background: rgba(248,113,113,0.15); color: var(--red); }
+.badge-warn  { background: rgba(251,191,36,0.15);  color: var(--amber); }
+.badge-blue  { background: rgba(79,142,247,0.15);  color: var(--accent); }
+.badge-gray  { background: var(--bg4); color: var(--text2); }
+
+.event-log {
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--text2); max-height: 100px; overflow-y: auto;
+  line-height: 1.85; padding: 10px 14px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────── */
+.site-footer {
+  border-top: 1px solid var(--border);
+  padding: 24px 40px; text-align: center;
+  font-size: 12px; color: var(--text3); font-family: var(--font-mono);
+}
+.site-footer a { color: var(--text3); text-decoration: none; }
+.site-footer a:hover { color: var(--text2); }
+
+/* ── Responsive ──────────────────────────────────────────────────────── */
+@media (max-width: 760px) {
+  .app-wrap { flex-direction: column; padding: 20px; }
+  .sidebar { width: 100%; }
+  .site-header { padding: 24px 20px 0; }
+  .header-inner { padding-bottom: 20px; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="site-header">
+  <div class="header-inner">
+    <span class="header-tag">Space Situational Awareness · Epistemic Reasoning</span>
+    <h1 class="header-title">Minimum Viable <span>Epistemic Model</span></h1>
+    <p class="header-desc">An interactive derivation of a belief-and-knowledge model for SSA — from Bayesian basics through open-world unknown mass management. Work through each step in order, or jump to the full live sandbox.</p>
+    <div class="header-pills">
+      <span class="pill active">Bayesian updating</span>
+      <span class="pill">Dempster-Shafer m(?)</span>
+      <span class="pill">Physical pruning</span>
+      <span class="pill">σ propagation</span>
+      <span class="pill">Negative evidence</span>
+      <span class="pill">Hypothesis lifecycle</span>
+    </div>
+  </div>
+</header>
+
+<!-- APP -->
+<div class="app-wrap">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <span class="sidebar-label">Steps</span>
+    <button class="step-btn active" onclick="showStep(1,this)">
+      <span class="step-num">Step 1</span>
+      <span class="step-name">Belief weight &amp; evidence</span>
+    </button>
+    <button class="step-btn" onclick="showStep(2,this)">
+      <span class="step-num">Step 1+</span>
+      <span class="step-name">Unknown mass m(?)</span>
+    </button>
+    <button class="step-btn" onclick="showStep(3,this)">
+      <span class="step-num">Step 2</span>
+      <span class="step-name">Physical pruning</span>
+    </button>
+    <button class="step-btn" onclick="showStep(4,this)">
+      <span class="step-num">Step 3</span>
+      <span class="step-name">Time &amp; σ decay</span>
+    </button>
+    <button class="step-btn" onclick="showStep(5,this)">
+      <span class="step-num">Step 4</span>
+      <span class="step-name">Negative evidence</span>
+    </button>
+    <button class="step-btn" onclick="showStep(6,this)">
+      <span class="step-num">Step 5</span>
+      <span class="step-name">Unknown lifecycle</span>
+    </button>
+    <button class="step-btn full-btn" onclick="showStep(7,this)">
+      <span class="step-num">Full Model</span>
+      <span class="step-name">Live sandbox</span>
+    </button>
+    <div class="sidebar-note">Work through each step in order. Each one adds a new mechanism to the model.</div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- ═══ PANEL 1 ═══ -->
+    <div class="panel active" id="panel1">
+      <div class="card">
+        <div class="card-title">Step 1 — Belief weight and evidence update</div>
+        <div class="card-sub">The foundation. Assign a weight to each hypothesis about where an object might be. When you observe something, weights shift — evidence for one takes weight from the other.</div>
+      </div>
+      <div class="insight"><div class="insight-title">Key insight</div>A missed detection is not a non-event. When the sensor is reliable (P=0.90) and sees nothing, that is strong evidence the object is not in A. Silence is loud. Weight is conserved — whatever leaves A goes to B exactly.</div>
+      <div class="interactive-card">
+        <span class="section-lbl">Interactive</span>
+        <div class="ctrl">
+          <span class="ctrl-label">P(det|A): <span id="p1-pda-val">0.90</span></span>
+          <input type="range" min="0.1" max="0.99" step="0.01" value="0.90" oninput="p1SliderUpdate()" id="p1-pda">
+          <span class="ctrl-label">P(det|B): <span id="p1-pdb-val">0.20</span></span>
+          <input type="range" min="0.01" max="0.90" step="0.01" value="0.20" oninput="p1SliderUpdate()" id="p1-pdb">
+        </div>
+        <div class="lbl">Current belief weights</div>
+        <div id="p1-bars"></div>
+        <div class="divider"></div>
+        <div>
+          <button class="btn btn-det" onclick="p1Observe(true)">Detection</button>
+          <button class="btn btn-miss" onclick="p1Observe(false)">Missed detection</button>
+          <button class="btn btn-neu" onclick="p1Reset()">Reset</button>
+        </div>
+        <div id="p1-result"></div>
+      </div>
+      <details class="disc"><summary>What you are seeing</summary>
+        <div class="disc-inner">Two hypotheses: <span class="ha">A</span> (object in region A) and <span class="hb">B</span> (object in region B). Their weights must always sum to 1.0 — weight is conserved like physical mass. The bars show how much of your total belief sits on each hypothesis.</div>
+      </details>
+      <details class="disc"><summary>How to use this panel</summary>
+        <div class="disc-inner"><ul>
+          <li><strong>P(det|A)</strong> — how likely the sensor detects the object if truly in A. High = reliable.</li>
+          <li><strong>P(det|B)</strong> — same for region B. Usually lower.</li>
+          <li>Press <span class="badge badge-green">Detection</span> — watch weight flow toward the hypothesis that better explains it.</li>
+          <li>Press <span class="badge badge-red">Missed detection</span> — the sensor saw nothing. Watch what happens when P(det|A) is high.</li>
+          <li>Try setting P(det|A)=0.90 and firing several misses in a row.</li>
+        </ul></div>
+      </details>
+    </div>
+
+    <!-- ═══ PANEL 2 ═══ -->
+    <div class="panel" id="panel2">
+      <div class="card">
+        <div class="card-title">Step 1+ — Unknown mass m(?)</div>
+        <div class="card-sub">Standard Bayes forces all belief into named hypotheses. m(?) reserves mass for objects not yet catalogued — making the model open-world.</div>
+      </div>
+      <div class="warn-box"><div class="warn-title">Key insight</div>When evidence arrives that neither A nor B explains well, it flows into m(?) rather than awkwardly inflating the wrong hypothesis. A growing m(?) signals catalogue incompleteness — a dark object may be present.</div>
+      <div class="interactive-card">
+        <span class="section-lbl">Interactive</span>
+        <div class="ctrl">
+          <span class="ctrl-label">m(?) prior: <span id="p2-mu-val">0.15</span></span>
+          <input type="range" min="0.01" max="0.40" step="0.01" value="0.15" oninput="p2Init()" id="p2-mu">
+        </div>
+        <div class="lbl">Current mass distribution</div>
+        <div id="p2-bars"></div>
+        <div class="divider"></div>
+        <div>
+          <button class="btn btn-det" onclick="p2Observe('normal')">Routine detection</button>
+          <button class="btn btn-warn" onclick="p2Observe('anomalous')">Anomalous detection</button>
+          <button class="btn btn-neu" onclick="p2Init()">Reset</button>
+        </div>
+        <div id="p2-result"></div>
+      </div>
+      <details class="disc"><summary>What you are seeing</summary>
+        <div class="disc-inner">Three mass terms: <span class="ha">A</span>, <span class="hb">B</span>, and <span class="hu">?</span>. All three sum to 1.0. Adjust the prior to set how much initial mass you reserve for unknowns — higher in poorly-catalogued regimes like LEO debris fields.</div>
+      </details>
+      <details class="disc"><summary>How to use this panel</summary>
+        <div class="disc-inner"><ul>
+          <li>Press <span class="badge badge-green">Routine detection</span> — well explained by A or B. Watch m(?) shrink slightly.</li>
+          <li>Press <span class="badge badge-warn">Anomalous detection</span> — neither A nor B predicted this. Watch m(?) absorb the surprise.</li>
+          <li>Try setting m(?) prior high (0.35) and firing anomalous detections repeatedly.</li>
+        </ul></div>
+      </details>
+    </div>
+
+    <!-- ═══ PANEL 3 ═══ -->
+    <div class="panel" id="panel3">
+      <div class="card">
+        <div class="card-title">Step 2 — Physical pruning (hard elimination)</div>
+        <div class="card-sub">Some hypotheses are not merely improbable — they are physically impossible. Apply constraints to permanently remove them from the set.</div>
+      </div>
+      <div class="insight"><div class="insight-title">Key insight</div>Physical elimination produces weight = exactly 0, not a very small number. No future observation can raise it. This is deductive certainty — the only true certainty in your model. Always prune before evidence updating.</div>
+      <div class="interactive-card">
+        <span class="section-lbl">Interactive</span>
+        <div class="lbl">Hypothesis set</div>
+        <div id="p3-hyps"></div>
+        <div class="divider"></div>
+        <div>
+          <button class="btn btn-miss" onclick="p3Prune('altitude')">Apply altitude constraint (&lt;160 km)</button>
+          <button class="btn btn-miss" onclick="p3Prune('inclination')">Apply inclination constraint</button>
+          <button class="btn btn-det" onclick="p3Observe()">Evidence update on survivors</button>
+          <button class="btn btn-neu" onclick="p3Init()">Reset</button>
+        </div>
+        <div id="p3-result"></div>
+      </div>
+      <details class="disc"><summary>What you are seeing</summary>
+        <div class="disc-inner">Four orbital hypotheses with different altitudes and inclinations, plus m(?). Eliminated hypotheses have their weight redistributed to survivors and cannot be restored by any future observation.</div>
+      </details>
+      <details class="disc"><summary>How to use this panel</summary>
+        <div class="disc-inner"><ul>
+          <li>Press <span class="badge badge-red">Apply altitude constraint</span> — orbits below 160 km decay within hours. h4 at 120 km is eliminated.</li>
+          <li>Press <span class="badge badge-red">Apply inclination constraint</span> — radar track incompatible with low-inclination orbits. h3 is eliminated.</li>
+          <li>Press <span class="badge badge-green">Evidence update</span> — only surviving hypotheses are affected.</li>
+          <li>Try applying evidence <em>before</em> pruning, then reset and reverse. Final weights differ — order matters.</li>
+        </ul></div>
+      </details>
+    </div>
+
+    <!-- ═══ PANEL 4 ═══ -->
+    <div class="panel" id="panel4">
+      <div class="card">
+        <div class="card-title">Step 3 — Time propagation and σ growth</div>
+        <div class="card-sub">Without new observations, position uncertainty σ grows continuously. Belief weight m(h) stays stable — but operational usefulness m_eff decays.</div>
+      </div>
+      <div class="warn-box"><div class="warn-title">Key insight</div>A 7-day-old TLE and a fresh TLE with the same nominal orbit have identical m(h) — but radically different m_eff. Treating them as equivalent produces dangerously optimistic conjunction probabilities. m(h) is stable; m_eff is time-sensitive.</div>
+      <div class="interactive-card">
+        <span class="section-lbl">Interactive</span>
+        <div class="ctrl">
+          <span class="ctrl-label">Days elapsed: <span id="p4-days-val">0</span></span>
+          <input type="range" min="0" max="14" step="0.5" value="0" oninput="p4Update()" id="p4-days">
+        </div>
+        <div id="p4-table"></div>
+        <div class="divider"></div>
+        <div class="lbl">m_eff relative to t=0 (W=1 km corridor)</div>
+        <div id="p4-meff"></div>
+        <div id="p4-warn" style="display:none"></div>
+      </div>
+      <details class="disc"><summary>What you are seeing</summary>
+        <div class="disc-inner">Each hypothesis carries three quantities: <strong>m(h)</strong> belief weight (flat with time), <strong>σ</strong> along-track position spread in km (grows), and <strong>m_eff</strong> effective weight inside a 1 km conjunction corridor (decays). h2 at 180 km grows ~5× faster than h1 at 380 km due to atmospheric drag.</div>
+      </details>
+      <details class="disc"><summary>How to use this panel</summary>
+        <div class="disc-inner"><ul>
+          <li>Drag the slider slowly from 0 to 14 days.</li>
+          <li>Watch m(h) stay flat — no new evidence means no weight change.</li>
+          <li>Watch σ grow — h2 much faster than h1 due to drag at lower altitude.</li>
+          <li>Watch m_eff collapse — the bar shrinks even though m(h) is unchanged.</li>
+          <li>At ~10 days a warning fires — the model is too stale for reliable conjunction assessment.</li>
+        </ul></div>
+      </details>
+    </div>
+
+    <!-- ═══ PANEL 5 ═══ -->
+    <div class="panel" id="panel5">
+      <div class="card">
+        <div class="card-title">Step 4 — Negative evidence (missed detection)</div>
+        <div class="card-sub">When the sensor looks and sees nothing, that is real evidence. A miss penalises tight hypotheses more than diffuse ones.</div>
+      </div>
+      <div class="insight"><div class="insight-title">Key insight</div>Detection → updates m(h) AND resets σ tight (positional info gained). Miss → updates m(h) only, σ unchanged (no positional info). Repeated misses erode tight hypotheses and grow m(?). At 0.20 the spawn threshold fires.</div>
+      <div class="interactive-card">
+        <span class="section-lbl">Interactive</span>
+        <div class="ctrl">
+          <span class="ctrl-label">Days elapsed (sets σ): <span id="p5-days-val">3</span></span>
+          <input type="range" min="0.5" max="7" step="0.5" value="3" oninput="p5Update()" id="p5-days">
+        </div>
+        <div class="lbl">Current belief weights</div>
+        <div id="p5-bars"></div>
+        <div class="divider"></div>
+        <div>
+          <button class="btn btn-miss" onclick="p5Miss()">Missed detection</button>
+          <button class="btn btn-neu" onclick="p5Init()">Reset</button>
+        </div>
+        <div id="p5-result"></div>
+        <div id="p5-spawn" style="display:none" class="warn-box" style="margin-top:10px">m(?) has crossed 0.20 — spawn threshold reached. The observation history is no longer well-explained by h1 and h2 alone. Go to Step 5 to generate hypothesis C.</div>
+      </div>
+      <details class="disc"><summary>What you are seeing</summary>
+        <div class="disc-inner">Two surviving hypotheses with σ set by the days slider. Each miss applies P(¬det|h) = 1 − c(h,t) × P_hit, where c(h,t) is how much of the hypothesis falls in the sensor beam. Tight hypotheses are penalised more heavily.</div>
+      </details>
+      <details class="disc"><summary>How to use this panel</summary>
+        <div class="disc-inner"><ul>
+          <li>Set days low (1 day) — hypotheses are tight. Fire several misses. Watch h1 lose weight rapidly.</li>
+          <li>Set days high (6 days) — hypotheses are diffuse. Fire misses. Weight shifts much more slowly.</li>
+          <li>Fire 7–12 consecutive misses at low days. Watch m(?) climb to the spawn threshold.</li>
+        </ul></div>
+      </details>
+    </div>
+
+    <!-- ═══ PANEL 6 ═══ -->
+    <div class="panel" id="panel6">
+      <div class="card">
+        <div class="card-title">Step 5 — Unknown mass lifecycle</div>
+        <div class="card-sub">m(?) grows from three distinct sources and, when large enough, spawns a new named hypothesis. This is the discovery mechanism.</div>
+      </div>
+      <div class="success-box"><div class="success-title">Key insight</div>C is born with wide σ (8 km) and moderate weight. It immediately enters the full update cycle — prunable by physics, tightenable by detection, retirable by misses. The remaining 40% of m(?) stays unknown — there may be more objects beyond C.</div>
+      <div class="interactive-card">
+        <span class="section-lbl">Interactive</span>
+        <div class="lbl">Current mass distribution</div>
+        <div id="p6-bars"></div>
+        <div class="divider"></div>
+        <div>
+          <button class="btn btn-miss" onclick="p6Add('leak')">Time leak α (+0.010)</button>
+          <button class="btn btn-miss" onclick="p6Add('anomaly')">Anomalous detection β (+0.040)</button>
+          <button class="btn btn-warn" onclick="p6Add('frag')">Fragmentation spike γ (+0.120)</button>
+        </div>
+        <div style="margin-top:8px">
+          <button class="btn btn-det" onclick="p6Spawn()">Spawn C from m(?)</button>
+          <button class="btn btn-neu" onclick="p6Init()">Reset</button>
+        </div>
+        <div id="p6-result"></div>
+      </div>
+      <details class="disc"><summary>What you are seeing</summary>
+        <div class="disc-inner">Three m(?) growth sources: α (slow temporal leak from observation gap), β (discrete jump from anomalous detection), γ (large spike from a fragmentation event). When m(?) exceeds the spawn threshold, 60% transfers to new hypothesis C with initial position and σ = 8 km.</div>
+      </details>
+      <details class="disc"><summary>How to use this panel</summary>
+        <div class="disc-inner"><ul>
+          <li>Press <span class="badge badge-red">Time leak α</span> several times to simulate days passing.</li>
+          <li>Press <span class="badge badge-red">Anomalous detection β</span> for a discrete jump from an unexplained signal.</li>
+          <li>Press <span class="badge badge-red">Fragmentation spike γ</span> to simulate a known breakup event.</li>
+          <li>Once m(?) is large enough, press <span class="badge badge-green">Spawn C</span> — watch mass transfer and C appear.</li>
+        </ul></div>
+      </details>
+    </div>
+
+    <!-- ═══ PANEL 7 ═══ -->
+    <div class="panel" id="panel7">
+      <div class="card">
+        <div class="card-title">Full live model — all five steps active</div>
+        <div class="card-sub">All mechanisms running simultaneously. This is your minimum viable epistemic model operating end-to-end.</div>
+      </div>
+      <div class="insight"><div class="insight-title">Key insight</div>The full loop: prior → physical pruning → propagate → observe → update → propagate → observe → … When m(?) grows too large, spawn C and fold it back into the loop. Every mechanism from Steps 1–5 is live simultaneously.</div>
+      <div class="interactive-card">
+        <span class="section-lbl">State Vector</span>
+        <div id="p7-state"></div>
+        <div class="divider"></div>
+        <span class="section-lbl">Controls</span>
+        <div class="ctrl">
+          <span class="ctrl-label" style="font-weight:500">Time:</span>
+          <button class="btn btn-miss" onclick="p7Time(1)">+1 day</button>
+          <button class="btn btn-miss" onclick="p7Time(3)">+3 days</button>
+        </div>
+        <div class="ctrl">
+          <span class="ctrl-label" style="font-weight:500">Observe:</span>
+          <button class="btn btn-det" onclick="p7Obs('det')">Detection (h1 region)</button>
+          <button class="btn btn-miss" onclick="p7Obs('miss')">Missed detection</button>
+          <button class="btn btn-warn" onclick="p7Obs('anomaly')">Anomalous detection</button>
+        </div>
+        <div class="ctrl">
+          <span class="ctrl-label" style="font-weight:500">Manage:</span>
+          <button class="btn btn-info" onclick="p7Spawn()">Spawn C (needs m(?)≥0.15)</button>
+          <button class="btn btn-neu" onclick="p7Init()">Reset all</button>
+        </div>
+        <div class="lbl" style="margin-top:12px">Event log</div>
+        <div class="event-log" id="p7-log"></div>
+      </div>
+      <details class="disc"><summary>What you are seeing</summary>
+        <div class="disc-inner">Full state vector per hypothesis: <strong>m(h)</strong> belief weight, <strong>σ</strong> position spread in km, <strong>m_eff</strong> actionable weight in a 1 km conjunction corridor. h3 and h4 are pre-eliminated by physical constraints. The event log records every action with timestamps.</div>
+      </details>
+      <details class="disc"><summary>Suggested experiment — first-time users</summary>
+        <div class="disc-inner"><ul>
+          <li>Press <span class="badge badge-red">+3 days</span> three times — watch σ grow and m_eff collapse.</li>
+          <li>Press <span class="badge badge-green">Detection (h1 region)</span> — watch σ reset and h1 weight rise.</li>
+          <li>Press <span class="badge badge-red">Missed detection</span> five times — watch h1 erode and m(?) rise.</li>
+          <li>Press <span class="badge badge-warn">Anomalous detection</span> — spike m(?).</li>
+          <li>Press <span class="badge badge-blue">Spawn C</span> — watch C enter the model with σ=8 km.</li>
+          <li>Advance time further — watch C's σ grow and m_eff emerge.</li>
+        </ul></div>
+      </details>
+    </div>
+
+  </main>
+</div>
+
+<!-- FOOTER -->
+<footer class="site-footer">
+  <span>Minimum Viable Epistemic Model for SSA &nbsp;·&nbsp; Belief / Knowledge Framework &nbsp;·&nbsp; <a href="#">View on GitHub</a></span>
+</footer>
+
+<script>
+const $ = id => document.getElementById(id);
+const fmt = v => v.toFixed(3);
+const conc = (sig, W=1) => W / (Math.sqrt(2 * Math.PI) * sig);
+const meff = (m, sig, W=1) => m * conc(sig, W);
+
+function showStep(n, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.step-btn').forEach(b => b.classList.remove('active'));
+  $('panel' + n).classList.add('active');
+  btn.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+const COLORS = {
+  h1: '#34d399', h2: '#fbbf24', h3: '#4f8ef7', h4: '#a78bfa',
+  C:  '#4f8ef7', '?': '#a78bfa', A: '#34d399', B: '#fbbf24'
+};
+
+function bars(data) {
+  return data.map(d => {
+    const pct = Math.min(Math.round(d.v * 100), 100);
+    const c = COLORS[d.k] || '#888';
+    return `<div class="bar-row">
+      <div class="bar-label" style="color:${c}">${d.label || d.k}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${c}"></div></div>
+      <div class="bar-val" style="color:${c}">${fmt(d.v)}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ── P1 ── */
+let p1 = { mA: 0.7, mB: 0.3 };
+function p1Render() {
+  $('p1-bars').innerHTML = bars([{ k: 'A', label: 'A — region A', v: p1.mA }, { k: 'B', label: 'B — region B', v: p1.mB }]);
+}
+function p1SliderUpdate() {
+  $('p1-pda-val').textContent = parseFloat($('p1-pda').value).toFixed(2);
+  $('p1-pdb-val').textContent = parseFloat($('p1-pdb').value).toFixed(2);
+}
+function p1Observe(det) {
+  const pda = parseFloat($('p1-pda').value), pdb = parseFloat($('p1-pdb').value);
+  const lA = det ? pda : 1 - pda, lB = det ? pdb : 1 - pdb;
+  const norm = lA * p1.mA + lB * p1.mB;
+  const nA = lA * p1.mA / norm, nB = lB * p1.mB / norm;
+  const dA = nA - p1.mA, dB = nB - p1.mB;
+  $('p1-result').innerHTML = `<div class="lbl" style="margin-top:12px">After ${det ? 'detection' : 'missed detection'}:</div>
+    <div class="mono">m(A): ${fmt(p1.mA)} → <span class="ha">${fmt(nA)}</span> <span class="${dA >= 0 ? 'good' : 'bad'}">(${dA >= 0 ? '+' : ''}${fmt(dA)})</span><br>
+    m(B): ${fmt(p1.mB)} → <span class="hb">${fmt(nB)}</span> <span class="${dB >= 0 ? 'good' : 'bad'}">(${dB >= 0 ? '+' : ''}${fmt(dB)})</span><br>
+    <span style="color:var(--text3)">total = ${fmt(nA + nB)} (conserved)</span></div>`;
+  p1.mA = nA; p1.mB = nB; p1Render();
+}
+function p1Reset() { p1 = { mA: 0.7, mB: 0.3 }; p1Render(); $('p1-result').innerHTML = ''; }
+p1Render();
+
+/* ── P2 ── */
+let p2 = {};
+function p2Init() {
+  const mu = parseFloat($('p2-mu').value);
+  $('p2-mu-val').textContent = mu.toFixed(2);
+  const r = 1 - mu;
+  p2 = { mA: r * 0.70, mB: r * 0.30, mU: mu };
+  p2Render(); $('p2-result').innerHTML = '';
+}
+function p2Render() {
+  $('p2-bars').innerHTML = bars([{ k: 'A', label: 'A — named hyp.', v: p2.mA }, { k: 'B', label: 'B — named hyp.', v: p2.mB }, { k: '?', label: '? — unknown', v: p2.mU }]);
+}
+function p2Observe(type) {
+  const lA = type === 'normal' ? 0.90 : 0.10, lB = type === 'normal' ? 0.20 : 0.05, lU = type === 'normal' ? 0.50 : 0.80;
+  const norm = lA * p2.mA + lB * p2.mB + lU * p2.mU;
+  const nA = lA * p2.mA / norm, nB = lB * p2.mB / norm, nU = lU * p2.mU / norm;
+  $('p2-result').innerHTML = `<div class="lbl" style="margin-top:12px">${type === 'normal' ? 'Routine' : 'Anomalous'} detection:</div>
+    <div class="mono">m(A): ${fmt(p2.mA)} → <span class="ha">${fmt(nA)}</span><br>
+    m(B): ${fmt(p2.mB)} → <span class="hb">${fmt(nB)}</span><br>
+    m(?): ${fmt(p2.mU)} → <span class="hu">${fmt(nU)}</span>
+    ${type === 'anomalous' ? '<br><span style="color:var(--amber)">↑ unknown absorbed the anomalous evidence</span>' : ''}</div>`;
+  p2.mA = nA; p2.mB = nB; p2.mU = nU; p2Render();
+}
+p2Init();
+
+/* ── P3 ── */
+let p3 = {};
+function p3Init() {
+  p3 = {
+    hyps: [
+      { k: 'h1', label: 'h1 — 380 km, 51°', m: 0.40, alive: true, alt: 380, inc: 51 },
+      { k: 'h2', label: 'h2 — 180 km, 51°', m: 0.25, alive: true, alt: 180, inc: 51 },
+      { k: 'h3', label: 'h3 — 380 km, 28°', m: 0.20, alive: true, alt: 380, inc: 28 },
+      { k: 'h4', label: 'h4 — 120 km, 51°', m: 0.05, alive: true, alt: 120, inc: 51 },
+    ], mU: 0.10
+  };
+  p3Render(); $('p3-result').innerHTML = '';
+}
+function p3Norm() {
+  const tot = p3.hyps.filter(h => h.alive).reduce((s, h) => s + h.m, 0) + p3.mU;
+  p3.hyps.forEach(h => { if (h.alive) h.m /= tot; }); p3.mU /= tot;
+}
+function p3Render() {
+  const rows = p3.hyps.map(h => `<tr>
+    <td class="${h.alive ? '' : 'dead'}">${h.label}</td>
+    <td>${h.alt} km</td><td>${h.inc}°</td>
+    <td class="${h.alive ? '' : 'dead'}">${h.alive ? fmt(h.m) : 'ELIMINATED'}</td>
+  </tr>`).join('');
+  $('p3-hyps').innerHTML = `<table><tr><th>Hypothesis</th><th>Altitude</th><th>Inclination</th><th>Weight m(h)</th></tr>
+    ${rows}<tr><td class="hu">? — unknown</td><td>—</td><td>—</td><td class="hu">${fmt(p3.mU)}</td></tr></table>`;
+}
+function p3Prune(type) {
+  let killed = [];
+  p3.hyps.forEach(h => {
+    if (!h.alive) return;
+    if (type === 'altitude' && h.alt < 160) { h.alive = false; h.m = 0; killed.push(h.label); }
+    if (type === 'inclination' && h.inc < 45) { h.alive = false; h.m = 0; killed.push(h.label); }
+  });
+  if (killed.length) {
+    p3Norm();
+    $('p3-result').innerHTML = `<div class="danger-box" style="margin-top:10px"><strong>Hard eliminated (permanent):</strong> ${killed.join(', ')}<br>Mass redistributed to survivors. No future evidence can restore them.</div>`;
+  } else {
+    $('p3-result').innerHTML = `<div class="success-box" style="margin-top:10px">No hypotheses violated this constraint.</div>`;
+  }
+  p3Render();
+}
+function p3Observe() {
+  const alive = p3.hyps.filter(h => h.alive);
+  const liks = { h1: 0.85, h2: 0.60, h3: 0.75, h4: 0.50 };
+  let norm = 0; alive.forEach(h => { norm += liks[h.k] * h.m; }); norm += 0.50 * p3.mU;
+  alive.forEach(h => { h.m = liks[h.k] * h.m / norm; }); p3.mU = 0.50 * p3.mU / norm;
+  $('p3-result').innerHTML = `<div class="success-box" style="margin-top:10px">Evidence update applied to surviving hypotheses only.</div>`;
+  p3Render();
+}
+p3Init();
+
+/* ── P4 ── */
+function p4Update() {
+  const t = parseFloat($('p4-days').value); $('p4-days-val').textContent = t.toFixed(1);
+  const h1 = { m: 0.619, sig0: 0.5, k: 0.5 }, h2 = { m: 0.253, sig0: 0.5, k: 2.5 };
+  const s1 = h1.sig0 + h1.k * t, s2 = h2.sig0 + h2.k * t;
+  const me1 = meff(h1.m, s1), me2 = meff(h2.m, s2), mu = 0.128 + 0.005 * t;
+  $('p4-table').innerHTML = `<table>
+    <tr><th>Hypothesis</th><th>m(h) — belief weight</th><th>σ — spread (km)</th><th>m_eff — actionable</th></tr>
+    <tr><td class="ha">h1 — 380 km</td><td class="ha">${fmt(h1.m)} (stable)</td><td class="ha">${s1.toFixed(2)}</td><td class="ha">${fmt(me1)}</td></tr>
+    <tr><td class="hb">h2 — 180 km</td><td class="hb">${fmt(h2.m)} (stable)</td><td class="hb">${s2.toFixed(2)}</td><td class="hb">${fmt(me2)}</td></tr>
+    <tr><td class="hu">? — unknown</td><td class="hu">${fmt(mu)}</td><td>—</td><td>—</td></tr>
+  </table>`;
+  const me1_0 = meff(h1.m, h1.sig0), me2_0 = meff(h2.m, h2.sig0);
+  $('p4-meff').innerHTML = bars([
+    { k: 'h1', label: `h1 m_eff (${Math.round(me1 / me1_0 * 100)}% of t=0)`, v: Math.min(me1, 0.65) },
+    { k: 'h2', label: `h2 m_eff (${Math.round(me2 / me2_0 * 100)}% of t=0)`, v: Math.min(me2, 0.65) }
+  ]);
+  const w = $('p4-warn');
+  if (t > 7) {
+    w.style.display = 'block';
+    w.className = 'danger-box';
+    w.innerHTML = `At ${t.toFixed(0)} days: m_eff(h1) is only ${Math.round(me1 / me1_0 * 100)}% of its t=0 value. Fresh observation urgently needed to tighten σ and restore actionable conjunction assessment.`;
+  } else { w.style.display = 'none'; }
+}
+p4Update();
+
+/* ── P5 ── */
+let p5 = {};
+function p5Init() { p5 = { mh1: 0.619, mh2: 0.253, mU: 0.128, misses: 0 }; p5Update(); $('p5-result').innerHTML = ''; $('p5-spawn').style.display = 'none'; }
+function p5Update() {
+  const t = parseFloat($('p5-days').value); $('p5-days-val').textContent = t.toFixed(1);
+  p5.sig1 = 0.5 + 0.5 * t; p5.sig2 = 0.5 + 2.5 * t;
+  $('p5-bars').innerHTML = bars([
+    { k: 'h1', label: `h1  m=${fmt(p5.mh1)}  σ=${p5.sig1.toFixed(1)}km`, v: p5.mh1 },
+    { k: 'h2', label: `h2  m=${fmt(p5.mh2)}  σ=${p5.sig2.toFixed(1)}km`, v: p5.mh2 },
+    { k: '?',  label: `?   m=${fmt(p5.mU)}`, v: p5.mU }
+  ]);
+}
+function p5Miss() {
+  const Phit = 0.90, W = 1;
+  const c1 = conc(p5.sig1, W), c2 = conc(p5.sig2, W);
+  const l1 = 1 - c1 * Phit, l2 = 1 - c2 * Phit, lU = 0.90;
+  const norm = l1 * p5.mh1 + l2 * p5.mh2 + lU * p5.mU;
+  const n1 = l1 * p5.mh1 / norm, n2 = l2 * p5.mh2 / norm, nU = lU * p5.mU / norm;
+  p5.misses++;
+  $('p5-result').innerHTML = `<div class="lbl" style="margin-top:12px">Miss #${p5.misses} — concentration factors:</div>
+    <div class="mono">c(h1)=${c1.toFixed(3)} ${c1 > 0.15 ? '(tight — miss is surprising)' : '(diffuse — miss expected)'}<br>
+    c(h2)=${c2.toFixed(3)} ${c2 > 0.05 ? '(moderate)' : '(very diffuse — miss almost certain)'}<br><br>
+    h1: ${fmt(p5.mh1)} → <span class="ha">${fmt(n1)}</span> <span class="bad">(${fmt(n1 - p5.mh1)})</span><br>
+    h2: ${fmt(p5.mh2)} → <span class="hb">${fmt(n2)}</span> <span class="${n2 >= p5.mh2 ? 'good' : 'bad'}">(${fmt(n2 - p5.mh2)})</span><br>
+    ?: ${fmt(p5.mU)} → <span class="hu">${fmt(nU)}</span></div>`;
+  p5.mh1 = n1; p5.mh2 = n2; p5.mU = nU;
+  p5Update();
+  if (p5.mU >= 0.20) $('p5-spawn').style.display = 'block';
+}
+p5Init();
+
+/* ── P6 ── */
+let p6 = {};
+function p6Init() { p6 = { mh1: 0.55, mh2: 0.30, mU: 0.15, mC: 0, cSpawned: false }; p6Render(); $('p6-result').innerHTML = ''; }
+function p6Norm() { const tot = p6.mh1 + p6.mh2 + p6.mU + p6.mC; p6.mh1 /= tot; p6.mh2 /= tot; p6.mU /= tot; p6.mC /= tot; }
+function p6Render() {
+  const d = [{ k: 'h1', label: 'h1 — named', v: p6.mh1 }, { k: 'h2', label: 'h2 — named', v: p6.mh2 }];
+  if (p6.cSpawned) d.push({ k: 'C', label: 'C — newly spawned', v: p6.mC });
+  d.push({ k: '?', label: '? — unknown residual', v: p6.mU });
+  $('p6-bars').innerHTML = bars(d);
+}
+function p6Add(type) {
+  const was = p6.mU;
+  if (type === 'leak') p6.mU += 0.010;
+  if (type === 'anomaly') p6.mU += 0.040;
+  if (type === 'frag') p6.mU += 0.120;
+  p6Norm();
+  const labels = { leak: 'Time leak α — steady growth from observation gap', anomaly: 'Anomalous detection β — unexplained signal received', frag: 'Fragmentation spike γ — known breakup event' };
+  $('p6-result').innerHTML = `<div class="lbl" style="margin-top:12px">${labels[type]}</div>
+    <div class="mono">m(?): ${fmt(was)} → <span class="hu">${fmt(p6.mU)}</span>
+    ${p6.mU >= 0.15 ? '<br><span style="color:var(--amber)">↑ spawn threshold reached — Spawn C now available</span>' : ''}</div>`;
+  p6Render();
+}
+function p6Spawn() {
+  if (p6.mU < 0.10) { $('p6-result').innerHTML = `<div class="danger-box" style="margin-top:10px">m(?) = ${fmt(p6.mU)} too low. Accumulate more evidence first.</div>`; return; }
+  const spawned = 0.60 * p6.mU; p6.mC += spawned; p6.mU *= 0.40; p6.cSpawned = true;
+  p6Norm();
+  $('p6-result').innerHTML = `<div class="success-box" style="margin-top:10px"><strong>Hypothesis C spawned.</strong><br>
+    m(C) = ${fmt(p6.mC)} transferred from m(?)<br>
+    μ(C) = anomalous detection position &nbsp;|&nbsp; σ(C) = 8 km initial<br>
+    m(?) reduced to ${fmt(p6.mU)} — residual unknown remains<br>
+    C now participates in m_eff and the full update cycle.</div>`;
+  p6Render();
+}
+p6Init();
+
+/* ── P7 ── */
+let p7 = {};
+function p7Init() {
+  p7 = {
+    t: 0,
+    hyps: [
+      { k: 'h1', label: 'h1 — 380 km', m: 0.619, sig: 0.5, ks: 0.5, alive: true },
+      { k: 'h2', label: 'h2 — 180 km', m: 0.253, sig: 0.5, ks: 2.5, alive: true },
+    ],
+    mU: 0.128, mC: 0, sigC: 8.0, cSpawned: false, log: []
+  };
+  p7Render(); $('p7-log').innerHTML = '';
+}
+function p7Log(msg) {
+  p7.log.unshift(`t=${p7.t.toFixed(1)}d › ${msg}`);
+  if (p7.log.length > 10) p7.log.pop();
+  $('p7-log').innerHTML = p7.log.join('<br>');
+}
+function p7Norm() {
+  let tot = p7.hyps.filter(h => h.alive).reduce((s, h) => s + h.m, 0) + p7.mU + (p7.cSpawned ? p7.mC : 0);
+  p7.hyps.forEach(h => { if (h.alive) h.m /= tot; });
+  p7.mU /= tot;
+  if (p7.cSpawned) p7.mC /= tot;
+}
+function p7Render() {
+  const W = 1;
+  let rows = p7.hyps.map(h => {
+    if (!h.alive) return `<tr><td class="dead">${h.label}</td><td class="dead">eliminated</td><td class="dead">—</td><td class="dead">—</td></tr>`;
+    const me = meff(h.m, h.sig, W);
+    const cl = h.k === 'h1' ? 'ha' : 'hb';
+    return `<tr><td class="${cl}">${h.label}</td><td class="${cl}">${fmt(h.m)}</td><td class="${cl}">${h.sig.toFixed(2)} km</td><td class="${cl}">${fmt(me)}</td></tr>`;
+  }).join('');
+  if (p7.cSpawned) { const meC = meff(p7.mC, p7.sigC, W); rows += `<tr><td class="hc">C — spawned</td><td class="hc">${fmt(p7.mC)}</td><td class="hc">${p7.sigC.toFixed(2)} km</td><td class="hc">${fmt(meC)}</td></tr>`; }
+  rows += `<tr><td class="hu">? — unknown</td><td class="hu">${fmt(p7.mU)}</td><td>—</td><td>—</td></tr>`;
+  $('p7-state').innerHTML = `<div class="lbl">t = ${p7.t.toFixed(1)} days &nbsp;|&nbsp; W = 1 km conjunction corridor</div>
+    <table><tr><th>Hypothesis</th><th>m(h) belief weight</th><th>σ spread</th><th>m_eff actionable</th></tr>${rows}</table>`;
+}
+function p7Time(dt) {
+  p7.t += dt;
+  p7.hyps.forEach(h => { if (h.alive) h.sig += h.ks * dt; });
+  if (p7.cSpawned) p7.sigC += 1.0 * dt;
+  p7.mU += 0.005 * dt; p7Norm();
+  p7Log(`+${dt}d — σ grew, m_eff decayed, m(?) +${fmt(0.005 * dt)}`);
+  p7Render();
+}
+function p7Obs(type) {
+  const W = 1, Phit = 0.90;
+  if (type === 'det') {
+    let norm = 0; const lk = {};
+    p7.hyps.forEach(h => { if (!h.alive) { lk[h.k] = 0; return; } lk[h.k] = conc(h.sig, W) * Phit; norm += lk[h.k] * h.m; });
+    if (p7.cSpawned) { lk['C'] = conc(p7.sigC, W) * Phit; norm += lk['C'] * p7.mC; }
+    norm += 0.50 * p7.mU;
+    p7.hyps.forEach(h => { if (h.alive) h.m = lk[h.k] * h.m / norm; });
+    if (p7.cSpawned) p7.mC = lk['C'] * p7.mC / norm;
+    p7.mU = 0.50 * p7.mU / norm;
+    const h1 = p7.hyps.find(h => h.k === 'h1'); if (h1 && h1.alive) h1.sig = 0.5;
+    p7Log(`Detection → h1 σ reset to 0.5 km, weights updated`);
+  } else if (type === 'miss') {
+    let norm = 0; const lk = {};
+    p7.hyps.forEach(h => { if (!h.alive) { lk[h.k] = 1; return; } lk[h.k] = 1 - conc(h.sig, W) * Phit; norm += lk[h.k] * h.m; });
+    if (p7.cSpawned) { lk['C'] = 1 - conc(p7.sigC, W) * Phit; norm += lk['C'] * p7.mC; }
+    norm += 0.90 * p7.mU;
+    p7.hyps.forEach(h => { if (h.alive) h.m = lk[h.k] * h.m / norm; });
+    if (p7.cSpawned) p7.mC = lk['C'] * p7.mC / norm;
+    p7.mU = 0.90 * p7.mU / norm;
+    p7Log(`Miss — h1 eroded (tight σ penalised more than diffuse h2)`);
+  } else {
+    p7.mU += 0.04; p7Norm();
+    p7Log(`Anomalous detection — m(?) +0.040`);
+  }
+  p7Norm(); p7Render();
+}
+function p7Spawn() {
+  if (p7.mU < 0.15) { p7Log(`Spawn failed — m(?)=${fmt(p7.mU)} below 0.15 threshold`); return; }
+  p7.mC += 0.60 * p7.mU; p7.mU *= 0.40; p7.cSpawned = true; p7.sigC = 8.0;
+  p7Norm(); p7Log(`C spawned — σ=8.0 km, m(C)=${fmt(p7.mC)}`);
+  p7Render();
+}
+p7Init();
+</script>
+</body>
+</html>

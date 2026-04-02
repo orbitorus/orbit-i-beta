@@ -1,0 +1,480 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --accent: #1D9E75;
+    --accent-light: #E1F5EE;
+    --accent-dark: #085041;
+    --danger: #E24B4A;
+    --amber: #BA7517;
+    --amber-light: #FAEEDA;
+    --text: var(--color-text-primary);
+    --muted: var(--color-text-secondary);
+    --surface: var(--color-background-secondary);
+    --border: var(--color-border-tertiary);
+    --font-display: 'Syne', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+  }
+
+  #deck {
+    font-family: var(--font-body);
+    color: var(--text);
+    width: 100%;
+    min-height: 520px;
+  }
+
+  .slide { display: none; min-height: 480px; padding: 2.5rem 2rem 2rem; flex-direction: column; justify-content: center; }
+  .slide.active { display: flex; }
+
+  .nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.75rem 2rem;
+    border-top: 0.5px solid var(--border);
+    font-size: 13px;
+    color: var(--muted);
+    font-family: var(--font-body);
+  }
+
+  .nav button {
+    background: none; border: 0.5px solid var(--border);
+    border-radius: 6px; padding: 6px 18px;
+    font-family: var(--font-body); font-size: 13px;
+    color: var(--text); cursor: pointer;
+    transition: background 0.15s;
+  }
+  .nav button:hover { background: var(--surface); }
+  .nav button:disabled { opacity: 0.3; cursor: default; }
+
+  .progress-bar {
+    height: 2px; background: var(--border);
+    position: relative;
+  }
+  .progress-fill {
+    height: 100%; background: var(--accent);
+    transition: width 0.3s ease;
+  }
+
+  .tag {
+    display: inline-block; font-size: 11px; font-weight: 500; letter-spacing: 0.08em;
+    text-transform: uppercase; padding: 3px 10px; border-radius: 4px;
+    margin-bottom: 1rem;
+    font-family: var(--font-display);
+  }
+  .tag-teal { background: #E1F5EE; color: #085041; }
+  .tag-amber { background: #FAEEDA; color: #633806; }
+  .tag-red { background: #FCEBEB; color: #791F1F; }
+  .tag-blue { background: #E6F1FB; color: #0C447C; }
+
+  h1.display {
+    font-family: var(--font-display);
+    font-size: 2.6rem; font-weight: 800;
+    line-height: 1.1; letter-spacing: -0.02em;
+    color: var(--text);
+  }
+  h2.section-title {
+    font-family: var(--font-display);
+    font-size: 1.7rem; font-weight: 700;
+    line-height: 1.2; letter-spacing: -0.01em;
+    color: var(--text);
+    margin-bottom: 1.25rem;
+  }
+  .sub {
+    font-size: 1rem; color: var(--muted); line-height: 1.6;
+    font-weight: 300; margin-top: 0.5rem;
+  }
+  .big-number {
+    font-family: var(--font-display); font-size: 3.5rem; font-weight: 800;
+    color: var(--accent); line-height: 1;
+  }
+  .big-number.red { color: var(--danger); }
+  .big-number.amber { color: var(--amber); }
+
+  .card {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: 12px; padding: 1.25rem 1.5rem;
+  }
+  .card-accent {
+    border-left: 3px solid var(--accent);
+    background: var(--surface); border-radius: 0 12px 12px 0;
+    padding: 1rem 1.25rem; margin-bottom: 0.75rem;
+  }
+  .card-accent.red { border-left-color: var(--danger); }
+  .card-accent.amber { border-left-color: var(--amber); }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+
+  .pill {
+    display: inline-block; border-radius: 20px; padding: 4px 14px;
+    font-size: 13px; font-weight: 500; font-family: var(--font-display);
+  }
+  .pill-teal { background: #9FE1CB; color: #04342C; }
+  .pill-amber { background: #FAC775; color: #412402; }
+  .pill-red { background: #F7C1C1; color: #501313; }
+
+  .flow-row {
+    display: flex; align-items: center; gap: 0; margin: 1.5rem 0;
+    flex-wrap: nowrap; overflow-x: auto;
+  }
+  .flow-box {
+    flex: 1; min-width: 0; text-align: center; padding: 0.6rem 0.5rem;
+    font-size: 11px; font-weight: 500; border-radius: 8px;
+    font-family: var(--font-display); line-height: 1.3;
+  }
+  .flow-box.dim { background: var(--surface); color: var(--muted); }
+  .flow-box.active-teal { background: #9FE1CB; color: #04342C; }
+  .flow-box.active-amber { background: #FAC775; color: #412402; }
+  .flow-arrow {
+    font-size: 12px; color: var(--muted); padding: 0 4px; flex-shrink: 0;
+  }
+
+  .authority-row {
+    display: grid; grid-template-columns: 1.2fr 1.5fr 1.5fr 1.5fr;
+    gap: 8px; align-items: center; padding: 0.6rem 0;
+    border-bottom: 0.5px solid var(--border); font-size: 13px;
+  }
+  .authority-row.header { font-weight: 500; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+  .price-card {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: 12px; padding: 1.25rem;
+    display: flex; flex-direction: column; gap: 0.5rem;
+  }
+  .price-card.featured { border: 2px solid var(--accent); }
+  .price { font-family: var(--font-display); font-size: 1.6rem; font-weight: 800; color: var(--text); }
+  .price-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; }
+  .price-name { font-family: var(--font-display); font-size: 1rem; font-weight: 700; }
+
+  .quote-block {
+    border-left: 3px solid var(--accent); padding: 0.75rem 1rem;
+    font-style: italic; color: var(--muted); font-size: 0.95rem; margin: 1rem 0;
+    line-height: 1.6;
+  }
+
+  .step-num {
+    font-family: var(--font-display); font-size: 1.8rem; font-weight: 800;
+    color: var(--accent); min-width: 2rem;
+  }
+
+  .close-line {
+    font-family: var(--font-display); font-size: 1.4rem; font-weight: 700;
+    line-height: 1.3; color: var(--text);
+  }
+
+  .region-row {
+    display: flex; gap: 8px; margin-top: 0.75rem; flex-wrap: wrap;
+  }
+  .region-badge {
+    border: 0.5px solid var(--border); border-radius: 6px;
+    padding: 4px 10px; font-size: 12px; color: var(--muted);
+  }
+
+  .check { color: var(--accent); font-weight: 500; margin-right: 6px; }
+  .bullet-list li { list-style: none; padding: 0.35rem 0; font-size: 0.95rem; line-height: 1.5; display: flex; align-items: flex-start; gap: 6px; }
+  .bullet-list li::before { content: "→"; color: var(--accent); flex-shrink: 0; margin-top: 1px; }
+
+  .slide-1-orb {
+    width: 80px; height: 80px; border-radius: 50%;
+    border: 2px solid var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 1.5rem;
+    position: relative;
+  }
+  .slide-1-orb::after {
+    content: '';
+    position: absolute;
+    width: 110px; height: 110px; border-radius: 50%;
+    border: 0.5px solid var(--border);
+  }
+  .orb-inner { width: 20px; height: 20px; border-radius: 50%; background: var(--accent); }
+
+  .conops-block {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: 10px; padding: 0.75rem 1rem; margin-bottom: 0.5rem;
+  }
+  .conops-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 2px; }
+  .conops-action { font-size: 13px; font-weight: 500; }
+  .conops-orb { font-size: 11px; color: #085041; background: #E1F5EE; border-radius: 4px; padding: 2px 6px; margin-top: 4px; display: inline-block; }
+</style>
+
+<div id="deck">
+  <div class="progress-bar"><div class="progress-fill" id="prog" style="width: 10%"></div></div>
+
+  <!-- Slide 1: Hook -->
+  <div class="slide active" id="s1">
+    <div class="slide-1-orb"><div class="orb-inner"></div></div>
+    <div class="tag tag-teal">Orbitorus</div>
+    <h1 class="display">Decision intelligence<br>for collision risk.</h1>
+    <p class="sub" style="max-width: 480px; margin-top: 1rem;">Your team makes conjunction calls every week. How confident are you that every decision is the right one — and that you can prove it?</p>
+    <div class="region-row" style="margin-top: 1.5rem;">
+      <span class="region-badge">LEO operators</span>
+      <span class="region-badge">Mission ops teams</span>
+      <span class="region-badge">Space agencies</span>
+      <span class="region-badge">New space ventures</span>
+    </div>
+  </div>
+
+  <!-- Slide 2: The Problem -->
+  <div class="slide" id="s2">
+    <div class="tag tag-red">The reality</div>
+    <h2 class="section-title">The debris environment<br>is not forgiving.</h2>
+    <div class="grid-3" style="margin-bottom: 1.25rem;">
+      <div class="card" style="text-align: center;">
+        <div class="big-number red">36K+</div>
+        <p style="font-size: 12px; color: var(--muted); margin-top: 6px;">tracked objects in orbit today</p>
+      </div>
+      <div class="card" style="text-align: center;">
+        <div class="big-number amber">72h</div>
+        <p style="font-size: 12px; color: var(--muted); margin-top: 6px;">to make a maneuver decision — or it's too late</p>
+      </div>
+      <div class="card" style="text-align: center;">
+        <div class="big-number">2×</div>
+        <p style="font-size: 12px; color: var(--muted); margin-top: 6px;">conjunction frequency doubling every 2–3 years</p>
+      </div>
+    </div>
+    <div class="card-accent red">
+      <p style="font-size: 0.9rem; font-weight: 500;">More CDMs. Same team. Same pressure window. Zero margin for informal decisions.</p>
+    </div>
+    <div class="card-accent amber" style="margin-top: 0;">
+      <p style="font-size: 0.9rem;">Regulators, insurers and SSR auditors are beginning to ask: <em>"Show us your conjunction decision trail."</em></p>
+    </div>
+  </div>
+
+  <!-- Slide 3: Workflow / CONOPS -->
+  <div class="slide" id="s3">
+    <div class="tag tag-blue">Space ops workflow</div>
+    <h2 class="section-title">Where Orbitorus lives in your ops chain.</h2>
+    <div class="flow-row">
+      <div class="flow-box dim">Orbit det.</div>
+      <div class="flow-arrow">›</div>
+      <div class="flow-box dim">Screening</div>
+      <div class="flow-arrow">›</div>
+      <div class="flow-box active-amber">CDM receipt</div>
+      <div class="flow-arrow">›</div>
+      <div class="flow-box active-teal">Risk assess.</div>
+      <div class="flow-arrow">›</div>
+      <div class="flow-box active-teal">Decision</div>
+      <div class="flow-arrow">›</div>
+      <div class="flow-box active-teal">Maneuver</div>
+      <div class="flow-arrow">›</div>
+      <div class="flow-box dim">Verify</div>
+    </div>
+    <p style="font-size: 11px; color: var(--muted); margin-bottom: 1rem;">Orbitorus owns the critical middle — where informal practice creates the most risk.</p>
+    <div class="conops-block">
+      <div class="conops-label">CDM ingested</div>
+      <div class="conops-action">Parameters parsed: Pc, Miss Distance, covariance realism, TCA scored automatically</div>
+      <div class="conops-orb">Orbitorus flags covariance quality — not just the Pc number</div>
+    </div>
+    <div class="conops-block">
+      <div class="conops-label">Decision support</div>
+      <div class="conops-action">Maneuver trade-off modelled. Operator decides — every rationale captured in audit trail.</div>
+      <div class="conops-orb">Human always in the loop. Orbitorus informs, never overrides.</div>
+    </div>
+    <div class="conops-block">
+      <div class="conops-label">Post-event</div>
+      <div class="conops-action">Audit trail auto-compiled. Outcome report generated. Learning loop feeds next assessment.</div>
+    </div>
+  </div>
+
+  <!-- Slide 4: Decisional Authority -->
+  <div class="slide" id="s4">
+    <div class="tag tag-teal">Decisional authority</div>
+    <h2 class="section-title">Your team stays in command.<br>Orbitorus backs every call.</h2>
+    <div style="border: 0.5px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 1.25rem;">
+      <div class="authority-row header" style="padding: 0.75rem 1rem; background: var(--surface);">
+        <div>Pc range</div><div>Decision owner</div><div>Required action</div><div>Orbitorus role</div>
+      </div>
+      <div class="authority-row" style="padding: 0.6rem 1rem;">
+        <div><span class="pill pill-teal">&lt; 1e-5</span></div>
+        <div style="font-size: 13px;">Automated screening</div>
+        <div style="font-size: 13px; color: var(--muted);">Monitor, no action</div>
+        <div style="font-size: 13px; color: var(--muted);">Log and archive</div>
+      </div>
+      <div class="authority-row" style="padding: 0.6rem 1rem;">
+        <div><span class="pill pill-amber">1e-5 to 1e-4</span></div>
+        <div style="font-size: 13px;">Flight Dynamics Eng.</div>
+        <div style="font-size: 13px; color: var(--muted);">Assess + prepare contingency</div>
+        <div style="font-size: 13px; color: var(--accent); font-weight: 500;">Decision dashboard</div>
+      </div>
+      <div class="authority-row" style="padding: 0.6rem 1rem; border-bottom: none;">
+        <div><span class="pill pill-red">&gt; 1e-4</span></div>
+        <div style="font-size: 13px;">Mission Director</div>
+        <div style="font-size: 13px; color: var(--muted);">Maneuver go / no-go</div>
+        <div style="font-size: 13px; color: var(--accent); font-weight: 500;">Full audit trail</div>
+      </div>
+    </div>
+    <div class="quote-block">"Orbitorus does not replace your judgment. It makes your judgment defensible."</div>
+  </div>
+
+  <!-- Slide 5: The Gap -->
+  <div class="slide" id="s5">
+    <div class="tag tag-amber">The gap</div>
+    <h2 class="section-title">What your team is<br>doing right now.</h2>
+    <div class="grid-2">
+      <div>
+        <p style="font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 0.75rem;">Without Orbitorus</p>
+        <ul class="bullet-list" style="list-style: none;">
+          <li style="display: flex; gap: 8px; padding: 0.4rem 0; font-size: 0.9rem;"><span style="color: var(--danger);">✕</span> Pc read without checking covariance quality</li>
+          <li style="display: flex; gap: 8px; padding: 0.4rem 0; font-size: 0.9rem;"><span style="color: var(--danger);">✕</span> Maneuver trade-off done informally</li>
+          <li style="display: flex; gap: 8px; padding: 0.4rem 0; font-size: 0.9rem;"><span style="color: var(--danger);">✕</span> No decision rationale documented</li>
+          <li style="display: flex; gap: 8px; padding: 0.4rem 0; font-size: 0.9rem;"><span style="color: var(--danger);">✕</span> Post-event review is anecdotal</li>
+          <li style="display: flex; gap: 8px; padding: 0.4rem 0; font-size: 0.9rem;"><span style="color: var(--danger);">✕</span> Nothing to show auditors or insurers</li>
+        </ul>
+      </div>
+      <div>
+        <p style="font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 0.75rem;">With Orbitorus</p>
+        <ul class="bullet-list" style="list-style: none;">
+          <li style="display: flex; gap: 8px; padding: 0.4rem 0; font-size: 0.9rem;"><span style="color: var(--accent);">✓</span> Covariance realism scored on every CDM</li>
+          <li style="display: flex; gap: 8px; padding: 0.4rem 0; font-size: 0.9rem;"><span style="color: var(--accent);">✓</span> Structured maneuver trade-off modelled</li>
+          <li style="display: flex; gap: 8px; padding: 0.4rem 0; font-size: 0.9rem;"><span style="color: var(--accent);">✓</span> Every decision captured with rationale</li>
+          <li style="display: flex; gap: 8px; padding: 0.4rem 0; font-size: 0.9rem;"><span style="color: var(--accent);">✓</span> Auto-compiled outcome report</li>
+          <li style="display: flex; gap: 8px; padding: 0.4rem 0; font-size: 0.9rem;"><span style="color: var(--accent);">✓</span> Audit trail ready for SSR, FCC, ESA</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 6: The Workshop -->
+  <div class="slide" id="s6">
+    <div class="tag tag-teal">How we start</div>
+    <h2 class="section-title">Not a training course.<br>An audit of your decision process.</h2>
+    <div style="display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.25rem;">
+      <div style="display: flex; gap: 1rem; align-items: flex-start;">
+        <div class="step-num">1</div>
+        <div><p style="font-weight: 500; font-size: 0.95rem;">Conjunction risk landscape</p><p style="font-size: 0.85rem; color: var(--muted);">Your orbital regime, your exposure baseline</p></div>
+      </div>
+      <div style="display: flex; gap: 1rem; align-items: flex-start;">
+        <div class="step-num">2</div>
+        <div><p style="font-weight: 500; font-size: 0.95rem;">25-scenario decision simulation</p><p style="font-size: 0.85rem; color: var(--muted);">Real CDM parameters, time pressure, covariance traps</p></div>
+      </div>
+      <div style="display: flex; gap: 1rem; align-items: flex-start;">
+        <div class="step-num">3</div>
+        <div><p style="font-weight: 500; font-size: 0.95rem;">Team decision profile analysis</p><p style="font-size: 0.85rem; color: var(--muted);">Where your team agrees, diverges, and leaves risk on the table</p></div>
+      </div>
+      <div style="display: flex; gap: 1rem; align-items: flex-start;">
+        <div class="step-num">4</div>
+        <div><p style="font-weight: 500; font-size: 0.95rem;">Real close-call case study</p><p style="font-size: 0.85rem; color: var(--muted);">Compare your calls against what actually happened</p></div>
+      </div>
+    </div>
+    <div class="card" style="display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
+      <div>
+        <p style="font-size: 0.85rem; color: var(--muted); text-decoration: line-through;">USD 2,000</p>
+        <p style="font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 800;">USD 1,000</p>
+        <p style="font-size: 12px; color: var(--muted);">4 sessions · up to 5 pax · outcome report included</p>
+      </div>
+      <div style="text-align: right;">
+        <span style="background: #E1F5EE; color: #085041; font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 4px;">50% validation offer</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 7: Pricing Path -->
+  <div class="slide" id="s7">
+    <div class="tag tag-blue">The path forward</div>
+    <h2 class="section-title">Each stage stands alone.<br>No obligation to continue.</h2>
+    <div class="grid-3">
+      <div class="price-card featured">
+        <div class="price-label">Start here</div>
+        <div class="price-name">Workshop</div>
+        <div class="price">USD 1K</div>
+        <div style="height: 0.5px; background: var(--border); margin: 0.5rem 0;"></div>
+        <p style="font-size: 12px; color: var(--muted);">Decision audit + outcome report</p>
+        <p style="font-size: 12px; color: var(--muted);">4–6 hours commitment</p>
+        <div style="margin-top: 0.5rem;"><span style="background: #E1F5EE; color: #085041; font-size: 11px; padding: 2px 8px; border-radius: 4px;">Today</span></div>
+      </div>
+      <div class="price-card">
+        <div class="price-label">If 1–2 critical events/month</div>
+        <div class="price-name">Pilot Program</div>
+        <div class="price">USD 5K</div>
+        <div style="height: 0.5px; background: var(--border); margin: 0.5rem 0;"></div>
+        <p style="font-size: 12px; color: var(--muted);">Live workflow, real data</p>
+        <p style="font-size: 12px; color: var(--muted);">6 months + 3 months free onboarding</p>
+        <div style="margin-top: 0.5rem;"><span style="background: #FAEEDA; color: #633806; font-size: 11px; padding: 2px 8px; border-radius: 4px;">3–6 months</span></div>
+      </div>
+      <div class="price-card">
+        <div class="price-label">Full capability</div>
+        <div class="price-name">SaaS Platform</div>
+        <div class="price">USD 10K<span style="font-size: 0.9rem; font-weight: 400;">/yr</span></div>
+        <div style="height: 0.5px; background: var(--border); margin: 0.5rem 0;"></div>
+        <p style="font-size: 12px; color: var(--muted);">Cloud platform, archived data, full account</p>
+        <p style="font-size: 12px; color: var(--muted);">Ongoing, continuous assessment</p>
+        <div style="margin-top: 0.5rem;"><span style="background: var(--surface); color: var(--muted); font-size: 11px; padding: 2px 8px; border-radius: 4px; border: 0.5px solid var(--border);">Scale stage</span></div>
+      </div>
+    </div>
+    <div class="card-accent" style="margin-top: 1rem;">
+      <p style="font-size: 0.85rem;">The workshop is designed to be the last check before you commit to nothing, or everything. Either outcome is the right one.</p>
+    </div>
+  </div>
+
+  <!-- Slide 8: Why Now -->
+  <div class="slide" id="s8">
+    <div class="tag tag-amber">Why now</div>
+    <h2 class="section-title">Three forces converging.<br>The window is short.</h2>
+    <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.25rem;">
+      <div class="card-accent amber">
+        <p style="font-weight: 500; font-size: 0.95rem; margin-bottom: 2px;">Constellation proliferation</p>
+        <p style="font-size: 0.85rem; color: var(--muted);">Conjunction frequency doubling every 2–3 years. Volume is already outpacing informal processes.</p>
+      </div>
+      <div class="card-accent amber">
+        <p style="font-weight: 500; font-size: 0.95rem; margin-bottom: 2px;">Regulatory tightening</p>
+        <p style="font-size: 0.85rem; color: var(--muted);">Zero Debris Charter. Space Sustainability Rating. SSR is becoming a procurement criterion — especially in Europe and Japan.</p>
+      </div>
+      <div class="card-accent amber">
+        <p style="font-weight: 500; font-size: 0.95rem; margin-bottom: 2px;">Insurance and liability</p>
+        <p style="font-size: 0.85rem; color: var(--muted);">Underwriters are starting to ask for documented risk management. Without an audit trail, you are self-insuring the gap.</p>
+      </div>
+    </div>
+    <div class="quote-block" style="font-style: normal; font-weight: 500;">When was the last time your team's conjunction decision was documented end-to-end?</div>
+  </div>
+
+  <!-- Slide 9: Close -->
+  <div class="slide" id="s9">
+    <div class="tag tag-teal">One ask</div>
+    <h2 class="section-title" style="margin-bottom: 0.75rem;">Let's find out if<br>you have a gap.</h2>
+    <p class="sub" style="margin-bottom: 1.5rem;">We're running 20 discovery conversations and 3 workshops in the next 60 days. We're being transparent about that — because if you're a fit, you're in a small group of operators who get to shape what this becomes.</p>
+    <div class="grid-3" style="margin-bottom: 1.25rem;">
+      <div class="card" style="text-align: center;">
+        <p style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 6px;">Option 1</p>
+        <p style="font-weight: 500; font-size: 0.9rem;">30-min discovery call</p>
+        <p style="font-size: 12px; color: var(--muted); margin-top: 4px;">Assess fit. No commitment.</p>
+      </div>
+      <div class="card" style="text-align: center; border: 2px solid var(--accent);">
+        <p style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 6px;">Option 2</p>
+        <p style="font-weight: 500; font-size: 0.9rem;">Book the workshop</p>
+        <p style="font-size: 12px; color: var(--muted); margin-top: 4px;">USD 1,000. Walk away with your decision profile.</p>
+      </div>
+      <div class="card" style="text-align: center;">
+        <p style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 6px;">Option 3</p>
+        <p style="font-weight: 500; font-size: 0.9rem;">Introduce your ops lead</p>
+        <p style="font-size: 12px; color: var(--muted); margin-top: 4px;">Let the right person decide.</p>
+      </div>
+    </div>
+    <div style="border-top: 0.5px solid var(--border); padding-top: 1rem;">
+      <p class="close-line">"Every conjunction is a decision.<br>Orbitorus makes sure it's the right one — <span style="color: var(--accent);">and that you can prove it.</span>"</p>
+    </div>
+  </div>
+
+  <div class="nav">
+    <button id="prev-btn" onclick="changeSlide(-1)" disabled>← Prev</button>
+    <span id="slide-counter">1 / 9</span>
+    <button id="next-btn" onclick="changeSlide(1)">Next →</button>
+  </div>
+</div>
+
+<script>
+  let current = 1;
+  const total = 9;
+
+  function changeSlide(dir) {
+    document.getElementById('s' + current).classList.remove('active');
+    current = Math.max(1, Math.min(total, current + dir));
+    document.getElementById('s' + current).classList.add('active');
+    document.getElementById('slide-counter').textContent = current + ' / ' + total;
+    document.getElementById('prev-btn').disabled = current === 1;
+    document.getElementById('next-btn').disabled = current === total;
+    document.getElementById('prog').style.width = (current / total * 100) + '%';
+  }
+</script>

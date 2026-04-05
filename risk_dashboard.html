@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orbitorus — Continuous Spacecraft Risk Intelligence</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #080C14;
+    --bg2:       #0D1421;
+    --bg3:       #111827;
+    --border:    rgba(255,255,255,0.08);
+    --border2:   rgba(255,255,255,0.14);
+    --text:      #E8EDF5;
+    --muted:     #5A6478;
+    --muted2:    #8492A6;
+    --blue:      #3B8EDB;
+    --blue-dim:  rgba(59,142,219,0.12);
+    --green:     #1D9E75;
+    --green-dim: rgba(29,158,117,0.12);
+    --amber:     #E8A020;
+    --amber-dim: rgba(232,160,32,0.12);
+    --red:       #D85A30;
+    --red-dim:   rgba(216,90,48,0.12);
+    --purple:    #7F77DD;
+    --purple-dim:rgba(127,119,221,0.12);
+    --accent:    #3B8EDB;
+    --mono:      'Space Mono', monospace;
+    --sans:      'DM Sans', sans-serif;
+    --radius:    10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── HEADER ── */
+  header {
+    border-bottom: 0.5px solid var(--border);
+    padding: 0 clamp(16px, 4vw, 48px);
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    background: rgba(8,12,20,0.92);
+    backdrop-filter: blur(12px);
+    z-index: 100;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    text-decoration: none;
+    letter-spacing: .04em;
+  }
+
+  .logo-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--blue);
+    animation: pulse 2.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  .header-meta {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--mono);
+    letter-spacing: .04em;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    padding: clamp(40px, 6vw, 80px) clamp(16px, 4vw, 48px) clamp(32px, 4vw, 56px);
+    border-bottom: 0.5px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 60% 50% at 70% 50%, rgba(59,142,219,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    color: var(--blue);
+    background: var(--blue-dim);
+    border: 0.5px solid rgba(59,142,219,0.3);
+    border-radius: 20px;
+    padding: 4px 12px;
+    margin-bottom: 20px;
+  }
+
+  .hero-tag::before {
+    content: '';
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--blue);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  h1 {
+    font-family: var(--mono);
+    font-size: clamp(22px, 4vw, 40px);
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--text);
+    margin-bottom: 16px;
+    max-width: 700px;
+  }
+
+  h1 span { color: var(--blue); }
+
+  .hero-desc {
+    font-size: clamp(13px, 2vw, 15px);
+    color: var(--muted2);
+    max-width: 600px;
+    line-height: 1.7;
+    margin-bottom: 28px;
+  }
+
+  .hero-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+  }
+
+  .hero-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .hero-stat-val {
+    font-family: var(--mono);
+    font-size: clamp(18px, 3vw, 24px);
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .hero-stat-lbl {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: .04em;
+  }
+
+  /* ── SECTION ── */
+  .section {
+    padding: clamp(24px, 4vw, 48px) clamp(16px, 4vw, 48px);
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .section-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .section-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .section-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    color: var(--muted);
+    margin-bottom: 2px;
+  }
+
+  h2 {
+    font-family: var(--mono);
+    font-size: clamp(14px, 2.5vw, 18px);
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.3;
+  }
+
+  .section-desc {
+    font-size: 12px;
+    color: var(--muted2);
+    max-width: 520px;
+    line-height: 1.6;
+  }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--bg2);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: clamp(14px, 2.5vw, 22px);
+  }
+
+  .card-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    color: var(--muted2);
+    margin-bottom: 4px;
+  }
+
+  .card-sub {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 14px;
+    line-height: 1.5;
+  }
+
+  /* ── STAT PILLS ── */
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .stat-pill {
+    background: var(--bg3);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+  }
+
+  .stat-pill-lbl {
+    font-size: 10px;
+    color: var(--muted);
+    margin-bottom: 4px;
+    line-height: 1.3;
+  }
+
+  .stat-pill-val {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  /* ── LEGEND ── */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-bottom: 10px;
+  }
+
+  .leg {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--muted2);
+  }
+
+  .leg-line {
+    width: 20px;
+    height: 2.5px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .leg-dash {
+    width: 20px;
+    height: 0;
+    border-top: 2px dashed;
+    flex-shrink: 0;
+  }
+
+  /* ── CHART WRAPPER ── */
+  .chart-wrap {
+    position: relative;
+    width: 100%;
+    height: clamp(180px, 30vw, 240px);
+  }
+
+  /* ── INSIGHT BOX ── */
+  .insight {
+    margin-top: 14px;
+    padding: 12px 14px;
+    background: var(--bg3);
+    border-left: 2px solid var(--blue);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    font-size: 12px;
+    color: var(--muted2);
+    line-height: 1.6;
+  }
+
+  .insight strong { color: var(--text); font-weight: 500; }
+
+  /* ── BEFORE/AFTER SPLIT ── */
+  .ba-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  @media (max-width: 640px) {
+    .ba-grid { grid-template-columns: 1fr; }
+    .stat-row { grid-template-columns: repeat(3,1fr); }
+  }
+
+  .ba-card {
+    border-radius: var(--radius-lg);
+    padding: clamp(12px, 2vw, 18px);
+  }
+
+  .ba-card.before {
+    background: var(--bg3);
+    border: 0.5px solid var(--border);
+    border-top: 2px solid rgba(255,255,255,0.12);
+  }
+
+  .ba-card.after {
+    background: rgba(59,142,219,0.05);
+    border: 0.5px solid rgba(59,142,219,0.2);
+    border-top: 2px solid var(--blue);
+  }
+
+  .ba-tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin-bottom: 12px;
+  }
+
+  .ba-tag.before { background: rgba(255,255,255,0.06); color: var(--muted2); }
+  .ba-tag.after  { background: rgba(59,142,219,0.15); color: #7DB8E8; }
+
+  .ba-title {
+    font-family: var(--mono);
+    font-size: clamp(12px, 2vw, 14px);
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .ba-desc {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.55;
+    margin-bottom: 12px;
+  }
+
+  /* ── BLIND TIMELINE ── */
+  .blind-tl { display: flex; flex-direction: column; gap: 7px; margin: 12px 0; }
+  .tl-row { display: flex; align-items: center; gap: 8px; font-size: 10px; color: var(--muted); }
+  .tl-bar { flex: 1; height: 2px; background: rgba(255,255,255,0.06); border-radius: 1px; position: relative; }
+  .tl-dot { position: absolute; width: 10px; height: 10px; border-radius: 50%; background: var(--red); top: 50%; transform: translateY(-50%); }
+
+  /* ── MINI STATS ── */
+  .mini-stats { display: grid; grid-template-columns: repeat(2,1fr); gap: 6px; margin-top: 10px; }
+  .mini-stat { background: rgba(255,255,255,0.04); border-radius: var(--radius); padding: 8px 10px; }
+  .mini-stat-lbl { font-size: 9px; color: var(--muted); margin-bottom: 2px; }
+  .mini-stat-val { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--text); }
+
+  /* ── CDM PANEL ── */
+  .cdm-panel {
+    background: rgba(255,255,255,0.03);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+    margin: 10px 0;
+  }
+  .cdm-alert { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--red); margin-bottom: 10px; }
+  .cdm-row { display: flex; justify-content: space-between; align-items: center; font-size: 11px; padding: 4px 0; border-bottom: 0.5px solid var(--border); }
+  .cdm-row:last-child { border-bottom: none; }
+  .cdm-lbl { color: var(--muted); }
+  .cdm-val { font-family: var(--mono); color: var(--muted2); }
+  .cdm-blind { font-size: 10px; color: var(--muted); font-style: italic; margin-top: 8px; opacity: 0.7; }
+
+  /* ── MANEUVER TABLE ── */
+  .maneuver-tbl { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 10px; }
+  .maneuver-tbl th { text-align: left; font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing:.06em; color: var(--muted); padding: 6px 8px; border-bottom: 0.5px solid var(--border); }
+  .maneuver-tbl td { padding: 7px 8px; border-bottom: 0.5px solid var(--border); font-family: var(--mono); font-size: 11px; color: var(--muted2); }
+  .maneuver-tbl tr:last-child td { border-bottom: none; }
+  .tbl-best td { color: var(--green); }
+
+  /* ── COMPARISON TABLE ── */
+  .compare-wrap { overflow-x: auto; margin-top: 20px; }
+  .compare-tbl { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 480px; }
+  .compare-tbl th { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing:.06em; padding: 10px 14px; text-align: left; border-bottom: 0.5px solid var(--border2); }
+  .compare-tbl th.col-cdm { color: var(--muted); }
+  .compare-tbl th.col-orb { color: var(--blue); }
+  .compare-tbl td { padding: 9px 14px; border-bottom: 0.5px solid var(--border); color: var(--muted2); vertical-align: middle; }
+  .compare-tbl td:first-child { color: var(--text); font-weight: 500; font-size: 13px; }
+  .compare-tbl tr:last-child td { border-bottom: none; }
+  .compare-tbl tr:hover td { background: rgba(255,255,255,0.02); }
+  .check { color: var(--green); font-weight: 700; font-size: 14px; }
+  .cross { color: var(--muted); opacity: 0.4; font-size: 14px; }
+
+  /* ── TRACKING SECTION ── */
+  .tracking-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 640px) { .tracking-grid { grid-template-columns: 1fr; } }
+
+  .track-card {
+    border-radius: var(--radius-lg);
+    padding: clamp(14px,2.5vw,20px);
+    border: 0.5px solid var(--border);
+  }
+  .track-card.ground { background: var(--bg3); border-top: 2px solid rgba(255,255,255,0.15); }
+  .track-card.space  { background: rgba(59,142,219,0.05); border-top: 2px solid var(--blue); }
+
+  .track-title { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+  .track-limit {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+  }
+  .track-limit.ground { background: rgba(216,90,48,0.12); color: var(--red); }
+  .track-limit.space  { background: rgba(29,158,117,0.12); color: var(--green); }
+
+  .track-items { display: flex; flex-direction: column; gap: 7px; }
+  .track-item { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: var(--muted2); line-height: 1.5; }
+  .track-bullet { width: 4px; height: 4px; border-radius: 50%; flex-shrink: 0; margin-top: 6px; }
+  .track-bullet.neg { background: var(--muted); }
+  .track-bullet.pos { background: var(--green); }
+
+  /* ── FOOTER ── */
+  footer {
+    padding: 24px clamp(16px, 4vw, 48px);
+    border-top: 0.5px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .footer-logo { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--muted); }
+  .footer-meta { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+
+  /* ── ANIMATIONS ── */
+  .fade-in { opacity: 0; transform: translateY(16px); transition: opacity .5s ease, transform .5s ease; }
+  .fade-in.visible { opacity: 1; transform: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="logo" href="#">
+    <span class="logo-dot"></span>
+    ORBITORUS
+  </a>
+  <div class="header-meta">CONTINUOUS RISK INTELLIGENCE · LEO</div>
+</header>
+
+<!-- ── HERO ── -->
+<section class="hero fade-in">
+  <div class="hero-tag">LIVE DEMO — CONJUNCTION MANAGEMENT</div>
+  <h1>Beyond the CDM.<br>Risk as a <span>continuous field</span>.</h1>
+  <p class="hero-desc">
+    The industry today receives discrete Conjunction Data Messages when risk crosses a threshold.
+    Orbitorus models collision probability continuously from first detection at –72h,
+    with calibrated uncertainty bands and explicit maneuver trade-offs — powered by space-based tracking down to 1–3 cm debris.
+  </p>
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <span class="hero-stat-val">–72h</span>
+      <span class="hero-stat-lbl">Detection horizon</span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat-val" style="color:var(--blue)">15 min</span>
+      <span class="hero-stat-lbl">Update cadence</span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat-val" style="color:var(--green)">1–3 cm</span>
+      <span class="hero-stat-lbl">Detection floor (space-based)</span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat-val" style="color:var(--amber)">~1M</span>
+      <span class="hero-stat-lbl">Untracked debris objects</span>
+    </div>
+  </div>
+</section>
+
+<!-- ── SECTION 1: Continuous Risk Field ── -->
+<section class="section fade-in">
+  <div class="section-header">
+    <div class="section-meta">
+      <div class="section-tag">01 — RISK FIELD</div>
+      <h2>Continuous Pc — from detection to TCA</h2>
+    </div>
+    <div class="section-desc">
+      Conjunction detected at –72h. Pc rises gradually as orbit solutions refine,
+      then steepens sharply in the final 24h. CDMs fire once — Orbitorus tracks the entire evolution.
+    </div>
+  </div>
+
+  <div class="ba-grid">
+    <div class="ba-card before">
+      <div class="ba-tag before">BEFORE — CDM WORLD</div>
+      <div class="ba-title">Single alert, rest is blind</div>
+      <div class="ba-desc">No visibility until Pc crosses the threshold. Everything before and after the CDM is dark.</div>
+      <div class="blind-tl">
+        <div class="tl-row"><div class="tl-bar"></div><span>–72h</span></div>
+        <div class="tl-row"><div class="tl-bar"></div><span>–48h</span></div>
+        <div class="tl-row"><div class="tl-bar"><div class="tl-dot" style="left:72%"></div></div><span style="color:var(--red)">CDM –24h</span></div>
+        <div class="tl-row"><div class="tl-bar"></div><span>TCA</span></div>
+      </div>
+      <div class="mini-stats">
+        <div class="mini-stat"><div class="mini-stat-lbl">Baseline Pc</div><div class="mini-stat-val" style="color:var(--muted)">unknown</div></div>
+        <div class="mini-stat"><div class="mini-stat-lbl">Data points</div><div class="mini-stat-val" style="color:var(--red)">1</div></div>
+      </div>
+    </div>
+
+    <div class="ba-card after">
+      <div class="ba-tag after">AFTER — ORBITORUS</div>
+      <div class="ba-title">Full 72-hour Pc evolution</div>
+      <div class="ba-desc">Every 15-minute update visible. Risk build-up quantified before any CDM is issued.</div>
+      <div class="stat-row" style="margin-bottom:10px">
+        <div class="stat-pill"><div class="stat-pill-lbl">Pc at –72h</div><div class="stat-pill-val">~1e-06</div></div>
+        <div class="stat-pill"><div class="stat-pill-lbl">Pc at –24h</div><div class="stat-pill-val" style="color:var(--amber)">~1e-05</div></div>
+        <div class="stat-pill"><div class="stat-pill-lbl">Pc at TCA</div><div class="stat-pill-val" style="color:var(--red)">~2e-04</div></div>
+      </div>
+      <div class="legend">
+        <span class="leg"><span class="leg-line" style="background:var(--blue)"></span>Pc(t) continuous</span>
+        <span class="leg"><span class="leg-dash" style="border-color:rgba(255,255,255,0.3)"></span>CDM threshold</span>
+      </div>
+      <div class="chart-wrap"><canvas id="c1"></canvas></div>
+    </div>
+  </div>
+
+  <div class="insight">
+    <strong>Key insight:</strong> The CDM fires once at –24h. But Orbitorus has been tracking risk since –72h — 48 hours of actionable intelligence, including the early window when maneuvers are cheapest.
+    Ground-based tracking (>10 cm objects) contributes the initial detection; space-based sensors refine the state vector at higher cadence.
+  </div>
+</section>
+
+<!-- ── SECTION 2: Uncertainty ── -->
+<section class="section fade-in">
+  <div class="section-header">
+    <div class="section-meta">
+      <div class="section-tag">02 — UNCERTAINTY</div>
+      <h2>Error covariance → Pc uncertainty bands</h2>
+    </div>
+    <div class="section-desc">
+      At –72h, atmospheric drag assumptions and poor covariance calibration produce enormous Pc spread.
+      As observations accumulate the covariance ellipsoids shrink and bands converge — but by then maneuver options are expensive.
+    </div>
+  </div>
+
+  <div class="ba-grid">
+    <div class="ba-card before">
+      <div class="ba-tag before">BEFORE — CDM WORLD</div>
+      <div class="ba-title">One number. No distribution.</div>
+      <div class="ba-desc">The CDM reports a single Pc value. Tail risk, uncertainty spread, and covariance realism are completely hidden.</div>
+      <div class="cdm-panel">
+        <div class="cdm-alert">CDM — Pc 2.1×10⁻⁴</div>
+        <div class="cdm-row"><span class="cdm-lbl">P90 uncertainty</span><span class="cdm-val">—</span></div>
+        <div class="cdm-row"><span class="cdm-lbl">P99 tail risk</span><span class="cdm-val">—</span></div>
+        <div class="cdm-row"><span class="cdm-lbl">Covariance realism</span><span class="cdm-val">—</span></div>
+        <div class="cdm-row"><span class="cdm-lbl">Covariance calibrated?</span><span class="cdm-val">unknown</span></div>
+        <div class="cdm-blind">A single Pc hides the entire distribution. Insurers cannot price tail risk.</div>
+      </div>
+      <div class="mini-stats">
+        <div class="mini-stat"><div class="mini-stat-lbl">P99/P50 ratio</div><div class="mini-stat-val" style="color:var(--muted)">unknown</div></div>
+        <div class="mini-stat"><div class="mini-stat-lbl">Usable for underwriting</div><div class="mini-stat-val" style="color:var(--red)">No</div></div>
+      </div>
+    </div>
+
+    <div class="ba-card after">
+      <div class="ba-tag after">AFTER — ORBITORUS</div>
+      <div class="ba-title">Full distribution, converging to TCA</div>
+      <div class="ba-desc">Wide bands at –72h reflect genuine propagation uncertainty. Bands collapse as observations improve covariance realism.</div>
+      <div class="stat-row" style="margin-bottom:10px">
+        <div class="stat-pill"><div class="stat-pill-lbl">P99/P50 at –72h</div><div class="stat-pill-val" style="color:var(--red)">~100×</div></div>
+        <div class="stat-pill"><div class="stat-pill-lbl">P99/P50 at –24h</div><div class="stat-pill-val" style="color:var(--amber)">~10×</div></div>
+        <div class="stat-pill"><div class="stat-pill-lbl">P99/P50 at –12h</div><div class="stat-pill-val" style="color:var(--green)">~3×</div></div>
+      </div>
+      <div class="legend">
+        <span class="leg"><span class="leg-line" style="background:var(--blue)"></span>P50 median</span>
+        <span class="leg"><span class="leg-line" style="background:var(--amber)"></span>P90</span>
+        <span class="leg"><span class="leg-line" style="background:var(--red)"></span>P99 tail</span>
+      </div>
+      <div class="chart-wrap"><canvas id="c2"></canvas></div>
+    </div>
+  </div>
+
+  <div class="insight">
+    <strong>Key insight:</strong> Uncertainty is <em>not</em> growing toward TCA — it's collapsing. Wide early bands reflect uncalibrated error covariance from propagation assumptions (drag models, solar flux, maneuver history).
+    Orbitorus runs ensemble propagation across multiple atmospheric density models to quantify this spread explicitly.
+    This is the signal insurers need to price risk — not a point estimate.
+  </div>
+</section>
+
+<!-- ── SECTION 3: Maneuver Coupling ── -->
+<section class="section fade-in">
+  <div class="section-header">
+    <div class="section-meta">
+      <div class="section-tag">03 — MANEUVER COUPLING</div>
+      <h2>Earlier action = exponentially less ΔV</h2>
+    </div>
+    <div class="section-desc">
+      A small burn at –48h achieves the same risk reduction as a large burn at –12h — using 6× less fuel.
+      Orbitorus surfaces the trade-space the moment a conjunction is detected.
+    </div>
+  </div>
+
+  <div class="ba-grid">
+    <div class="ba-card before">
+      <div class="ba-tag before">BEFORE — CDM WORLD</div>
+      <div class="ba-title">Alert issued. No action context.</div>
+      <div class="ba-desc">Operator receives Pc value and must decide burn timing, magnitude, and residual risk without quantified trade-offs.</div>
+      <div class="cdm-panel">
+        <div class="cdm-alert">CDM — Action Required</div>
+        <div class="cdm-row"><span class="cdm-lbl">Recommended burn time</span><span class="cdm-val">operator discretion</span></div>
+        <div class="cdm-row"><span class="cdm-lbl">ΔV requirement</span><span class="cdm-val">—</span></div>
+        <div class="cdm-row"><span class="cdm-lbl">Post-maneuver Pc</span><span class="cdm-val">—</span></div>
+        <div class="cdm-row"><span class="cdm-lbl">Risk/fuel tradeoff</span><span class="cdm-val">—</span></div>
+        <div class="cdm-blind">Operators must guess. Late burns cost 6× more ΔV for the same outcome.</div>
+      </div>
+    </div>
+
+    <div class="ba-card after">
+      <div class="ba-tag after">AFTER — ORBITORUS</div>
+      <div class="ba-title">Quantified maneuver trade-space</div>
+      <div class="ba-desc">Three scenarios, computed continuously. Triangle markers show burn moment — Pc drops immediately.</div>
+      <div class="legend" style="margin-bottom:8px">
+        <span class="leg"><span class="leg-line" style="background:rgba(255,255,255,0.25)"></span>No maneuver</span>
+        <span class="leg"><span class="leg-line" style="background:var(--purple)"></span>0.05 m/s @ –48h</span>
+        <span class="leg"><span class="leg-line" style="background:var(--green)"></span>0.1 m/s @ –24h</span>
+        <span class="leg"><span class="leg-line" style="background:var(--amber)"></span>0.3 m/s @ –12h</span>
+      </div>
+      <div class="chart-wrap"><canvas id="c3"></canvas></div>
+      <table class="maneuver-tbl">
+        <thead><tr><th>Scenario</th><th>ΔV</th><th>Burn time</th><th>Pc reduction</th><th>Fuel efficiency</th></tr></thead>
+        <tbody>
+          <tr><td>No maneuver</td><td>0</td><td>—</td><td style="color:var(--red)">0%</td><td style="color:var(--muted)">—</td></tr>
+          <tr><td>Early small</td><td>0.05 m/s</td><td>–48h</td><td style="color:var(--purple)">85%</td><td style="color:var(--purple)">Best</td></tr>
+          <tr><td>Mid burn</td><td>0.1 m/s</td><td>–24h</td><td style="color:var(--green)">92%</td><td style="color:var(--green)">Good</td></tr>
+          <tr class="tbl-best"><td>Late large</td><td>0.3 m/s</td><td>–12h</td><td>94%</td><td>6× worse</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="insight">
+    <strong>Key insight:</strong> Waiting 36 hours costs 6× more ΔV for the same risk reduction. This is because early along-track burns shift the orbital phase far outside the combined covariance ellipsoid at TCA.
+    Late burns fight tight geometry and require large ΔV to achieve the same miss distance. Orbitorus quantifies this trade continuously — connecting orbital physics to mission economics.
+  </div>
+</section>
+
+<!-- ── SECTION 4: Tracking Infrastructure ── -->
+<section class="section fade-in">
+  <div class="section-header">
+    <div class="section-meta">
+      <div class="section-tag">04 — TRACKING INFRASTRUCTURE</div>
+      <h2>Why space-based tracking changes everything</h2>
+    </div>
+    <div class="section-desc">
+      Ground-based radar is limited by land availability and object size (&gt;10 cm).
+      Orbitorus is built on a space-based sensing constellation tracking debris down to 1–3 cm.
+    </div>
+  </div>
+
+  <div class="tracking-grid">
+    <div class="track-card ground">
+      <div class="track-title">Ground-based tracking (status quo)</div>
+      <div class="track-limit ground">Detection floor: ~10 cm</div>
+      <div class="track-items">
+        <div class="track-item"><div class="track-bullet neg"></div>Radar placement constrained by land access and political geography</div>
+        <div class="track-item"><div class="track-bullet neg"></div>Poor southern hemisphere and polar coverage</div>
+        <div class="track-item"><div class="track-bullet neg"></div>1–2 updates per object per day → slow covariance refinement</div>
+        <div class="track-item"><div class="track-bullet neg"></div>~1 million objects in the 1–10 cm range are completely invisible</div>
+        <div class="track-item"><div class="track-bullet neg"></div>1–10 cm is the "lethal but untrackable" zone — too large to stop with shielding, too small to see</div>
+        <div class="track-item"><div class="track-bullet neg"></div>Covariance realism poor — operators apply arbitrary 2–10× inflation factors</div>
+      </div>
+    </div>
+
+    <div class="track-card space">
+      <div class="track-title">Space-based tracking — Orbitorus constellation</div>
+      <div class="track-limit space">Detection floor: 1–3 cm</div>
+      <div class="track-items">
+        <div class="track-item"><div class="track-bullet pos"></div>Sensors in orbit have shorter range to targets → dramatically better sensitivity</div>
+        <div class="track-item"><div class="track-bullet pos"></div>Global coverage including poles and southern hemisphere</div>
+        <div class="track-item"><div class="track-bullet pos"></div>Multiple observations per orbit → covariance collapses hours earlier</div>
+        <div class="track-item"><div class="track-bullet pos"></div>Sub-10 cm debris enters the catalogue for the first time</div>
+        <div class="track-item"><div class="track-bullet pos"></div>Higher cadence enables Bayesian sequential updating — each pass refines the posterior</div>
+        <div class="track-item"><div class="track-bullet pos"></div>Earlier covariance convergence = cheaper maneuvers = directly lower mission risk and insurance cost</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="insight" style="border-left-color:var(--green)">
+    <strong>The Orbitorus value chain:</strong> Space-based constellation (sensor layer) →
+    Bayesian sequential estimation with ensemble drag models (intelligence layer) →
+    Continuously updated Pc with calibrated uncertainty bands (risk layer) →
+    Quantified maneuver trade-space for operators and underwriters (decision layer).
+    Each layer is impossible without the one below it.
+  </div>
+</section>
+
+<!-- ── SECTION 5: Capability Comparison ── -->
+<section class="section fade-in">
+  <div class="section-header">
+    <div class="section-meta">
+      <div class="section-tag">05 — CAPABILITY COMPARISON</div>
+      <h2>CDM world vs Orbitorus</h2>
+    </div>
+  </div>
+  <div class="compare-wrap">
+    <table class="compare-tbl">
+      <thead>
+        <tr>
+          <th>Capability</th>
+          <th class="col-cdm">CDM (status quo)</th>
+          <th class="col-orb">Orbitorus</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Continuous risk monitoring</td><td><span class="cross">✕</span> Threshold alerts only</td><td><span class="check">✓</span> Every 15 min from –72h</td></tr>
+        <tr><td>Sub-10 cm debris tracking</td><td><span class="cross">✕</span> Below detection floor</td><td><span class="check">✓</span> Space-based to 1–3 cm</td></tr>
+        <tr><td>Uncertainty quantification</td><td><span class="cross">✕</span> Single Pc value</td><td><span class="check">✓</span> P50 / P90 / P99 bands</td></tr>
+        <tr><td>Covariance realism</td><td><span class="cross">✕</span> Often uncalibrated</td><td><span class="check">✓</span> Ensemble propagation</td></tr>
+        <tr><td>Maneuver trade-space</td><td><span class="cross">✕</span> Operator discretion</td><td><span class="check">✓</span> Quantified ΔV vs Pc curves</td></tr>
+        <tr><td>Early maneuver window</td><td><span class="cross">✕</span> Alert too late (–24h)</td><td><span class="check">✓</span> Actionable from –72h</td></tr>
+        <tr><td>Usable for underwriting</td><td><span class="cross">✕</span> Point estimate only</td><td><span class="check">✓</span> Full distribution, portfolio ready</td></tr>
+        <tr><td>Baseline exposure visibility</td><td><span class="cross">✕</span> Zero between alerts</td><td><span class="check">✓</span> Continuous, always-on</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-logo">ORBITORUS</div>
+  <div class="footer-meta">Continuous spacecraft risk intelligence · Space-based tracking constellation</div>
+</footer>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const N = 73;
+const T = Array.from({length:N}, (_,i) => i - 72);
+const labels = T.map(t => {
+  if(t===0)   return 'TCA';
+  if(t===-72) return '–72h';
+  if(t===-48) return '–48h';
+  if(t===-24) return '–24h';
+  if(t===-12) return '–12h';
+  return '';
+});
+
+function pcBase(t) {
+  const x = (t + 72) / 72;
+  const l = 1 / (1 + Math.exp(-10 * (x - 0.72)));
+  return 1e-6 + (2e-4 - 1e-6) * l;
+}
+
+function spreadMult(t) {
+  const frac = Math.abs(t) / 72;
+  return 1 + 99 * Math.pow(frac, 1.4);
+}
+
+function applyManeuver(burnTime, reduction) {
+  return T.map(t => {
+    if(t < burnTime) return pcBase(t);
+    const base = pcBase(burnTime) * (1 - reduction);
+    const residual = (pcBase(t) - pcBase(burnTime)) * 0.06;
+    return Math.max(1e-7, base + residual);
+  });
+}
+
+const noMan  = T.map(t => pcBase(t));
+const cdmThr = T.map(() => 1e-5);
+const p50    = T.map(t => pcBase(t));
+const p90    = T.map(t => pcBase(t) * Math.pow(spreadMult(t), 0.55));
+const p99    = T.map(t => pcBase(t) * spreadMult(t));
+const sc48   = applyManeuver(-48, 0.85);
+const sc24   = applyManeuver(-24, 0.92);
+const sc12   = applyManeuver(-12, 0.94);
+
+function ptData(bt) { return T.map(t => t===bt ? pcBase(t) : null); }
+function ptR(bt)    { return T.map(t => t===bt ? 7 : 0); }
+
+// ── CHART DEFAULTS ────────────────────────────────────────────────────────────
+const gc  = 'rgba(255,255,255,0.06)';
+const tc  = '#5A6478';
+
+const baseOpts = (yMin, yMax) => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  animation: { duration: 800 },
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      backgroundColor: '#0D1421',
+      borderColor: 'rgba(255,255,255,0.12)',
+      borderWidth: 1,
+      titleColor: '#8492A6',
+      bodyColor: '#E8EDF5',
+      titleFont: { family: "'Space Mono', monospace", size: 10 },
+      bodyFont:  { family: "'Space Mono', monospace", size: 11 },
+      callbacks: { label: ctx => ctx.parsed.y != null ? ` Pc: ${ctx.parsed.y.toExponential(2)}` : '' }
+    }
+  },
+  scales: {
+    x: {
+      grid: { color: gc },
+      ticks: { color: tc, font: { family:"'Space Mono',monospace", size: 10 }, callback: (_,i) => labels[i] }
+    },
+    y: {
+      type: 'logarithmic', min: yMin, max: yMax,
+      grid: { color: gc },
+      ticks: { color: tc, font: { family:"'Space Mono',monospace", size: 10 }, callback: v => v.toExponential(0) }
+    }
+  }
+});
+
+// ── CHART 1: Continuous Pc ────────────────────────────────────────────────────
+new Chart(document.getElementById('c1'), {
+  type: 'line',
+  data: { labels, datasets: [
+    { data: noMan,  borderColor: '#3B8EDB', backgroundColor: 'rgba(59,142,219,0.1)', borderWidth: 2.5, pointRadius: 0, fill: true,  tension: 0.4 },
+    { data: cdmThr, borderColor: 'rgba(255,255,255,0.28)', borderWidth: 1.2, borderDash: [5,4], pointRadius: 0, fill: false, tension: 0 }
+  ]},
+  options: baseOpts(1e-7, 1e-3)
+});
+
+// ── CHART 2: Uncertainty bands ────────────────────────────────────────────────
+new Chart(document.getElementById('c2'), {
+  type: 'line',
+  data: { labels, datasets: [
+    { data: p99, borderColor: 'rgba(216,90,48,0.5)',  backgroundColor: 'rgba(216,90,48,0.07)',  borderWidth: 1, borderDash:[3,3], pointRadius:0, fill:'+1', tension:0.4 },
+    { data: p90, borderColor: 'rgba(232,160,32,0.65)', backgroundColor: 'rgba(232,160,32,0.07)', borderWidth: 1, borderDash:[4,2], pointRadius:0, fill:'+1', tension:0.4 },
+    { data: p50, borderColor: '#3B8EDB', backgroundColor: 'rgba(59,142,219,0.08)', borderWidth: 2.5, pointRadius: 0, fill: false, tension: 0.4 }
+  ]},
+  options: baseOpts(1e-8, 1e-1)
+});
+
+// ── CHART 3: Maneuver scenarios ───────────────────────────────────────────────
+new Chart(document.getElementById('c3'), {
+  type: 'line',
+  data: { labels, datasets: [
+    { data: noMan, borderColor: 'rgba(255,255,255,0.2)', borderWidth: 1.5, borderDash:[4,3], pointRadius:0, fill:false, tension:0.4 },
+    { data: sc48,  borderColor: '#7F77DD', borderWidth: 2,   pointRadius:0, fill:false, tension:0.3 },
+    { data: sc24,  borderColor: '#1D9E75', borderWidth: 2.5, pointRadius:0, fill:false, tension:0.3 },
+    { data: sc12,  borderColor: '#E8A020', borderWidth: 2,   pointRadius:0, fill:false, tension:0.3 },
+    { data: ptData(-48), borderColor:'#7F77DD', backgroundColor:'#7F77DD', pointRadius:ptR(-48), pointStyle:'triangle', showLine:false },
+    { data: ptData(-24), borderColor:'#1D9E75', backgroundColor:'#1D9E75', pointRadius:ptR(-24), pointStyle:'triangle', showLine:false },
+    { data: ptData(-12), borderColor:'#E8A020', backgroundColor:'#E8A020', pointRadius:ptR(-12), pointStyle:'triangle', showLine:false }
+  ]},
+  options: baseOpts(1e-7, 1e-3)
+});
+
+// ── SCROLL ANIMATIONS ─────────────────────────────────────────────────────────
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
+}, { threshold: 0.08 });
+document.querySelectorAll('.fade-in').forEach(el => obs.observe(el));
+</script>
+</body>
+</html>

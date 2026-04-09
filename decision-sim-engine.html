@@ -1,0 +1,160 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.wrap{max-width:600px;margin:0 auto;padding:2rem 1rem}
+.step-panel{display:none}
+.step-panel.active{display:block}
+.tag{display:inline-block;font-size:10px;font-weight:500;letter-spacing:.08em;padding:2px 8px;border-radius:20px;text-transform:uppercase}
+.tag-amber{background:var(--color-background-warning);color:var(--color-text-warning)}
+.tag-gray{background:var(--color-background-secondary);color:var(--color-text-secondary)}
+.tag-red{background:var(--color-background-danger);color:var(--color-text-danger)}
+.tag-blue{background:var(--color-background-info);color:var(--color-text-info)}
+.cdm-card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden;margin:1rem 0}
+.cdm-header{padding:10px 16px;border-bottom:0.5px solid var(--color-border-tertiary);display:flex;justify-content:space-between;align-items:center}
+.cdm-row{display:flex;justify-content:space-between;align-items:center;padding:9px 16px;border-bottom:0.5px solid var(--color-border-tertiary);font-size:13px}
+.cdm-row:last-child{border-bottom:none}
+.cdm-key{color:var(--color-text-secondary)}
+.cdm-val{font-family:var(--font-mono);font-size:12px;font-weight:500;color:var(--color-text-primary)}
+.cdm-val.warn{color:var(--color-text-warning)}
+.note{font-size:12px;color:var(--color-text-secondary);line-height:1.6;padding:10px 14px;border-left:2px solid var(--color-border-info);margin:1rem 0;background:var(--color-background-info);border-radius:0 var(--border-radius-md) var(--border-radius-md) 0}
+.choice-btn{display:block;width:100%;text-align:left;padding:10px 14px;margin:5px 0;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:transparent;cursor:pointer;font-size:13px;color:var(--color-text-primary);transition:background .15s}
+.choice-btn:hover{background:var(--color-background-secondary)}
+.choice-btn.selected{border-color:var(--color-border-info);background:var(--color-background-info);color:var(--color-text-info)}
+.insight{font-size:12px;color:var(--color-text-secondary);line-height:1.6;padding:10px 14px;background:var(--color-background-secondary);border-radius:var(--border-radius-md);margin-top:8px;display:none}
+.nav{display:flex;justify-content:space-between;align-items:center;margin-top:1.5rem}
+.dots{display:flex;gap:5px}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--color-border-secondary)}
+.dot.on{background:var(--color-text-primary)}
+.fp-card{margin-top:1rem;padding:12px 16px;background:var(--color-background-secondary);border-radius:var(--border-radius-md);font-size:12px;line-height:2}
+.fp-row{display:flex;gap:8px}
+.fp-label{color:var(--color-text-tertiary);min-width:120px}
+.fp-val{color:var(--color-text-primary);font-weight:500}
+.step-meta{font-size:10px;font-weight:500;letter-spacing:.08em;color:var(--color-text-tertiary);text-transform:uppercase;margin-bottom:6px}
+.step-title{font-size:15px;font-weight:500;color:var(--color-text-primary);margin-bottom:4px}
+.step-sub{font-size:13px;color:var(--color-text-secondary);margin-bottom:1rem}
+</style>
+
+<div class="wrap">
+
+<div class="dots" id="dots" style="margin-bottom:1.25rem">
+  <div class="dot on" id="d0"></div>
+  <div class="dot" id="d1"></div>
+  <div class="dot" id="d2"></div>
+  <div class="dot" id="d3"></div>
+</div>
+
+<div class="step-panel active" id="s0">
+  <div class="step-meta">CDM received · T−72h · 2026-01-01 00:00Z</div>
+  <div class="step-title">Conjunction alert: LEO_CONJ_001</div>
+  <div class="cdm-card">
+    <div class="cdm-header">
+      <span style="font-size:11px;color:var(--color-text-tertiary)">CCSDS CDM</span>
+      <span class="tag tag-gray">v1 of 4</span>
+    </div>
+    <div class="cdm-row"><span class="cdm-key">TCA</span><span class="cdm-val">2026-01-04 08:22:11Z</span></div>
+    <div class="cdm-row"><span class="cdm-key">Miss distance</span><span class="cdm-val warn">850 m</span></div>
+    <div class="cdm-row"><span class="cdm-key">Relative velocity</span><span class="cdm-val">12.3 km/s</span></div>
+    <div class="cdm-row"><span class="cdm-key">Collision probability</span><span class="cdm-val warn">1.2 × 10⁻⁵</span></div>
+    <div class="cdm-row"><span class="cdm-key">Covariance quality</span><span class="cdm-val"><span class="tag tag-amber">low</span></span></div>
+    <div class="cdm-row"><span class="cdm-key">Object catalog</span><span class="cdm-val"><span class="tag tag-gray">tracked debris</span></span></div>
+  </div>
+  <div class="note">CDM version 1 of 4. Propagation uncertainty is highest now — Pc and miss distance will shift significantly by T-24h.</div>
+</div>
+
+<div class="step-panel" id="s1">
+  <div class="step-meta">Step 1 · Screening</div>
+  <div class="step-title">What drives your screening decision?</div>
+  <div class="step-sub">Select your primary criterion for flagging this conjunction.</div>
+  <button class="choice-btn" id="cb0" onclick="pick('param',0)">Miss distance — flag if below 1 km</button>
+  <button class="choice-btn" id="cb1" onclick="pick('param',1)">Collision probability Pc — flag if above 1×10⁻⁵</button>
+  <button class="choice-btn" id="cb2" onclick="pick('param',2)">Combined — both miss distance and Pc must exceed threshold</button>
+  <button class="choice-btn" id="cb3" onclick="pick('param',3)">Relative velocity only — high-energy conjunctions always flagged</button>
+  <div class="insight" id="ins-param"></div>
+</div>
+
+<div class="step-panel" id="s2">
+  <div class="step-meta">Step 2 · Covariance</div>
+  <div class="step-title">Covariance quality is flagged low</div>
+  <div class="step-sub">How do you factor this into your risk estimate?</div>
+  <button class="choice-btn" id="cv0" onclick="pick('cov',0)">Trust the Pc as reported — it is the official estimate</button>
+  <button class="choice-btn" id="cv1" onclick="pick('cov',1)">Treat Pc as a lower bound — inflate mentally for safety</button>
+  <button class="choice-btn" id="cv2" onclick="pick('cov',2)">Ignore Pc entirely at T-72h, rely on miss distance</button>
+  <button class="choice-btn" id="cv3" onclick="pick('cov',3)">Request additional tracking before making any judgment</button>
+  <div class="insight" id="ins-cov"></div>
+</div>
+
+<div class="step-panel" id="s3">
+  <div class="step-meta">Step 3 · Action</div>
+  <div class="step-title">T−72h decision: LEO_CONJ_001</div>
+  <div class="step-sub">Based on your screening, what is your initial action?</div>
+  <button class="choice-btn" id="ac0" onclick="pick('act',0)">WAIT — no action, await CDM v2 at T-48h</button>
+  <button class="choice-btn" id="ac1" onclick="pick('act',1)">MONITOR — flag for analysis, assign analyst</button>
+  <button class="choice-btn" id="ac2" onclick="pick('act',2)">ACT — begin maneuver planning now</button>
+  <div class="insight" id="ins-act"></div>
+  <div class="fp-card" id="fp" style="display:none">
+    <div style="font-size:11px;font-weight:500;color:var(--color-text-tertiary);letter-spacing:.06em;margin-bottom:8px;text-transform:uppercase">Operator fingerprint · T-72h</div>
+    <div class="fp-row"><span class="fp-label">Screening bias</span><span class="fp-val" id="fp0">—</span></div>
+    <div class="fp-row"><span class="fp-label">Cov. strategy</span><span class="fp-val" id="fp1">—</span></div>
+    <div class="fp-row"><span class="fp-label">Decision</span><span class="fp-val" id="fp2">—</span></div>
+    <div class="fp-row"><span class="fp-label">Risk posture</span><span class="fp-val" id="fp3">—</span></div>
+    <button style="margin-top:12px" onclick="sendPrompt('What happens at T-48h when CDM version 2 arrives?')">Continue to T-48h ↗</button>
+  </div>
+</div>
+
+<div class="nav">
+  <button id="back-btn" onclick="goBack()" style="display:none">Back</button>
+  <div></div>
+  <button id="next-btn" onclick="goNext()">Next</button>
+</div>
+
+</div>
+
+<script>
+let step=0,choices={param:-1,cov:-1,act:-1};
+const PI=[
+  "Miss-distance-first operators trust geometry over probability. Valid when covariance quality is suspect — as it is here.",
+  "Pc-first operators are probabilistic thinkers, but low-quality covariance can contaminate the estimate at T-72h.",
+  "Combined screening is the most defensible policy, but risks under-flagging when one metric is degraded.",
+  "Velocity-only screening is very conservative — it flags almost every LEO conjunction regardless of Pc."
+];
+const CI=[
+  "Trusting reported Pc is efficient but can be optimistic when covariance is low-quality, as here.",
+  "Treating Pc as a lower bound is appropriate at T-72h. Common among experienced operators who have seen Pc rise sharply on later CDM updates.",
+  "Ignoring Pc at T-72h preserves geometric intuition but surrenders probabilistic information entirely.",
+  "Requesting additional tracking is the correct procedural response — reveals awareness of the covariance quality problem."
+];
+const AI=[
+  "WAIT is defensible at 1.2×10⁻⁵ — below most agency action thresholds. Risk: CDM v2 may show a significantly worse picture with less planning time remaining.",
+  "MONITOR is the canonical T-72h response for this Pc range. Commits analyst attention without committing fuel, preserving full decision flexibility.",
+  "ACT at T-72h is aggressive. TCA is 72 hours away and this is CDM version 1 of 4. Maneuvering on low-quality covariance carries risk of worsening the geometry."
+];
+const PL=["miss distance","Pc (probabilistic)","combined threshold","relative velocity"];
+const CL=["trust reported Pc","inflate Pc (conservative)","ignore Pc at T-72h","request tracking"];
+const AL=["WAIT → await CDM v2","MONITOR → assign analyst","ACT → maneuver planning"];
+const RL=["risk-neutral","balanced","risk-averse"];
+
+function upd(){
+  for(let i=0;i<4;i++) document.getElementById('d'+i).className='dot'+(i===step?' on':'');
+  document.getElementById('back-btn').style.display=step>0?'':'none';
+  document.getElementById('next-btn').style.display=step<3?'':'none';
+  document.querySelectorAll('.step-panel').forEach((p,i)=>p.classList.toggle('active',i===step));
+}
+function goNext(){if(step<3){step++;upd();}}
+function goBack(){if(step>0){step--;upd();}}
+function pick(type,i){
+  choices[type]=i;
+  const map={param:['cb0','cb1','cb2','cb3'],cov:['cv0','cv1','cv2','cv3'],act:['ac0','ac1','ac2']};
+  const ins={param:'ins-param',cov:'ins-cov',act:'ins-act'};
+  const txt={param:PI,cov:CI,act:AI};
+  map[type].forEach((id,j)=>{document.getElementById(id).className='choice-btn'+(j===i?' selected':'');});
+  const el=document.getElementById(ins[type]);
+  el.style.display='block';el.textContent=txt[type][i];
+  if(type==='act'){
+    document.getElementById('fp').style.display='block';
+    document.getElementById('fp0').textContent=choices.param>=0?PL[choices.param]:'—';
+    document.getElementById('fp1').textContent=choices.cov>=0?CL[choices.cov]:'—';
+    document.getElementById('fp2').textContent=AL[i];
+    document.getElementById('fp3').textContent=RL[i];
+  }
+}
+</script>

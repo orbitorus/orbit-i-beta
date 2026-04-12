@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LEO_CONJ_001 — Conjunction Decision Simulator</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased}
+:root{
+  --bg:#0f1117;--bg2:#181c27;--bg3:#1e2333;--bg4:#252b3b;
+  --border:#2e3448;--border2:#3a4260;
+  --text:#e8eaf0;--text2:#8b92a8;--text3:#555e78;
+  --amber:#f59e0b;--amber-bg:#2a2008;--amber-bd:#78490a;
+  --blue:#60a5fa;--blue-bg:#0d1f3c;--blue-bd:#1e3a6e;
+  --red:#f87171;--red-bg:#2a0d0d;--red-bd:#6b1a1a;
+  --green:#34d399;--green-bg:#062016;--green-bd:#0d4a2e;
+  --purple:#a78bfa;--purple-bg:#1a1040;--purple-bd:#3d2a8a;
+  --mono:'SF Mono','Fira Mono','Courier New',monospace;
+}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh}
+.shell{display:flex;justify-content:center;padding:2rem 1rem 4rem}
+.console{width:100%;max-width:580px}
+
+/* Phase bar */
+.phase-bar{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:1.75rem}
+.ph{flex:1;padding:8px 4px;text-align:center;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);border-right:1px solid var(--border);cursor:pointer;transition:all .2s}
+.ph:last-child{border-right:none}
+.ph.done{background:var(--bg3);color:var(--text2)}
+.ph.active{background:#0e1535;color:#a5b4fc}
+.ph.locked{opacity:.5;cursor:default}
+
+/* Dots */
+.dots{display:flex;gap:4px;margin-bottom:1.25rem}
+.dot{width:5px;height:5px;border-radius:50%;background:var(--border2)}
+.dot.on{background:var(--blue)}
+.dot.purple{background:var(--purple)}
+
+/* Pages */
+.pg{display:none}.pg.on{display:block}
+
+/* Typography */
+.meta{font-size:10px;font-weight:700;letter-spacing:.12em;color:var(--text3);text-transform:uppercase;margin-bottom:5px}
+.title{font-size:17px;font-weight:600;color:var(--text);margin-bottom:4px;letter-spacing:-.01em}
+.subtitle{font-size:13px;color:var(--text2);margin-bottom:1rem;line-height:1.5}
+
+/* Status bar */
+.sbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem}
+
+/* Pills */
+.pill{display:inline-flex;align-items:center;font-size:10px;font-weight:700;letter-spacing:.06em;padding:2px 8px;border-radius:20px;text-transform:uppercase;white-space:nowrap}
+.p-gray{background:var(--bg4);color:var(--text2);border:1px solid var(--border2)}
+.p-amber{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)}
+.p-red{background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)}
+.p-green{background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)}
+.p-blue{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd)}
+.p-purple{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-bd)}
+
+/* Cards */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:.9rem}
+.card-head{display:flex;justify-content:space-between;align-items:center;padding:9px 14px;border-bottom:1px solid var(--border);background:var(--bg3)}
+.ck{font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.07em;text-transform:uppercase}
+.row{display:flex;justify-content:space-between;align-items:center;padding:9px 14px;border-bottom:1px solid var(--border);gap:8px}
+.row:last-child{border-bottom:none}
+.rk{font-size:13px;color:var(--text2);flex-shrink:0}
+.rv{font-size:12px;font-family:var(--mono);font-weight:500;text-align:right;color:var(--text);display:flex;align-items:center;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+.rv.warn{color:var(--amber)}.rv.danger{color:var(--red)}.rv.good{color:var(--green)}
+.delta{font-size:10px;font-weight:700;padding:1px 5px;border-radius:4px}
+.d-up{background:var(--red-bg);color:var(--red)}.d-dn{background:var(--green-bg);color:var(--green)}.d-eq{background:var(--bg4);color:var(--text3)}
+
+/* Notes */
+.note{font-size:12px;line-height:1.65;padding:11px 14px;border-radius:0 8px 8px 0;margin-bottom:.9rem}
+.note-blue{color:var(--text2);border-left:2px solid var(--blue);background:var(--blue-bg)}
+.note-amber{color:#fcd34d;border-left:2px solid var(--amber);background:var(--amber-bg)}
+.note-red{color:var(--red);border-left:2px solid var(--red);background:var(--red-bg)}
+.note-green{color:var(--green);border-left:2px solid var(--green);background:var(--green-bg)}
+
+/* Options */
+.btn-group{display:flex;flex-direction:column;gap:5px;margin-bottom:.65rem}
+.opt{display:flex;align-items:flex-start;gap:9px;padding:10px 13px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;cursor:pointer;text-align:left;font-size:13px;color:var(--text2);transition:all .15s;width:100%}
+.opt:hover{border-color:var(--border2);color:var(--text);background:var(--bg3)}
+.opt.sel{border-color:#3b5bdb;background:#0e1535;color:#a5b4fc}
+.ol{flex-shrink:0;width:18px;height:18px;border-radius:4px;background:var(--bg4);border:1px solid var(--border2);font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;color:var(--text3);margin-top:1px}
+.opt.sel .ol{background:#1e2f6e;border-color:#3b5bdb;color:#a5b4fc}
+
+/* Insight */
+.ins{font-size:12px;color:var(--text2);line-height:1.65;padding:9px 13px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;margin-bottom:.65rem;display:none}
+
+/* Scenario tabs */
+.stabs{display:flex;gap:5px;margin-bottom:.9rem;flex-wrap:wrap}
+.stab{padding:5px 12px;border-radius:20px;font-size:11px;font-weight:500;border:1px solid var(--border);background:var(--bg3);color:var(--text2);cursor:pointer;transition:all .15s}
+.stab:hover{border-color:var(--border2);color:var(--text)}.stab.on{border-color:#3b5bdb;background:#0e1535;color:#a5b4fc}
+.sc{display:none}.sc.on{display:block}
+
+/* Progress bars */
+.wbar{margin-bottom:.65rem}
+.wbl{font-size:11px;color:var(--text3);margin-bottom:4px;display:flex;justify-content:space-between}
+.wbt{height:6px;background:var(--bg4);border-radius:3px;overflow:hidden}
+.wbf{height:100%;border-radius:3px}
+
+/* Carry box */
+.carry{background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:10px 13px;margin-bottom:.9rem}
+.carry-head{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:7px}
+.carry-row{display:flex;gap:8px;padding:3px 0;font-size:12px}
+.ck2{color:var(--text3);width:120px;flex-shrink:0}
+.cv2{color:var(--text);font-weight:500}
+
+/* Countdown */
+.countdown{background:var(--bg2);border:1px solid var(--red-bd);border-radius:12px;padding:14px 16px;margin-bottom:.9rem;display:flex;align-items:center;gap:14px}
+.cdn{font-size:34px;font-weight:700;font-family:var(--mono);color:var(--red);line-height:1}
+.cds{font-size:10px;color:var(--text3);margin-top:3px}
+.cdr{flex:1}
+.cdt{font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px}
+.cdd{font-size:11px;color:var(--text3);line-height:1.5}
+
+/* Maneuver options */
+.mv-opt{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:11px 13px;cursor:pointer;transition:all .15s;margin-bottom:5px}
+.mv-opt:hover{border-color:var(--border2);background:var(--bg3)}
+.mv-opt.sel{border-color:#3b5bdb;background:#0e1535}
+.mv-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}
+.mv-title{font-size:13px;font-weight:500;color:var(--text)}.mv-opt.sel .mv-title{color:#a5b4fc}
+.mv-detail{font-size:11px;color:var(--text3);line-height:1.5}.mv-opt.sel .mv-detail{color:#7c93e0}
+
+/* Timeline */
+.tl{position:relative;margin-bottom:1rem;padding-left:18px}
+.tl-line{position:absolute;left:6px;top:8px;bottom:8px;width:1px;background:var(--border2)}
+.tl-item{position:relative;margin-bottom:13px;padding-left:14px}
+.tl-dot{position:absolute;left:-12px;top:4px;width:8px;height:8px;border-radius:50%}
+.tl-done{background:var(--blue);border:1px solid var(--blue)}
+.tl-now{background:var(--amber);border:1px solid var(--amber)}
+.tl-warn{background:var(--red);border:1px solid var(--red)}
+.tl-future{background:var(--bg4);border:1px solid var(--border2)}
+.tl-label{font-size:11px;font-weight:600;color:var(--text2)}.tl-sub{font-size:11px;color:var(--text3)}
+
+/* Fingerprint / Summary */
+.fp{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:1rem}
+.fp-head{padding:12px 15px;background:var(--purple-bg);border-bottom:1px solid var(--purple-bd);display:flex;align-items:center;gap:10px}
+.fp-icon{width:34px;height:34px;border-radius:8px;background:var(--purple-bd);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;color:var(--purple)}
+.fp-name{font-size:14px;font-weight:600;color:var(--purple)}
+.fp-sub-text{font-size:11px;color:var(--text3);margin-top:1px}
+.fp-body{padding:0}
+.fp-section{padding:8px 15px 4px;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--blue);border-top:1px solid var(--border)}
+.fp-section:first-child{border-top:none}
+.fp-row{display:flex;gap:8px;padding:6px 15px;border-bottom:1px solid var(--border);font-size:12px}
+.fp-row:last-child{border-bottom:none}
+.fpk{color:var(--text3);width:145px;flex-shrink:0}.fpv{color:var(--text);font-weight:500;line-height:1.4}
+
+/* Score cards */
+.score-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1rem}
+.sc-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+.sc-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:7px}
+.sc-val{font-size:19px;font-weight:700;margin-bottom:5px}
+.sc-bar-track{height:4px;background:var(--bg4);border-radius:2px;overflow:hidden;margin-bottom:5px}
+.sc-bar-fill{height:100%;border-radius:2px;transition:width .5s}
+.sc-desc{font-size:11px;color:var(--text3);line-height:1.4}
+
+/* Selectors */
+.sel-row{margin-bottom:1rem}
+.sel-label{font-size:11px;color:var(--text3);margin-bottom:5px}
+.sel-pills{display:flex;gap:5px;flex-wrap:wrap}
+.sp{padding:4px 11px;border-radius:20px;font-size:11px;font-weight:500;border:1px solid var(--border);background:var(--bg3);color:var(--text2);cursor:pointer;transition:all .15s}
+.sp:hover{border-color:var(--border2);color:var(--text)}.sp.on{border-color:#3b5bdb;background:#0e1535;color:#a5b4fc}
+
+/* Retro table */
+.retro{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:1rem}
+.retro-row{display:grid;grid-template-columns:55px 1fr 1fr;border-bottom:1px solid var(--border);font-size:11px}
+.retro-row:last-child{border-bottom:none}
+.retro-row.hdr{background:var(--bg3);font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3)}
+.rc{padding:8px 11px;border-right:1px solid var(--border)}.rc:last-child{border-right:none}
+.rc.ph{color:var(--text3);font-family:var(--mono);font-size:10px}
+.good{color:var(--green)}.bad{color:var(--red)}.ok{color:var(--amber)}
+
+/* Verdict */
+.verdict{border-radius:12px;overflow:hidden;margin-bottom:1rem}
+.verdict-head{padding:13px 15px;display:flex;align-items:center;gap:11px}
+.v-icon{font-size:22px;line-height:1;flex-shrink:0}
+.v-title{font-size:14px;font-weight:700}
+.v-sub{font-size:11px;margin-top:2px;opacity:.8}
+.verdict-body{padding:12px 15px;background:var(--bg2);border:1px solid var(--border);border-top:none;border-radius:0 0 12px 12px}
+.vrow{display:flex;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px}
+.vrow:last-child{border-bottom:none}
+.vk{color:var(--text3);width:130px;flex-shrink:0}.vv{color:var(--text);font-weight:500;line-height:1.4}
+
+/* Constraint grid */
+.cg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:.9rem}
+.cbox{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
+.cb-label{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:4px}
+.cb-val{font-size:13px;font-weight:500}
+.cb-val.ok{color:var(--green)}.cb-val.warn{color:var(--amber)}.cb-val.bad{color:var(--red)}
+.cb-sub{font-size:11px;color:var(--text3);margin-top:2px}
+
+/* Phase timeline strip */
+.pt{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:1px;background:var(--border);border-radius:10px;overflow:hidden;margin-bottom:1.25rem}
+.pt-cell{background:var(--bg2);padding:10px 12px}
+.pt-cell.cur{background:var(--bg3)}
+.pt-time{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:2px}
+.pt-dec{font-size:12px;font-weight:500;color:var(--text);margin-bottom:1px}
+.pt-sub{font-size:10px;color:var(--text3)}
+
+/* Section divider */
+.sdiv{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:.9rem}
+
+/* Compare */
+.cmp{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:1rem}
+.cmp-row{display:grid;grid-template-columns:110px 1fr 1fr;border-bottom:1px solid var(--border);font-size:11px}
+.cmp-row:last-child{border-bottom:none}
+.cmp-row.hdr{background:var(--bg3);font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3)}
+.cc{padding:8px 11px;border-right:1px solid var(--border)}.cc:last-child{border-right:none}
+.cc.key{color:var(--text3)}.cc.yours{color:var(--text)}.cc.nom{color:var(--text2)}
+
+/* Profile traits */
+.trait{display:flex;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px}
+.trait:last-child{border-bottom:none}
+.tdot{width:6px;height:6px;border-radius:50%;margin-top:4px;flex-shrink:0}
+.ttext{color:var(--text2);line-height:1.5}
+
+/* Nav */
+.nav{display:flex;justify-content:space-between;align-items:center;margin-top:1.25rem}
+.btn{background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-size:13px;padding:7px 16px;border-radius:7px;cursor:pointer;transition:all .15s}
+.btn:hover{background:var(--bg4)}
+.btn.primary{background:#1e3a8a;border-color:#2d52c0;color:#bfdbfe}
+.btn.primary:hover{background:#1e40af}
+.btn.purple{background:#2d1a6e;border-color:#5b3fc8;color:var(--purple)}
+.btn.purple:hover{background:#3d2a8a}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:.75rem}
+
+@media(max-width:480px){
+  .shell{padding:1rem .75rem 3rem}
+  .title{font-size:15px}
+  .score-grid{grid-template-columns:1fr}
+  .pt{grid-template-columns:1fr 1fr}
+  .cg{grid-template-columns:1fr}
+  .fpk{width:110px}.vk{width:100px}
+  .cmp-row{grid-template-columns:90px 1fr 1fr}
+  .retro-row{grid-template-columns:45px 1fr 1fr}
+}
+</style>
+</head>
+<body>
+<div class="shell"><div class="console">
+
+<div style="margin-bottom:1.5rem">
+  <div style="font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#555e78;margin-bottom:4px">Conjunction decision simulator</div>
+  <div style="font-size:20px;font-weight:700;color:#e8eaf0;letter-spacing:-.02em">LEO_CONJ_001</div>
+</div>
+
+<div class="phase-bar" id="phasebar">
+  <div class="ph active" id="ph0" onclick="jumpPhase(0)">T−72h</div>
+  <div class="ph locked" id="ph1" onclick="jumpPhase(1)">T−48h</div>
+  <div class="ph locked" id="ph2" onclick="jumpPhase(2)">T−24h</div>
+  <div class="ph locked" id="ph3" onclick="jumpPhase(3)">T−6h</div>
+  <div class="ph locked" id="ph4" onclick="jumpPhase(4)">Summary</div>
+</div>
+
+<div class="dots" id="dots"></div>
+
+<!-- ═══════════════════════════════════════
+     T-72h  PAGES 0-3
+═══════════════════════════════════════ -->
+
+<div class="pg on" id="p0">
+  <div class="meta">CDM received · T−72h · 2026-01-01 00:00Z</div>
+  <div class="title">Conjunction alert: LEO_CONJ_001</div>
+  <div style="height:.5rem"></div>
+  <div class="sbar"><span class="pill p-amber">Amber · monitor</span><span class="pill p-gray">72h to TCA</span><span class="pill p-gray">CDM v1 of 4</span></div>
+  <div class="card">
+    <div class="card-head"><span class="ck">CCSDS CDM · version 1</span><span class="pill p-gray">v1 of 4</span></div>
+    <div class="row"><span class="rk">TCA</span><span class="rv">2026-01-04 08:22:11Z</span></div>
+    <div class="row"><span class="rk">Miss distance</span><span class="rv warn">850 m</span></div>
+    <div class="row"><span class="rk">Relative velocity</span><span class="rv">12.3 km/s</span></div>
+    <div class="row"><span class="rk">Collision probability (Pc)</span><span class="rv warn">1.2 × 10⁻⁵</span></div>
+    <div class="row"><span class="rk">Covariance quality</span><span class="rv"><span class="pill p-amber">low</span></span></div>
+    <div class="row"><span class="rk">Object catalog</span><span class="rv"><span class="pill p-gray">tracked debris</span></span></div>
+  </div>
+  <div class="note note-blue">CDM v1 of 4. Propagation uncertainty is highest now — Pc and miss distance will shift significantly by T-24h.</div>
+</div>
+
+<div class="pg" id="p1">
+  <div class="meta">T−72h · Step 1 of 3 · Screening</div>
+  <div class="title">What drives your screening decision?</div>
+  <div class="subtitle">Select your primary criterion for flagging this conjunction.</div>
+  <div class="btn-group">
+    <button class="opt" id="t7p0" onclick="pick('p72',0)"><span class="ol">A</span>Miss distance — flag if below 1 km</button>
+    <button class="opt" id="t7p1" onclick="pick('p72',1)"><span class="ol">B</span>Collision probability Pc — flag if above 1×10⁻⁵</button>
+    <button class="opt" id="t7p2" onclick="pick('p72',2)"><span class="ol">C</span>Combined — both miss distance and Pc must exceed threshold</button>
+    <button class="opt" id="t7p3" onclick="pick('p72',3)"><span class="ol">D</span>Relative velocity only — high-energy conjunctions always flagged</button>
+  </div>
+  <div class="ins" id="i-p72"></div>
+</div>
+
+<div class="pg" id="p2">
+  <div class="meta">T−72h · Step 2 of 3 · Covariance</div>
+  <div class="title">Covariance quality is flagged low</div>
+  <div class="subtitle">How do you factor this into your risk estimate?</div>
+  <div class="btn-group">
+    <button class="opt" id="t7c0" onclick="pick('c72',0)"><span class="ol">A</span>Trust the Pc as reported — it is the official estimate</button>
+    <button class="opt" id="t7c1" onclick="pick('c72',1)"><span class="ol">B</span>Treat Pc as lower bound — inflate mentally for safety</button>
+    <button class="opt" id="t7c2" onclick="pick('c72',2)"><span class="ol">C</span>Ignore Pc at T-72h — rely on miss distance only</button>
+    <button class="opt" id="t7c3" onclick="pick('c72',3)"><span class="ol">D</span>Request additional tracking before any judgment</button>
+  </div>
+  <div class="ins" id="i-c72"></div>
+</div>
+
+<div class="pg" id="p3">
+  <div class="meta">T−72h · Step 3 of 3 · Decision</div>
+  <div class="title">T−72h action: LEO_CONJ_001</div>
+  <div class="subtitle">Based on your screening, what is your initial action?</div>
+  <div class="btn-group">
+    <button class="opt" id="t7a0" onclick="pick('a72',0)"><span class="ol">A</span>WAIT — no action, await CDM v2 at T-48h</button>
+    <button class="opt" id="t7a1" onclick="pick('a72',1)"><span class="ol">B</span>MONITOR — flag for analysis, assign analyst</button>
+    <button class="opt" id="t7a2" onclick="pick('a72',2)"><span class="ol">C</span>ACT — begin maneuver planning now</button>
+  </div>
+  <div class="ins" id="i-a72"></div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     T-48h  PAGES 4-6
+═══════════════════════════════════════ -->
+
+<div class="pg" id="p4">
+  <div class="meta">CDM v2 received · T−48h · 2026-01-02 08:00Z</div>
+  <div class="title">Updated conjunction data: LEO_CONJ_001</div>
+  <div style="height:.5rem"></div>
+  <div class="carry">
+    <div class="carry-head">Carried from T−72h</div>
+    <div class="carry-row"><span class="ck2">Screening</span><span class="cv2" id="cy-p">—</span></div>
+    <div class="carry-row"><span class="ck2">Cov. strategy</span><span class="cv2" id="cy-c">—</span></div>
+    <div class="carry-row"><span class="ck2">T-72h decision</span><span class="cv2" id="cy-a">—</span></div>
+  </div>
+  <div class="sbar"><span class="pill p-amber" id="t48pill">Amber · escalating</span><span class="pill p-gray">48h to TCA</span><span class="pill p-gray">CDM v2 of 4</span></div>
+  <div style="font-size:11px;color:var(--text3);margin-bottom:7px;font-weight:600">Select CDM v2 scenario:</div>
+  <div class="stabs">
+    <div class="stab on" id="s48t0" onclick="setSc48(0)">Escalation</div>
+    <div class="stab" id="s48t1" onclick="setSc48(1)">Improvement</div>
+    <div class="stab" id="s48t2" onclick="setSc48(2)">Ambiguous</div>
+  </div>
+  <div class="sc on" id="s48-0">
+    <div class="card">
+      <div class="card-head"><span class="ck">CCSDS CDM · version 2</span><span class="pill p-red">escalated</span></div>
+      <div class="row"><span class="rk">TCA</span><span class="rv">2026-01-04 08:21:47Z <span class="delta d-eq">−24s</span></span></div>
+      <div class="row"><span class="rk">Miss distance</span><span class="rv danger">340 m <span class="delta d-up">↑ worse</span></span></div>
+      <div class="row"><span class="rk">Collision probability (Pc)</span><span class="rv danger">6.5 × 10⁻⁴ <span class="delta d-up">↑ 54×</span></span></div>
+      <div class="row"><span class="rk">Covariance quality</span><span class="rv"><span class="pill p-amber">medium</span></span></div>
+    </div>
+    <div class="note note-amber">Pc jumped 54× since v1 — exceeds most agency red-lines. Covariance improved to medium. Maneuver planning should begin.</div>
+  </div>
+  <div class="sc" id="s48-1">
+    <div class="card">
+      <div class="card-head"><span class="ck">CCSDS CDM · version 2</span><span class="pill p-green">improved</span></div>
+      <div class="row"><span class="rk">TCA</span><span class="rv">2026-01-04 08:22:05Z <span class="delta d-eq">−6s</span></span></div>
+      <div class="row"><span class="rk">Miss distance</span><span class="rv good">2,140 m <span class="delta d-dn">↓ better</span></span></div>
+      <div class="row"><span class="rk">Collision probability (Pc)</span><span class="rv good">8.0 × 10⁻⁷ <span class="delta d-dn">↓ 15×</span></span></div>
+      <div class="row"><span class="rk">Covariance quality</span><span class="rv"><span class="pill p-blue">medium-high</span></span></div>
+    </div>
+    <div class="note note-blue">Pc dropped 15× — well below monitoring thresholds. Stand-down defensible; watch CDM v3.</div>
+  </div>
+  <div class="sc" id="s48-2">
+    <div class="card">
+      <div class="card-head"><span class="ck">CCSDS CDM · version 2</span><span class="pill p-amber">ambiguous</span></div>
+      <div class="row"><span class="rk">TCA</span><span class="rv">2026-01-04 08:22:33Z <span class="delta d-eq">+22s</span></span></div>
+      <div class="row"><span class="rk">Miss distance</span><span class="rv warn">610 m <span class="delta d-up">↑ closer</span></span></div>
+      <div class="row"><span class="rk">Collision probability (Pc)</span><span class="rv warn">9.2 × 10⁻⁵ <span class="delta d-up">↑ 7.7×</span></span></div>
+      <div class="row"><span class="rk">Covariance quality</span><span class="rv"><span class="pill p-amber">low-medium</span></span></div>
+    </div>
+    <div class="note note-amber">Pc rose 7.7× but just below red-line. One more arc could push either way — hardest decision.</div>
+  </div>
+  <div class="wbar" style="margin-top:.5rem">
+    <div class="wbl"><span>Maneuver planning window</span><span>~48h remaining</span></div>
+    <div class="wbt"><div class="wbf" style="width:67%;background:#3b82f6"></div></div>
+  </div>
+</div>
+
+<div class="pg" id="p5">
+  <div class="meta">T−48h · Step 1 of 2 · Covariance</div>
+  <div class="title">Covariance improved to medium</div>
+  <div class="subtitle">How does this change your confidence in the Pc estimate?</div>
+  <div class="btn-group">
+    <button class="opt" id="t4cv0" onclick="pick('cv48',0)"><span class="ol">A</span>Medium is reliable enough — I trust this Pc</button>
+    <button class="opt" id="t4cv1" onclick="pick('cv48',1)"><span class="ol">B</span>Still warrants inflation — wait for high quality at v3</button>
+    <button class="opt" id="t4cv2" onclick="pick('cv48',2)"><span class="ol">C</span>Covariance matters less now — miss distance drives my decision</button>
+  </div>
+  <div class="ins" id="i-cv48"></div>
+</div>
+
+<div class="pg" id="p6">
+  <div class="meta">T−48h · Step 2 of 2 · Decision</div>
+  <div class="title">T−48h action: LEO_CONJ_001</div>
+  <div class="subtitle" id="t48-sub">Pc now 6.5×10⁻⁴ — above most agency red-lines. What is your decision?</div>
+  <div class="wbar">
+    <div class="wbl"><span>Planning window now</span><span>~48h</span></div>
+    <div class="wbt"><div class="wbf" style="width:67%;background:#3b82f6"></div></div>
+  </div>
+  <div class="wbar">
+    <div class="wbl"><span>If deferred to T-24h</span><span>~24h</span></div>
+    <div class="wbt"><div class="wbf" style="width:33%;background:#f59e0b"></div></div>
+  </div>
+  <div class="btn-group" style="margin-top:.25rem">
+    <button class="opt" id="t4a0" onclick="pick('a48',0)"><span class="ol">A</span>WAIT — monitor only, await CDM v3</button>
+    <button class="opt" id="t4a1" onclick="pick('a48',1)"><span class="ol">B</span>PLAN — begin maneuver design, no fuel committed yet</button>
+    <button class="opt" id="t4a2" onclick="pick('a48',2)"><span class="ol">C</span>EXECUTE — uplink maneuver, resolve conjunction now</button>
+  </div>
+  <div class="ins" id="i-a48"></div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     T-24h  PAGES 7-9
+═══════════════════════════════════════ -->
+
+<div class="pg" id="p7">
+  <div class="meta">CDM v3 received · T−24h · 2026-01-03 08:00Z</div>
+  <div class="title">Final pre-TCA update: LEO_CONJ_001</div>
+  <div style="height:.5rem"></div>
+  <div class="carry">
+    <div class="carry-head">Carried from T−48h</div>
+    <div class="carry-row"><span class="ck2">T-48h scenario</span><span class="cv2" id="cy-sc48">—</span></div>
+    <div class="carry-row"><span class="ck2">T-48h decision</span><span class="cv2" id="cy-a48">—</span></div>
+  </div>
+  <div class="sbar"><span class="pill p-red" id="t24pill">Red · action required</span><span class="pill p-gray">24h to TCA</span><span class="pill p-gray">CDM v3 of 4</span></div>
+  <div style="font-size:11px;color:var(--text3);margin-bottom:7px;font-weight:600">Select CDM v3 scenario:</div>
+  <div class="stabs">
+    <div class="stab on" id="s24t0" onclick="setSc24(0)">Confirmed threat</div>
+    <div class="stab" id="s24t1" onclick="setSc24(1)">Resolved</div>
+    <div class="stab" id="s24t2" onclick="setSc24(2)">Boundary</div>
+  </div>
+  <div class="sc on" id="s24-0">
+    <div class="card">
+      <div class="card-head"><span class="ck">CCSDS CDM · version 3</span><span class="pill p-red">confirmed</span></div>
+      <div class="row"><span class="rk">Miss distance</span><span class="rv danger">290 m <span class="delta d-up">↑ worse</span></span></div>
+      <div class="row"><span class="rk">Collision probability (Pc)</span><span class="rv danger">8.4 × 10⁻⁴ <span class="delta d-up">confirmed</span></span></div>
+      <div class="row"><span class="rk">Covariance quality</span><span class="rv"><span class="pill p-green">high</span></span></div>
+      <div class="row"><span class="rk">HBR</span><span class="rv warn">5.2 m</span></div>
+    </div>
+    <div class="note note-red">Pc confirmed 8.4×10⁻⁴ with high covariance. Well above red-line. Maneuver execution deadline ~T−8h. Decision required this cycle.</div>
+  </div>
+  <div class="sc" id="s24-1">
+    <div class="card">
+      <div class="card-head"><span class="ck">CCSDS CDM · version 3</span><span class="pill p-green">resolved</span></div>
+      <div class="row"><span class="rk">Miss distance</span><span class="rv good">3,850 m <span class="delta d-dn">↓ clear</span></span></div>
+      <div class="row"><span class="rk">Collision probability (Pc)</span><span class="rv good">2.1 × 10⁻⁷ <span class="delta d-dn">resolved</span></span></div>
+      <div class="row"><span class="rk">Covariance quality</span><span class="rv"><span class="pill p-green">high</span></span></div>
+    </div>
+    <div class="note note-blue">Pc at 2.1×10⁻⁷ with high covariance — conjunction resolved. Stand-down justified; watch v4 for confirmation.</div>
+  </div>
+  <div class="sc" id="s24-2">
+    <div class="card">
+      <div class="card-head"><span class="ck">CCSDS CDM · version 3</span><span class="pill p-amber">boundary</span></div>
+      <div class="row"><span class="rk">Miss distance</span><span class="rv warn">520 m <span class="delta d-eq">marginal</span></span></div>
+      <div class="row"><span class="rk">Collision probability (Pc)</span><span class="rv warn">1.3 × 10⁻⁴ <span class="delta d-up">just above red-line</span></span></div>
+      <div class="row"><span class="rk">Covariance quality</span><span class="rv"><span class="pill p-blue">medium-high</span></span></div>
+    </div>
+    <div class="note note-amber">Pc just above red-line with medium-high covariance. Hardest decision: act now or wait for v4 with less margin.</div>
+  </div>
+</div>
+
+<div class="pg" id="p8">
+  <div class="meta">T−24h · Step 1 of 2 · Constraints</div>
+  <div class="title">Operational constraints apply</div>
+  <div class="subtitle">Mission context modifies the pure risk calculation.</div>
+  <div class="cg">
+    <div class="cbox"><div class="cb-label">Ground contact</div><div class="cb-val ok">Available</div><div class="cb-sub">Next window in 2h</div></div>
+    <div class="cbox"><div class="cb-label">Thruster status</div><div class="cb-val ok">Nominal</div><div class="cb-sub">All systems operational</div></div>
+    <div class="cbox"><div class="cb-label">Mission phase</div><div class="cb-val warn">Science obs.</div><div class="cb-sub">Active payload — maneuver interrupts</div></div>
+    <div class="cbox"><div class="cb-label">ΔV budget</div><div class="cb-val ok">Adequate</div><div class="cb-sub">~18 m/s remaining</div></div>
+  </div>
+  <div class="btn-group">
+    <button class="opt" id="t2c0" onclick="pick('c24',0)"><span class="ol">A</span>Constraints manageable — maneuver can proceed</button>
+    <button class="opt" id="t2c1" onclick="pick('c24',1)"><span class="ol">B</span>Science interruption raises my Pc action threshold</button>
+    <button class="opt" id="t2c2" onclick="pick('c24',2)"><span class="ol">C</span>Safety always overrides mission phase</button>
+  </div>
+  <div class="ins" id="i-c24"></div>
+</div>
+
+<div class="pg" id="p9">
+  <div class="meta">T−24h · Step 2 of 2 · Maneuver</div>
+  <div class="title">T−24h maneuver decision</div>
+  <div class="subtitle" id="t24-sub">Pc confirmed 8.4×10⁻⁴. Choose your maneuver posture.</div>
+  <div id="mv-opts">
+    <div class="mv-opt" id="mv0" onclick="pickMv(0)">
+      <div class="mv-head"><span class="mv-title">Stand down</span><span class="pill p-gray">0 m/s</span></div>
+      <div class="mv-detail">No maneuver. Accept risk and await CDM v4.</div>
+    </div>
+    <div class="mv-opt" id="mv1" onclick="pickMv(1)">
+      <div class="mv-head"><span class="mv-title">Option 1 — in-track</span><span class="pill p-amber">0.5 m/s</span></div>
+      <div class="mv-detail">Low ΔV in-track burn. Increases miss distance modestly.</div>
+    </div>
+    <div class="mv-opt" id="mv2" onclick="pickMv(2)">
+      <div class="mv-head"><span class="mv-title">Option 2 — radial</span><span class="pill p-blue">1.2 m/s</span></div>
+      <div class="mv-detail">Moderate ΔV radial burn. More effective geometry change.</div>
+    </div>
+    <div class="mv-opt" id="mv3" onclick="pickMv(3)">
+      <div class="mv-head"><span class="mv-title">Option 3 — combined</span><span class="pill p-red">2.1 m/s</span></div>
+      <div class="mv-detail">High ΔV combined burn. Maximum miss distance increase.</div>
+    </div>
+  </div>
+  <div class="ins" id="i-mv24"></div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     T-6h  PAGES 10-12
+═══════════════════════════════════════ -->
+
+<div class="pg" id="p10">
+  <div class="meta">CDM v4 received · T−6h · 2026-01-04 02:22Z</div>
+  <div class="title">Final update: LEO_CONJ_001</div>
+  <div style="height:.5rem"></div>
+  <div class="countdown">
+    <div><div class="cdn">6h</div><div class="cds">to TCA</div></div>
+    <div class="cdr">
+      <div class="cdt">Final CDM — no further updates</div>
+      <div class="cdd">Maneuver execution window is closing or closed.</div>
+    </div>
+  </div>
+  <div class="carry">
+    <div class="carry-head">Carried from T−24h</div>
+    <div class="carry-row"><span class="ck2">T-24h scenario</span><span class="cv2" id="cy-sc24">—</span></div>
+    <div class="carry-row"><span class="ck2">Maneuver decision</span><span class="cv2" id="cy-mv">—</span></div>
+  </div>
+  <div class="sbar"><span class="pill p-purple" id="t6pill">v4 · final</span><span class="pill p-gray">6h to TCA</span><span class="pill p-gray">No further CDMs</span></div>
+  <div style="font-size:11px;color:var(--text3);margin-bottom:7px;font-weight:600">Select CDM v4 outcome:</div>
+  <div class="stabs">
+    <div class="stab on" id="s6t0" onclick="setSc6(0)">Threat confirmed</div>
+    <div class="stab" id="s6t1" onclick="setSc6(1)">Late resolution</div>
+    <div class="stab" id="s6t2" onclick="setSc6(2)">Data gap</div>
+  </div>
+  <div class="sc on" id="s6-0">
+    <div class="card">
+      <div class="card-head"><span class="ck">CCSDS CDM · version 4 · final</span><span class="pill p-red">confirmed</span></div>
+      <div class="row"><span class="rk">Miss distance</span><span class="rv danger">275 m <span class="delta d-up">converged</span></span></div>
+      <div class="row"><span class="rk">Collision probability (Pc)</span><span class="rv danger">9.1 × 10⁻⁴ <span class="delta d-up">final</span></span></div>
+      <div class="row"><span class="rk">Covariance quality</span><span class="rv"><span class="pill p-green">very high</span></span></div>
+      <div class="row"><span class="rk">1σ miss dist. uncertainty</span><span class="rv warn">± 42 m</span></div>
+      <div class="row"><span class="rk">Maneuver window</span><span class="rv danger">closing — emergency only</span></div>
+    </div>
+    <div class="note note-red">Pc confirmed 9.1×10⁻⁴ with very high covariance. Definitive. Emergency maneuver is only remaining option if not already executed.</div>
+  </div>
+  <div class="sc" id="s6-1">
+    <div class="card">
+      <div class="card-head"><span class="ck">CCSDS CDM · version 4 · final</span><span class="pill p-green">resolved</span></div>
+      <div class="row"><span class="rk">Miss distance</span><span class="rv good">4,820 m <span class="delta d-dn">resolved</span></span></div>
+      <div class="row"><span class="rk">Collision probability (Pc)</span><span class="rv good">3.4 × 10⁻⁸ <span class="delta d-dn">negligible</span></span></div>
+      <div class="row"><span class="rk">Covariance quality</span><span class="rv"><span class="pill p-green">very high</span></span></div>
+      <div class="row"><span class="rk">1σ miss dist. uncertainty</span><span class="rv good">± 38 m</span></div>
+      <div class="row"><span class="rk">Maneuver window</span><span class="rv good">closed — no action needed</span></div>
+    </div>
+    <div class="note note-blue">Pc at 3.4×10⁻⁸ — conjunction fully resolved. No maneuver needed. If already executed, was defensible given earlier data.</div>
+  </div>
+  <div class="sc" id="s6-2">
+    <div class="card">
+      <div class="card-head"><span class="ck">CCSDS CDM · version 4 · final</span><span class="pill p-amber">data gap</span></div>
+      <div class="row"><span class="rk">Miss distance</span><span class="rv warn">480 m <span class="delta d-eq">unchanged</span></span></div>
+      <div class="row"><span class="rk">Collision probability (Pc)</span><span class="rv warn">1.1 × 10⁻⁴ <span class="delta d-eq">marginal</span></span></div>
+      <div class="row"><span class="rk">Covariance quality</span><span class="rv"><span class="pill p-amber">medium — tracking gap</span></span></div>
+      <div class="row"><span class="rk">1σ miss dist. uncertainty</span><span class="rv warn">± 310 m</span></div>
+      <div class="row"><span class="rk">Maneuver window</span><span class="rv warn">2h remain — critical</span></div>
+    </div>
+    <div class="note note-amber">Tracking gap — covariance did not improve. Miss distance could be 170–790 m. Maximum uncertainty, minimum time.</div>
+  </div>
+</div>
+
+<div class="pg" id="p11">
+  <div class="meta">T−6h · Step 1 of 2 · Prior action</div>
+  <div class="title">What was your T−24h status?</div>
+  <div class="subtitle">CDM v4 is now available. Your earlier posture is being assessed against final data.</div>
+  <div class="tl">
+    <div class="tl-line"></div>
+    <div class="tl-item"><div class="tl-dot tl-done"></div><div class="tl-label">T−72h · CDM v1</div><div class="tl-sub">Screening and initial decision</div></div>
+    <div class="tl-item"><div class="tl-dot tl-done"></div><div class="tl-label">T−48h · CDM v2</div><div class="tl-sub">Planning decision</div></div>
+    <div class="tl-item"><div class="tl-dot tl-done"></div><div class="tl-label">T−24h · CDM v3</div><div class="tl-sub">Maneuver selection</div></div>
+    <div class="tl-item"><div class="tl-dot tl-now"></div><div class="tl-label">T−6h · now</div><div class="tl-sub">Final CDM v4 received</div></div>
+    <div class="tl-item"><div class="tl-dot tl-warn"></div><div class="tl-label">T−0 · hard cutoff</div><div class="tl-sub">Thruster systems require min 6h lead</div></div>
+    <div class="tl-item"><div class="tl-dot tl-future"></div><div class="tl-label">TCA · 2026-01-04 08:22Z</div><div class="tl-sub">Time of closest approach</div></div>
+  </div>
+  <div class="btn-group">
+    <button class="opt" id="t6d0" onclick="pick('d6',0)"><span class="ol">A</span>Already executed maneuver at T-24h — satellite is clear</button>
+    <button class="opt" id="t6d1" onclick="pick('d6',1)"><span class="ol">B</span>Planned but not executed — sequence ready to uplink</button>
+    <button class="opt" id="t6d2" onclick="pick('d6',2)"><span class="ol">C</span>Still monitoring — no maneuver committed</button>
+  </div>
+  <div class="ins" id="i-d6"></div>
+</div>
+
+<div class="pg" id="p12">
+  <div class="meta">T−6h · Step 2 of 2 · Final decision</div>
+  <div class="title" id="t6-final-title">T−6h final action</div>
+  <div class="subtitle" id="t6-final-sub">Select your final action given CDM v4.</div>
+  <div id="t6-final-btns"></div>
+  <div class="ins" id="i-f6"></div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     SUMMARY  PAGE 13
+═══════════════════════════════════════ -->
+
+<div class="pg" id="p13">
+  <div class="meta">Session complete · LEO_CONJ_001</div>
+  <div class="title">Operator fingerprint — full session</div>
+  <div style="height:.5rem"></div>
+
+  <div class="sdiv">Decision record</div>
+  <div class="pt" id="pt-strip">
+    <div class="pt-cell"><div class="pt-time">T−72h</div><div class="pt-dec" id="pts-72a">—</div><div class="pt-sub" id="pts-72b">—</div></div>
+    <div class="pt-cell"><div class="pt-time">T−48h</div><div class="pt-dec" id="pts-48a">—</div><div class="pt-sub" id="pts-48b">—</div></div>
+    <div class="pt-cell"><div class="pt-time">T−24h</div><div class="pt-dec" id="pts-24a">—</div><div class="pt-sub" id="pts-24b">—</div></div>
+    <div class="pt-cell"><div class="pt-time">T−6h</div><div class="pt-dec" id="pts-6a">—</div><div class="pt-sub" id="pts-6b">—</div></div>
+  </div>
+
+  <div class="sdiv">Scored dimensions</div>
+  <div class="score-grid">
+    <div class="sc-card"><div class="sc-label">Risk posture</div><div class="sc-val" id="sc-risk-v">—</div><div class="sc-bar-track"><div class="sc-bar-fill" id="sc-risk-b" style="width:0%"></div></div><div class="sc-desc" id="sc-risk-d">—</div></div>
+    <div class="sc-card"><div class="sc-label">Cov. awareness</div><div class="sc-val" id="sc-cov-v">—</div><div class="sc-bar-track"><div class="sc-bar-fill" id="sc-cov-b" style="width:0%"></div></div><div class="sc-desc" id="sc-cov-d">—</div></div>
+    <div class="sc-card"><div class="sc-label">Decision consistency</div><div class="sc-val" id="sc-con-v">—</div><div class="sc-bar-track"><div class="sc-bar-fill" id="sc-con-b" style="width:0%"></div></div><div class="sc-desc" id="sc-con-d">—</div></div>
+    <div class="sc-card"><div class="sc-label">ΔV efficiency</div><div class="sc-val" id="sc-dv-v">—</div><div class="sc-bar-track"><div class="sc-bar-fill" id="sc-dv-b" style="width:0%"></div></div><div class="sc-desc" id="sc-dv-d">—</div></div>
+  </div>
+
+  <div class="sdiv">Inferred operator profile</div>
+  <div class="fp" id="prof-fp">
+    <div class="fp-head" id="prof-head">
+      <div class="fp-icon" id="prof-icon">—</div>
+      <div><div class="fp-name" id="prof-name">Computing…</div><div class="fp-sub-text" id="prof-sub">Select choices in each phase</div></div>
+    </div>
+    <div class="fp-body" id="prof-traits"></div>
+  </div>
+
+  <div class="sdiv">Full decision log</div>
+  <div class="fp">
+    <div class="fp-body">
+      <div class="fp-section">T−72h phase</div>
+      <div class="fp-row"><span class="fpk">Screening bias</span><span class="fpv" id="fl-p72">—</span></div>
+      <div class="fp-row"><span class="fpk">Cov. strategy</span><span class="fpv" id="fl-c72">—</span></div>
+      <div class="fp-row"><span class="fpk">Initial decision</span><span class="fpv" id="fl-a72">—</span></div>
+      <div class="fp-section">T−48h phase</div>
+      <div class="fp-row"><span class="fpk">Scenario faced</span><span class="fpv" id="fl-sc48">—</span></div>
+      <div class="fp-row"><span class="fpk">Cov. confidence</span><span class="fpv" id="fl-cv48">—</span></div>
+      <div class="fp-row"><span class="fpk">Updated decision</span><span class="fpv" id="fl-a48">—</span></div>
+      <div class="fp-section">T−24h phase</div>
+      <div class="fp-row"><span class="fpk">Scenario faced</span><span class="fpv" id="fl-sc24">—</span></div>
+      <div class="fp-row"><span class="fpk">Constraint response</span><span class="fpv" id="fl-c24">—</span></div>
+      <div class="fp-row"><span class="fpk">Maneuver selection</span><span class="fpv" id="fl-mv24">—</span></div>
+      <div class="fp-section">T−6h phase</div>
+      <div class="fp-row"><span class="fpk">CDM v4 scenario</span><span class="fpv" id="fl-sc6">—</span></div>
+      <div class="fp-row"><span class="fpk">Prior status</span><span class="fpv" id="fl-d6">—</span></div>
+      <div class="fp-row"><span class="fpk">Final action</span><span class="fpv" id="fl-f6">—</span></div>
+      <div class="fp-section">Inferred profile</div>
+      <div class="fp-row"><span class="fpk">Overall posture</span><span class="fpv" id="fl-posture">—</span></div>
+      <div class="fp-row"><span class="fpk">Cov. awareness</span><span class="fpv" id="fl-covaware">—</span></div>
+      <div class="fp-row"><span class="fpk">Decision pattern</span><span class="fpv" id="fl-pattern">—</span></div>
+    </div>
+  </div>
+
+  <div class="sdiv">Retrospective assessment</div>
+  <div class="retro">
+    <div class="retro-row hdr"><div class="rc">Phase</div><div class="rc">Choice</div><div class="rc">In retrospect</div></div>
+    <div class="retro-row"><div class="rc ph">T−72h</div><div class="rc" id="r72c">—</div><div class="rc" id="r72r">—</div></div>
+    <div class="retro-row"><div class="rc ph">T−48h</div><div class="rc" id="r48c">—</div><div class="rc" id="r48r">—</div></div>
+    <div class="retro-row"><div class="rc ph">T−24h</div><div class="rc" id="r24c">—</div><div class="rc" id="r24r">—</div></div>
+    <div class="retro-row"><div class="rc ph">T−6h</div><div class="rc" id="r6c">—</div><div class="rc" id="r6r">—</div></div>
+  </div>
+
+  <div class="sdiv">Compare vs nominal (ESA/NASA)</div>
+  <div class="cmp">
+    <div class="cmp-row hdr"><div class="cc">Dimension</div><div class="cc">Your choice</div><div class="cc">Nominal</div></div>
+    <div class="cmp-row"><div class="cc key">T-72h screening</div><div class="cc yours" id="cmp-p">—</div><div class="cc nom">Combined Pc + miss dist.</div></div>
+    <div class="cmp-row"><div class="cc key">T-72h cov.</div><div class="cc yours" id="cmp-c">—</div><div class="cc nom">Inflate at low quality</div></div>
+    <div class="cmp-row"><div class="cc key">T-72h action</div><div class="cc yours" id="cmp-a72">—</div><div class="cc nom">MONITOR</div></div>
+    <div class="cmp-row"><div class="cc key">T-48h action</div><div class="cc yours" id="cmp-a48">—</div><div class="cc nom">PLAN if Pc &gt; 1×10⁻⁴</div></div>
+    <div class="cmp-row"><div class="cc key">T-24h maneuver</div><div class="cc yours" id="cmp-mv">—</div><div class="cc nom">Option 2 radial (1.2 m/s)</div></div>
+    <div class="cmp-row"><div class="cc key">T-6h final</div><div class="cc yours" id="cmp-f6">—</div><div class="cc nom">Emergency mnvr / stand-down</div></div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn purple" onclick="restart()">Restart simulation</button>
+  </div>
+</div>
+
+<div class="nav">
+  <button class="btn" id="bb" onclick="go(-1)" style="display:none">Back</button>
+  <div></div>
+  <button class="btn primary" id="nb" onclick="go(1)">Next</button>
+</div>
+
+</div></div>
+
+<script>
+const TOTAL_PAGES=14;
+let cur=0;
+const S={p72:-1,c72:-1,a72:-1,sc48:0,cv48:-1,a48:-1,sc24:0,c24:-1,mv24:-1,sc6:0,d6:-1,f6:-1};
+
+const PL72=["miss distance","Pc (probabilistic)","combined threshold","velocity only"];
+const CL72=["trust reported Pc","inflate (lower bound)","ignore Pc at T-72h","request tracking"];
+const AL72=["WAIT","MONITOR","ACT"];
+const SCN48=["escalation","improvement","ambiguous"];
+const CL48=["trust medium Pc","wait for high quality","geometry over Pc"];
+const AL48=["WAIT","PLAN","EXECUTE"];
+const SCN24=["confirmed threat","resolved","boundary"];
+const CL24=["constraints manageable","mission raises threshold","safety overrides mission"];
+const MVL=["Stand down — 0 m/s","Option 1 in-track — 0.5 m/s","Option 2 radial — 1.2 m/s","Option 3 combined — 2.1 m/s"];
+const SCN6=["confirmed threat","late resolution","data gap"];
+const DL6=["already executed","planned — ready to uplink","still monitoring"];
+
+const INS={
+  p72:["Miss-distance-first operators trust geometry over probability. Valid when covariance quality is suspect — as it is here.","Pc-first operators are exposed to low-quality covariance contaminating the estimate at T-72h.","Combined screening is most defensible but can under-flag when one metric is degraded.","Velocity-only is very conservative — flags nearly every LEO conjunction."],
+  c72:["Trusting reported Pc is efficient but can be optimistic with low-quality covariance.","Treating Pc as lower bound is appropriate at T-72h — common among experienced operators.","Ignoring Pc at T-72h preserves geometric intuition but loses probabilistic information.","Requesting additional tracking reveals awareness of the covariance quality problem."],
+  a72:["WAIT is defensible at 1.2×10⁻⁵. Risk: CDM v2 may escalate with less planning time remaining.","MONITOR is the canonical T-72h response — commits analyst resources without committing fuel.","ACT at T-72h is aggressive on CDM v1 with low covariance quality."],
+  cv48:["Trusting medium covariance is reasonable — the additional arc has meaningfully reduced uncertainty.","Waiting for high quality costs 24h of planning margin. Appropriate if Pc is near threshold.","Prioritising miss distance loses information about the shape of the uncertainty ellipse."],
+  a48:["WAIT at T-48h with Pc above red-line is difficult to justify under most guidelines.","PLAN without committing fuel is the standard response — preserves optionality while v3 resolves.","EXECUTE at T-48h eliminates risk early. Appropriate if satellite is critical or late maneuvers are difficult."],
+  c24:["All constraints nominal — cleanest situation for executing a conjunction avoidance maneuver.","Raising the Pc threshold due to mission phase is defensible but at Pc > 1×10⁻³ most agencies override.","Safety-overrides-mission is the most common explicit policy — consistent and easy to defend in review."],
+  d6:["Having executed at T-24h is optimal. CDM v4 either confirms the maneuver was needed or reveals it was precautionary but defensible.","Sequence ready to uplink is the best T-6h position — minimises emergency ops risk significantly.","Arriving at T-6h uncommitted with a confirmed threat is maximum stress. Emergency maneuver still possible but risky."]
+};
+
+const FINAL_OPTS=[
+  [{l:"Emergency maneuver — uplink now, compressed sequence",i:"A"},{l:"Accept TCA — no further action",i:"B"},{l:"Shelter in place — safe mode, reduce cross-section",i:"C"}],
+  [{l:"Confirm stand-down — conjunction resolved",i:"A"},{l:"Precautionary maneuver — move anyway for margin",i:"B"}],
+  [{l:"Emergency maneuver — act on marginal Pc",i:"A"},{l:"Accept TCA — uncertainty too high to commit",i:"B"},{l:"Partial maneuver — minimum ΔV to shift geometry",i:"C"}]
+];
+const FINAL_INS=[
+  ["Emergency maneuver is the correct procedural response when Pc exceeds red-line and window remains open. Pre-prepared sequences significantly reduce commanding error risk.","Accepting TCA with Pc at 9.1×10⁻⁴ is not defensible under published guidelines. The probability of collision is real.","Shelter-in-place reduces cross-section but does not change the conjunction probability. A last-resort measure only."],
+  ["Correct — stand-down is fully justified at 3.4×10⁻⁸. If a maneuver was previously executed, the earlier CDM data supported that decision.","A precautionary maneuver at 3.4×10⁻⁸ wastes ΔV with no safety benefit. However if pre-planned, the reasoning was defensible given earlier ambiguity."],
+  ["Committing to emergency maneuver under data-gap conditions is high-risk/high-caution. Marginal Pc but very large uncertainty — may maneuver into worse geometry.","Accepting TCA with tracking gap is defensible only if your threshold is above 1.1×10⁻⁴. A legitimate posture for some operators.","Partial maneuver is a reasonable hedge — shifts geometry without overcommitting to noisy data."]
+];
+const FL6_L=[["Emergency maneuver","Accept TCA","Shelter in place"],["Stand-down confirmed","Precautionary maneuver"],["Emergency maneuver","Accept TCA","Partial maneuver"]];
+
+function phaseOf(p){
+  if(p<=3)return 0;
+  if(p<=6)return 1;
+  if(p<=9)return 2;
+  if(p<=12)return 3;
+  return 4;
+}
+function pagesInPhase(ph){return[[0,3],[4,6],[7,9],[10,12],[13,13]][ph];}
+
+function renderNav(){
+  const ph=phaseOf(cur);
+  ['ph0','ph1','ph2','ph3','ph4'].forEach((id,i)=>{
+    const el=document.getElementById(id);
+    el.className='ph'+(i<ph?' done':i===ph?' active':' locked');
+  });
+  const [start,end]=pagesInPhase(ph);
+  const total=end-start+1;
+  const idx=cur-start;
+  const dotColor=ph===4?'purple':'';
+  document.getElementById('dots').innerHTML=Array.from({length:total},(_,i)=>`<div class="dot${i===idx?' on'+(dotColor?' '+dotColor:''):''}"></div>`).join('');
+  document.getElementById('bb').style.display=cur>0?'':'none';
+  document.getElementById('nb').style.display=cur<TOTAL_PAGES-1?'':'none';
+}
+
+function go(d){
+  const next=cur+d;
+  if(next<0||next>=TOTAL_PAGES)return;
+  cur=next;
+  document.querySelectorAll('.pg').forEach((p,i)=>p.classList.toggle('on',i===cur));
+  renderNav();
+  if(cur===4)populateCarry72();
+  if(cur===7)populateCarry48();
+  if(cur===10)populateCarry24();
+  if(cur===13)populateSummary();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function jumpPhase(ph){
+  const maxAllowed=phaseOf(cur);
+  if(ph>maxAllowed+1)return;
+  const[start]=pagesInPhase(ph);
+  cur=start;
+  document.querySelectorAll('.pg').forEach((p,i)=>p.classList.toggle('on',i===cur));
+  renderNav();
+  if(cur===4)populateCarry72();
+  if(cur===7)populateCarry48();
+  if(cur===10)populateCarry24();
+  if(cur===13)populateSummary();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function pick(key,i){
+  S[key]=i;
+  const idMap={
+    p72:['t7p0','t7p1','t7p2','t7p3'],
+    c72:['t7c0','t7c1','t7c2','t7c3'],
+    a72:['t7a0','t7a1','t7a2'],
+    cv48:['t4cv0','t4cv1','t4cv2'],
+    a48:['t4a0','t4a1','t4a2'],
+    c24:['t2c0','t2c1','t2c2'],
+    d6:['t6d0','t6d1','t6d2']
+  };
+  const insId={p72:'i-p72',c72:'i-c72',a72:'i-a72',cv48:'i-cv48',a48:'i-a48',c24:'i-c24',d6:'i-d6'};
+  if(idMap[key]){
+    idMap[key].forEach((id,j)=>{const el=document.getElementById(id);if(el)el.className='opt'+(j===i?' sel':'');});
+    const el=document.getElementById(insId[key]);
+    if(el&&INS[key]){el.style.display='block';el.textContent=INS[key][i];}
+  }
+}
+
+function pickMv(i){
+  S.mv24=i;
+  ['mv0','mv1','mv2','mv3'].forEach((id,j)=>{const el=document.getElementById(id);if(el)el.className='mv-opt'+(j===i?' sel':'');});
+  const el=document.getElementById('i-mv24');
+  const ins=["Stand down is only defensible if Pc is resolved. At 8.4×10⁻⁴ this choice accepts a risk most agencies would not sanction.","Option 1 (0.5 m/s in-track) is the minimum effective maneuver. May leave residual risk if Pc is very high.","Option 2 (1.2 m/s radial) provides a robust geometry change — the preferred choice for most operational scenarios.","Option 3 (2.1 m/s combined) is the conservative maximum-separation maneuver. Justified for high-value assets."];
+  el.style.display='block';el.textContent=ins[i];
+}
+
+function pickFinal(i){
+  S.f6=i;
+  document.querySelectorAll('#t6-final-btns .opt').forEach((b,j)=>b.classList.toggle('sel',j===i));
+  const el=document.getElementById('i-f6');
+  el.style.display='block';
+  el.textContent=FINAL_INS[S.sc6][Math.min(i,FINAL_INS[S.sc6].length-1)];
+}
+
+function setSc48(i){
+  S.sc48=i;
+  ['s48t0','s48t1','s48t2'].forEach((id,j)=>document.getElementById(id).classList.toggle('on',j===i));
+  ['s48-0','s48-1','s48-2'].forEach((id,j)=>document.getElementById(id).classList.toggle('on',j===i));
+  const subs=['Pc now 6.5×10⁻⁴ — above most agency red-lines. What is your decision?','Pc dropped to 8.0×10⁻⁷. Is this conjunction resolved?','Pc is 9.2×10⁻⁵ — just below the red-line. How do you decide?'];
+  document.getElementById('t48-sub').textContent=subs[i];
+}
+function setSc24(i){
+  S.sc24=i;
+  ['s24t0','s24t1','s24t2'].forEach((id,j)=>document.getElementById(id).classList.toggle('on',j===i));
+  ['s24-0','s24-1','s24-2'].forEach((id,j)=>document.getElementById(id).classList.toggle('on',j===i));
+  const subs=['Pc confirmed 8.4×10⁻⁴. Choose your maneuver posture.','Pc resolved to 2.1×10⁻⁷. Is this conjunction closed?','Pc 1.3×10⁻⁴ — just above red-line. How much ΔV do you commit?'];
+  document.getElementById('t24-sub').textContent=subs[i];
+}
+function setSc6(i){
+  S.sc6=i;
+  ['s6t0','s6t1','s6t2'].forEach((id,j)=>document.getElementById(id).classList.toggle('on',j===i));
+  ['s6-0','s6-1','s6-2'].forEach((id,j)=>document.getElementById(id).classList.toggle('on',j===i));
+  buildFinalBtns();
+}
+function buildFinalBtns(){
+  const c=document.getElementById('t6-final-btns');
+  c.innerHTML='';S.f6=-1;
+  document.getElementById('i-f6').style.display='none';
+  const titles=['T−6h emergency decision','T−6h stand-down confirmation','T−6h critical — data gap'];
+  const subs=['Pc confirmed 9.1×10⁻⁴. Window closing. Final action?','Pc resolved 3.4×10⁻⁸. Confirm status.','Pc 1.1×10⁻⁴ with high uncertainty. 2h window. Final call.'];
+  document.getElementById('t6-final-title').textContent=titles[S.sc6];
+  document.getElementById('t6-final-sub').textContent=subs[S.sc6];
+  FINAL_OPTS[S.sc6].forEach((o,i)=>{
+    const b=document.createElement('button');
+    b.className='opt';
+    b.innerHTML=`<span class="ol">${o.i}</span>${o.l}`;
+    b.onclick=()=>pickFinal(i);
+    c.appendChild(b);
+  });
+}
+
+function populateCarry72(){
+  document.getElementById('cy-p').textContent=S.p72>=0?PL72[S.p72]:'(not answered)';
+  document.getElementById('cy-c').textContent=S.c72>=0?CL72[S.c72]:'(not answered)';
+  document.getElementById('cy-a').textContent=S.a72>=0?AL72[S.a72]:'(not answered)';
+}
+function populateCarry48(){
+  document.getElementById('cy-sc48').textContent=SCN48[S.sc48];
+  document.getElementById('cy-a48').textContent=S.a48>=0?AL48[S.a48]:'(not answered)';
+}
+function populateCarry24(){
+  document.getElementById('cy-sc24').textContent=SCN24[S.sc24];
+  document.getElementById('cy-mv').textContent=S.mv24>=0?MVL[S.mv24]:'(not answered)';
+}
+
+function populateSummary(){
+  const s=S;
+  document.getElementById('pts-72a').textContent=s.a72>=0?AL72[s.a72]:'—';
+  document.getElementById('pts-72b').textContent=s.p72>=0?PL72[s.p72]:'—';
+  document.getElementById('pts-48a').textContent=s.a48>=0?AL48[s.a48]:'—';
+  document.getElementById('pts-48b').textContent=SCN48[s.sc48];
+  document.getElementById('pts-24a').textContent=s.mv24>=0?MVL[s.mv24].split(' — ')[0]:'—';
+  document.getElementById('pts-24b').textContent=SCN24[s.sc24];
+  document.getElementById('pts-6a').textContent=s.f6>=0?FL6_L[s.sc6][Math.min(s.f6,2)]:'—';
+  document.getElementById('pts-6b').textContent=SCN6[s.sc6];
+
+  document.getElementById('fl-p72').textContent=s.p72>=0?PL72[s.p72]:'—';
+  document.getElementById('fl-c72').textContent=s.c72>=0?CL72[s.c72]:'—';
+  document.getElementById('fl-a72').textContent=s.a72>=0?AL72[s.a72]:'—';
+  document.getElementById('fl-sc48').textContent=SCN48[s.sc48];
+  document.getElementById('fl-cv48').textContent=s.cv48>=0?CL48[s.cv48]:'—';
+  document.getElementById('fl-a48').textContent=s.a48>=0?AL48[s.a48]:'—';
+  document.getElementById('fl-sc24').textContent=SCN24[s.sc24];
+  document.getElementById('fl-c24').textContent=s.c24>=0?CL24[s.c24]:'—';
+  document.getElementById('fl-mv24').textContent=s.mv24>=0?MVL[s.mv24]:'—';
+  document.getElementById('fl-sc6').textContent=SCN6[s.sc6];
+  document.getElementById('fl-d6').textContent=s.d6>=0?DL6[s.d6]:'—';
+  document.getElementById('fl-f6').textContent=s.f6>=0?FL6_L[s.sc6][Math.min(s.f6,2)]:'—';
+
+  document.getElementById('cmp-p').textContent=s.p72>=0?PL72[s.p72]:'—';
+  document.getElementById('cmp-c').textContent=s.c72>=0?CL72[s.c72]:'—';
+  document.getElementById('cmp-a72').textContent=s.a72>=0?AL72[s.a72]:'—';
+  document.getElementById('cmp-a48').textContent=s.a48>=0?AL48[s.a48]:'—';
+  document.getElementById('cmp-mv').textContent=s.mv24>=0?MVL[s.mv24]:'—';
+  document.getElementById('cmp-f6').textContent=s.f6>=0?FL6_L[s.sc6][Math.min(s.f6,2)]:'—';
+
+  const riskScore=Math.min(100,(s.a72>=0?s.a72*15:0)+(s.a48>=0?s.a48*15:0)+(s.mv24>=0?s.mv24*15:0)+(s.f6>=0?s.f6*5:0)+((s.c72===1||s.c72===3)?15:0));
+  const riskLabel=riskScore<25?'Risk-tolerant':riskScore<50?'Neutral':riskScore<75?'Cautious':'Conservative';
+  const riskColor=riskScore<25?'#f87171':riskScore<50?'#f59e0b':riskScore<75?'#60a5fa':'#34d399';
+  document.getElementById('sc-risk-v').textContent=riskLabel;document.getElementById('sc-risk-v').style.color=riskColor;
+  document.getElementById('sc-risk-b').style.cssText=`width:${riskScore}%;background:${riskColor}`;
+  document.getElementById('sc-risk-d').textContent=riskScore<30?'Below-threshold responses across phases':riskScore<60?'Balanced — decisions track threat level':riskScore<80?'Above-nominal caution — early action preference':'Maximum safety posture — high ΔV, early commitment';
+
+  const covScore=Math.min(100,((s.c72===1||s.c72===3)?40:s.c72===0?10:20)+((s.p72===1||s.p72===2)?30:10)+((s.cv48===0||s.cv48===1)?20:10));
+  const covLabel=covScore<30?'Low':covScore<55?'Medium':covScore<80?'High':'Expert';
+  const covColor=covScore<30?'#f87171':covScore<55?'#f59e0b':covScore<80?'#60a5fa':'#34d399';
+  document.getElementById('sc-cov-v').textContent=covLabel;document.getElementById('sc-cov-v').style.color=covColor;
+  document.getElementById('sc-cov-b').style.cssText=`width:${covScore}%;background:${covColor}`;
+  document.getElementById('sc-cov-d').textContent=covScore<35?'Did not adjust for covariance quality shifts':covScore<65?'Partial covariance awareness — inconsistent':'Correctly weighted covariance quality across all phases';
+
+  const e72=1,e48=s.sc48===1?0:1,e24=s.sc24===1?0:2,e6=s.sc6===1?0:s.f6>=0?0:1;
+  const c72m=s.a72>=0?(s.a72===e72?1:Math.abs(s.a72-e72)===1?.5:0):0;
+  const c48m=s.a48>=0?(s.a48===e48?1:Math.abs(s.a48-e48)===1?.5:0):0;
+  const c24m=s.mv24>=0?(s.mv24===e24?1:[1,3].includes(s.mv24)?.5:0):0;
+  const c6m=s.f6>=0?(s.f6===0?.8:.3):0;
+  const answered=[s.a72,s.a48,s.mv24,s.f6].filter(x=>x>=0).length;
+  const conPct=answered>0?Math.round((c72m+c48m+c24m+c6m)/Math.max(answered,1)*100):0;
+  const conLabel=conPct<30?'Inconsistent':conPct<60?'Partial':conPct<85?'Consistent':'Optimal';
+  const conColor=conPct<30?'#f87171':conPct<60?'#f59e0b':conPct<85?'#60a5fa':'#34d399';
+  document.getElementById('sc-con-v').textContent=conLabel+' ('+conPct+'%)';document.getElementById('sc-con-v').style.color=conColor;
+  document.getElementById('sc-con-b').style.cssText=`width:${conPct}%;background:${conColor}`;
+  document.getElementById('sc-con-d').textContent=conPct<40?'Decisions did not track scenario responses':conPct<70?'Some decisions matched expected posture':conPct<90?'Decisions appropriately tracked threat evolution':'Textbook escalation across all phases';
+
+  const dvCost=[0,.5,1.2,2.1][s.mv24>=0?s.mv24:0];
+  const dvExp=[0,.5,1.2][Math.min(s.sc24,2)];
+  const dvDiff=dvCost-dvExp;
+  const dvPct=Math.min(100,Math.max(0,50+dvDiff*18));
+  const dvLabel=dvDiff<-.4?'Under-spent':dvDiff<.15?'Efficient':dvDiff<.7?'Slightly over':'Overcommitted';
+  const dvColor=dvDiff<-.4?'#f87171':dvDiff<.15?'#34d399':dvDiff<.7?'#f59e0b':'#f59e0b';
+  document.getElementById('sc-dv-v').textContent=dvLabel;document.getElementById('sc-dv-v').style.color=dvColor;
+  document.getElementById('sc-dv-b').style.cssText=`width:${dvPct}%;background:${dvColor}`;
+  document.getElementById('sc-dv-d').textContent=dvDiff<-.4?'ΔV committed insufficient for confirmed threat':dvDiff<.15?'ΔV matched threat level — efficient use of budget':'Conservative ΔV selection relative to scenario';
+
+  const profiles=[
+    {name:"Passive observer",icon:"◎",color:"#f87171",sub:"High risk tolerance, low responsiveness",traits:["<strong>Chronically defers decisions</strong> — waited at T-72h and T-48h, acted only under maximum pressure","<strong>Geometric thinker</strong> — relies on miss distance over Pc; does not fully internalise probabilistic risk","<strong>Underweights covariance quality</strong> — treats low-quality Pc as reliable, leading to systematic overconfidence","<strong>Late ΔV commitment</strong> — if forced to maneuver, chooses minimal option to minimise disruption"],dots:["#f87171","#f87171","#f59e0b","#f59e0b"]},
+    {name:"Probabilistic analyst",icon:"◈",color:"#60a5fa",sub:"Calibrated, data-driven, covariance-aware",traits:["<strong>Pc-first screening</strong> — grounds decisions in probabilistic estimates rather than geometric rules","<strong>Covariance-calibrated</strong> — correctly adjusts Pc confidence based on quality at each phase","<strong>Escalation-matched responses</strong> — decision posture tracks CDM updates; monitors early, acts when warranted","<strong>Proportionate ΔV selection</strong> — chooses maneuver option that matches the confirmed threat level"],dots:["#60a5fa","#60a5fa","#34d399","#60a5fa"]},
+    {name:"Cautious proceduralist",icon:"◉",color:"#34d399",sub:"Conservative, rule-following, low false-negative rate",traits:["<strong>Combined screening</strong> — applies both miss distance and Pc thresholds; rarely misses a true conjunction","<strong>Inflates covariance by default</strong> — conservative posture treats Pc as lower bound at all quality levels","<strong>Early action bias</strong> — monitors at T-72h, plans at T-48h before Pc is fully resolved","<strong>High ΔV preference</strong> — selects Option 2 or 3; accepts fuel cost for maximum safety margin"],dots:["#34d399","#34d399","#34d399","#34d399"]},
+    {name:"Mission-weighted operator",icon:"◇",color:"#f59e0b",sub:"Balances safety against operational continuity",traits:["<strong>Raises action threshold</strong> — mission constraints or science phase increase the Pc bar before maneuvering","<strong>Prefers low-ΔV options</strong> — minimises disruption; Option 1 over Option 2 when Pc is near threshold","<strong>Waits for covariance improvement</strong> — delays commitment until CDM quality rises to medium-high","<strong>Consistent under-response bias</strong> — may under-act when mission stakes are framed as high"],dots:["#f59e0b","#f59e0b","#f59e0b","#f59e0b"]}
+  ];
+  const pIdx=(()=>{
+    if(s.a72===0&&s.a48===0)return 0;
+    if((s.p72===1||s.p72===2)&&(s.c72===1||s.c72===3)&&s.a72>=1)return 1;
+    if(s.p72===2&&s.c72===1&&s.a72===1&&s.mv24>=2)return 2;
+    return 3;
+  })();
+  const pr=profiles[pIdx];
+  document.getElementById('prof-icon').textContent=pr.icon;document.getElementById('prof-icon').style.color=pr.color;
+  document.getElementById('prof-name').textContent=pr.name;document.getElementById('prof-name').style.color=pr.color;
+  document.getElementById('prof-sub').textContent=pr.sub;
+  document.getElementById('prof-traits').innerHTML=pr.traits.map((t,i)=>`<div class="fp-section" style="padding-top:${i===0?'0':''}"></div><div style="display:flex;gap:8px;padding:7px 15px;border-bottom:1px solid #2e3448;font-size:12px"><div style="width:6px;height:6px;border-radius:50%;background:${pr.dots[i]};margin-top:4px;flex-shrink:0"></div><div style="color:#8b92a8;line-height:1.5">${t}</div></div>`).join('').replace(/<div class="fp-section" style="padding-top:"><\/div>/g,'');
+
+  const postureStr=riskScore<30?'risk-tolerant':riskScore<55?'neutral':riskScore<75?'cautious':'conservative';
+  document.getElementById('fl-posture').textContent=postureStr;
+  document.getElementById('fl-covaware').textContent=covScore<40?'low — did not adjust for covariance shifts':covScore<70?'medium — partially adjusted':'high — correctly weighted quality across phases';
+  const consistent=Math.abs((s.a72>=0?s.a72:0)-(s.a48>=0?s.a48:0))<=1&&(s.mv24>=0?(s.mv24>=(s.sc24===1?0:1)):true);
+  document.getElementById('fl-pattern').textContent=consistent?'consistent — posture stable across phases':'escalating — T-48h/T-24h more aggressive than T-72h';
+
+  const sc6Final=s.sc6;
+  const retros=[
+    {choice:s.a72>=0?AL72[s.a72]:'—',retro:s.a72===1?'optimal — MONITOR is nominal T-72h response':s.a72===0?'passive — set a pattern of deferral':'aggressive — CDM v1 with low covariance',cls:s.a72===1?'good':s.a72===0?'ok':'ok'},
+    {choice:s.a48>=0?AL48[s.a48]:'—',retro:s.sc48===1&&s.a48===0?'correct — conjunction improved':s.a48===1?'nominal — plan without committing fuel':s.a48===0?'too passive — missed planning window':'decisive',cls:s.a48===1?'good':s.a48===2?'ok':s.sc48===1&&s.a48===0?'good':'bad'},
+    {choice:s.mv24>=0?MVL[s.mv24].split(' — ')[0]:'—',retro:s.sc24===1&&s.mv24===0?'correct — conjunction resolved':s.sc24!==1&&s.mv24===0?'risky — no maneuver on confirmed threat':s.mv24===2?'nominal — radial burn, optimal geometry':'see ΔV efficiency score',cls:s.sc24===1&&s.mv24===0?'good':s.sc24!==1&&s.mv24===0?'bad':s.mv24===2?'good':'ok'},
+    {choice:s.f6>=0?FL6_L[sc6Final][Math.min(s.f6,2)]:'—',retro:sc6Final===1&&s.f6===0?'correct stand-down':sc6Final===0&&s.f6===0?'correct emergency response':sc6Final===0&&s.f6===1?'undefended — Pc 9.1×10⁻⁴ not actioned':'defensible given scenario',cls:sc6Final===1&&s.f6===0?'good':sc6Final===0&&s.f6===1?'bad':'ok'}
+  ];
+  ['72','48','24','6'].forEach((t,i)=>{
+    document.getElementById('r'+t+'c').textContent=retros[i].choice;
+    const el=document.getElementById('r'+t+'r');
+    el.textContent=retros[i].retro;el.className='rc '+retros[i].cls;
+  });
+}
+
+function restart(){
+  Object.keys(S).forEach(k=>{S[k]=k==='sc48'||k==='sc24'||k==='sc6'?0:-1;});
+  cur=0;
+  document.querySelectorAll('.pg').forEach((p,i)=>p.classList.toggle('on',i===0));
+  document.querySelectorAll('.opt').forEach(b=>b.classList.remove('sel'));
+  document.querySelectorAll('.ins').forEach(el=>{el.style.display='none';el.textContent='';});
+  ['s48t0','s24t0','s6t0'].forEach(id=>document.getElementById(id).classList.add('on'));
+  ['s48t1','s48t2','s24t1','s24t2','s6t1','s6t2'].forEach(id=>document.getElementById(id).classList.remove('on'));
+  ['s48-0','s24-0','s6-0'].forEach(id=>document.getElementById(id).classList.add('on'));
+  ['s48-1','s48-2','s24-1','s24-2','s6-1','s6-2'].forEach(id=>document.getElementById(id).classList.remove('on'));
+  buildFinalBtns();
+  renderNav();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+renderNav();buildFinalBtns();
+</script>
+</body>
+</html>

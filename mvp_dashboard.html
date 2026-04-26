@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Orbit-I — CDM Visualizer</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&display=swap');
+
+:root {
+  --bg:#0c0e14; --bg-alt:#10121a; --surface:#14161f; --surface-2:#1a1d2a;
+  --border:#232638; --border-light:#2d3147;
+  --text-primary:#dde1f0; --text-secondary:#7a7f9a; --text-muted:#4a4f6a;
+  --accent:#4f7cff; --accent-glow:rgba(79,124,255,0.25);
+  --turquoise:#40E0D0; --turquoise-dim:rgba(64,224,208,0.10);
+  --cdm:#40E0D0;        /* direct CDM values — teal */
+  --calc:#7a9fff;       /* calculated/derived values — soft blue */
+  --indicator:#f0a742; /* ratios, time indicators — orange */
+  --success:#34c77b; --danger:#ff5c5c; --warning:#f0a742;
+  --font-display:'Plus Jakarta Sans',sans-serif;
+  --font-mono:'DM Mono',monospace;
+  --radius-sm:4px; --radius:8px; --radius-lg:12px;
+  --transition:0.2s ease;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text-primary);font-family:var(--font-display);font-size:14px;line-height:1.6;min-height:100vh;-webkit-font-smoothing:antialiased;}
+a{color:inherit;text-decoration:none;}
+
+/* ── NAV ── */
+nav{position:sticky;top:0;z-index:100;background:rgba(12,14,20,0.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;height:56px;max-width:1400px;margin:0 auto;padding:0 28px;}
+.nav-logo{font-size:16px;font-weight:800;letter-spacing:-0.02em;}
+.nav-logo span{color:var(--turquoise);}
+.nav-center{font-family:var(--font-mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);}
+.nav-right{display:flex;align-items:center;gap:20px;}
+.nav-back{font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-secondary);transition:color var(--transition);}
+.nav-back:hover{color:var(--turquoise);}
+.live-dot{display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:10px;color:var(--success);letter-spacing:0.06em;}
+.live-dot-circle{width:6px;height:6px;border-radius:50%;background:var(--success);animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+/* ── MAIN ── */
+.main{max-width:1400px;margin:0 auto;padding:32px 28px 64px;}
+
+/* ── SECTION HEADER ── */
+.section-hdr{display:flex;align-items:center;gap:10px;margin-bottom:20px;}
+.section-hdr-line{width:20px;height:1px;background:var(--turquoise);}
+.section-hdr-text{font-family:var(--font-mono);font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--turquoise);}
+.section-hdr-right{margin-left:auto;display:flex;align-items:center;gap:12px;}
+.section-hdr-count{font-family:var(--font-mono);font-size:11px;color:var(--text-muted);}
+
+/* ── TABLE CONTAINER with scroll ── */
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;}
+.table-scroll-body{overflow:hidden;transition:max-height 0.4s ease;}
+.table-scroll-body.collapsed{max-height:285px;/* ~5 rows */}
+.table-scroll-body.expanded{max-height:900px;overflow-y:auto;}
+
+/* show more button */
+.show-more-bar{display:flex;align-items:center;justify-content:center;padding:10px;border-top:1px solid var(--border);background:var(--surface-2);cursor:pointer;transition:background var(--transition);}
+.show-more-bar:hover{background:var(--border);}
+.show-more-btn{font-family:var(--font-mono);font-size:11px;color:var(--turquoise);letter-spacing:0.08em;text-transform:uppercase;display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;}
+
+.cdm-table{width:100%;border-collapse:collapse;font-size:12px;}
+.cdm-table thead tr{border-bottom:1px solid var(--border);background:var(--surface-2);position:sticky;top:0;z-index:2;}
+.cdm-table th{font-family:var(--font-mono);font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);padding:10px 14px;text-align:left;white-space:nowrap;}
+.cdm-table th:first-child{width:36px;padding-left:16px;}
+.cdm-table tbody tr{border-bottom:1px solid var(--border);transition:background var(--transition);}
+.cdm-table tbody tr:last-child{border-bottom:none;}
+.cdm-table tbody tr:hover{background:var(--surface-2);}
+.cdm-table tbody tr.selected{background:rgba(64,224,208,0.06);border-left:2px solid var(--turquoise);}
+.cdm-table td{padding:11px 14px;color:var(--text-secondary);vertical-align:middle;}
+.cdm-table td:first-child{padding-left:16px;}
+
+.radio-btn{appearance:none;width:14px;height:14px;border:1.5px solid var(--border-light);border-radius:50%;cursor:pointer;transition:all var(--transition);}
+.radio-btn:checked{border-color:var(--turquoise);background:var(--turquoise);box-shadow:0 0 0 3px rgba(64,224,208,0.15);}
+
+.expand-btn{background:none;border:1px solid var(--border);color:var(--text-muted);border-radius:var(--radius-sm);padding:3px 8px;cursor:pointer;font-family:var(--font-mono);font-size:10px;letter-spacing:0.06em;transition:all var(--transition);}
+.expand-btn:hover{border-color:var(--turquoise);color:var(--turquoise);}
+
+.expand-row{display:none;background:var(--bg);}
+.expand-row.open{display:table-row;}
+.expand-content{padding:16px 20px 20px 52px;}
+.expand-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px 24px;}
+.expand-field{display:flex;flex-direction:column;gap:2px;}
+.expand-label{font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);}
+.expand-val{font-size:12px;color:var(--text-secondary);}
+
+.pc-val{font-family:var(--font-mono);font-size:11px;}
+.pc-high{color:var(--danger);}
+.pc-med{color:var(--warning);}
+.pc-low{color:var(--success);}
+
+.type-badge{display:inline-flex;font-family:var(--font-mono);font-size:9px;letter-spacing:0.06em;text-transform:uppercase;padding:2px 7px;border-radius:2px;border:1px solid;}
+.type-PAYLOAD{color:#7a9fff;border-color:rgba(122,159,255,0.3);background:rgba(122,159,255,0.07);}
+.type-DEBRIS{color:var(--warning);border-color:rgba(240,167,66,0.3);background:rgba(240,167,66,0.07);}
+.type-ROCKET{color:#c084fc;border-color:rgba(192,132,252,0.3);background:rgba(192,132,252,0.07);}
+
+/* ── OBJECT IDENTITY PANEL ── */
+.obj-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:24px;}
+.obj-panel-inner{display:grid;grid-template-columns:1fr 60px 1fr;}
+
+.obj-card{padding:24px 28px;}
+.obj-card-top-label{font-family:var(--font-mono);font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px;}
+
+/* ID row */
+.obj-id-row{display:flex;align-items:center;gap:16px;margin-bottom:12px;flex-wrap:wrap;}
+.obj-id-chip{display:flex;flex-direction:column;gap:1px;}
+.obj-id-chip-label{font-family:var(--font-mono);font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);}
+.obj-id-chip-val{font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);}
+
+/* name */
+.obj-name{font-size:22px;font-weight:800;letter-spacing:-0.02em;color:var(--text-primary);margin-bottom:14px;line-height:1.1;}
+
+/* type row */
+.obj-type-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.obj-type-label{font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);}
+.obj-maneuver{font-family:var(--font-mono);font-size:10px;padding:2px 8px;border-radius:2px;border:1px solid;}
+.obj-maneuver.yes{color:var(--success);border-color:rgba(52,199,123,0.3);background:rgba(52,199,123,0.07);}
+.obj-maneuver.no{color:var(--text-muted);border-color:var(--border);background:var(--surface-2);}
+
+/* obj2 mirrored */
+.obj-card.obj2{text-align:right;}
+.obj-card.obj2 .obj-id-row{justify-content:flex-end;}
+.obj-card.obj2 .obj-type-row{justify-content:flex-end;}
+
+/* vs divider */
+.obj-vs{display:flex;align-items:center;justify-content:center;border-left:1px solid var(--border);border-right:1px solid var(--border);}
+.vs-inner{display:flex;flex-direction:column;align-items:center;gap:6px;}
+.vs-text{font-family:var(--font-mono);font-size:11px;color:var(--text-muted);letter-spacing:0.1em;}
+.vs-dot{width:4px;height:4px;border-radius:50%;background:var(--border-light);}
+
+/* ── CHARTS ── */
+.charts-placeholder{background:var(--surface);border:1px dashed var(--border-light);border-radius:var(--radius-lg);padding:48px;text-align:center;color:var(--text-muted);font-family:var(--font-mono);font-size:12px;letter-spacing:0.06em;}
+.charts-placeholder-icon{font-size:28px;margin-bottom:12px;opacity:0.4;}
+
+.charts-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 22px;}
+.chart-card-title{font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:2px;}
+.chart-card-sub{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:0.06em;margin-bottom:16px;}
+.chart-canvas-wrap{position:relative;height:210px;}
+
+.metric-rows{margin-top:14px;display:flex;flex-direction:column;gap:7px;}
+.metric-row{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--surface-2);border-radius:var(--radius-sm);border:1px solid var(--border);}
+.metric-label{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:0.05em;text-transform:uppercase;}
+.metric-val{font-family:var(--font-mono);font-size:12px;font-weight:500;color:var(--text-primary);}
+.metric-val.danger{color:var(--danger);}
+.metric-val.warning{color:var(--warning);}
+.metric-val.success{color:var(--success);}
+.metric-val.turquoise{color:var(--turquoise);}
+.metric-val.cdm{color:var(--cdm);}
+.metric-val.calc{color:var(--calc);}
+.metric-val.indicator{color:var(--indicator);}
+
+/* urgency */
+.urgency-tca{text-align:center;padding:18px;background:var(--surface-2);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:10px;}
+.urgency-tca-label{font-family:var(--font-mono);font-size:9px;color:var(--text-muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;}
+.urgency-tca-val{font-size:32px;font-weight:800;letter-spacing:-0.02em;line-height:1;}
+.urgency-tca-unit{font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);margin-left:4px;}
+.urgency-bar-wrap{height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:10px;}
+.urgency-bar{height:100%;border-radius:3px;transition:width 0.6s ease;}
+
+/* bplane note */
+.bplane-note{font-family:var(--font-mono);font-size:9px;color:var(--text-muted);letter-spacing:0.05em;margin-top:8px;line-height:1.5;padding:6px 8px;background:var(--surface-2);border-radius:var(--radius-sm);border:1px solid var(--border);}
+
+
+/* ── SEMANTIC PANEL ── */
+.semantic-panel{margin-top:20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;}
+.semantic-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);background:var(--surface-2);}
+.semantic-hdr-title{font-family:var(--font-mono);font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--turquoise);}
+.semantic-hdr-sub{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:0.04em;}
+.settings-btn{font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;background:none;border:1px solid var(--border-light);color:var(--text-secondary);padding:5px 12px;border-radius:var(--radius-sm);cursor:pointer;transition:all var(--transition);}
+.settings-btn:hover,.settings-btn.active{border-color:var(--turquoise);color:var(--turquoise);}
+
+/* label strip */
+.semantic-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:0;padding:18px 20px;gap:10px;}
+.sem-group{display:flex;flex-direction:column;gap:6px;min-width:180px;flex:1;}
+.sem-group-title{font-family:var(--font-mono);font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:2px;padding-bottom:4px;border-bottom:1px solid var(--border);}
+
+.settings-legend{font-family:var(--font-mono);font-size:9px;color:var(--text-muted);letter-spacing:0.04em;line-height:1.6;margin-bottom:10px;padding:6px 8px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border);}
+.settings-legend span{color:var(--turquoise);}
+.sem-why{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:0.04em;white-space:nowrap;}
+.sem-item{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.sem-item-left{display:flex;flex-direction:column;gap:1px;}
+
+.sem-key{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:0.04em;}
+.sem-val{font-family:var(--font-mono);font-size:11px;font-weight:500;letter-spacing:0.06em;padding:2px 8px;border-radius:2px;border:1px solid;}
+/* semantic colour tokens */
+.sem-nominal{color:var(--success);border-color:rgba(52,199,123,0.3);background:rgba(52,199,123,0.06);}
+.sem-caution{color:var(--indicator);border-color:rgba(240,167,66,0.3);background:rgba(240,167,66,0.06);}
+.sem-alert{color:var(--danger);border-color:rgba(255,92,92,0.3);background:rgba(255,92,92,0.06);}
+.sem-neutral{color:var(--text-secondary);border-color:var(--border);background:var(--surface-2);}
+
+/* settings drawer */
+.settings-drawer{display:none;border-top:1px solid var(--border);background:var(--bg);}
+.settings-drawer.open{display:block;}
+.settings-drawer-inner{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-bottom:1px solid var(--border);}
+.settings-group{padding:18px 20px;border-right:1px solid var(--border);}
+.settings-group:last-child{border-right:none;}
+.settings-group-title{font-family:var(--font-mono);font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--turquoise);margin-bottom:12px;}
+.settings-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px;}
+.settings-label{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);flex:1;line-height:1.4;}
+.settings-input{width:80px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:var(--font-mono);font-size:11px;padding:4px 8px;outline:none;text-align:right;transition:border-color var(--transition);}
+.settings-input:focus{border-color:var(--turquoise);}
+.settings-footer{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;}
+.settings-reset{font-family:var(--font-mono);font-size:10px;letter-spacing:0.06em;background:none;border:1px solid var(--border);color:var(--text-secondary);padding:4px 12px;border-radius:var(--radius-sm);cursor:pointer;transition:all var(--transition);}
+.settings-reset:hover{border-color:var(--danger);color:var(--danger);}
+.settings-note{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:0.04em;}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.fade-in{animation:fadeUp 0.3s ease forwards;}
+
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border-light);border-radius:3px;}
+
+@media(max-width:960px){
+  .charts-grid{grid-template-columns:1fr;}
+  .obj-panel-inner{grid-template-columns:1fr;}
+  .obj-vs{display:none;}
+  .obj-card.obj2{text-align:left;}
+  .obj-card.obj2 .obj-id-row,.obj-card.obj2 .obj-type-row{justify-content:flex-start;}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <div class="nav-logo">Orbit<span>-I</span></div>
+    <div class="nav-center">CDM Visualizer</div>
+    <div class="nav-right">
+      <div class="live-dot"><div class="live-dot-circle"></div>Demo Mode</div>
+      <a href="mvp_login.html" class="nav-back">← Sign out</a>
+    </div>
+  </div>
+</nav>
+
+<div class="main">
+
+  <!-- SECTION 1 -->
+  <div class="section-hdr">
+    <div class="section-hdr-line"></div>
+    <span class="section-hdr-text">Conjunction Data Messages</span>
+    <div class="section-hdr-right">
+      <span class="section-hdr-count" id="rowCount">15 events · showing 5</span>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <div class="table-scroll-body collapsed" id="tableScrollBody">
+      <table class="cdm-table" id="cdmTable">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Conjunction ID</th>
+            <th>Object 1</th>
+            <th>Type</th>
+            <th>Object 2</th>
+            <th>Type</th>
+            <th>Pc</th>
+            <th>TCA (UTC)</th>
+            <th>Miss Dist (m)</th>
+            <th>Rel Speed (m/s)</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="cdmBody"></tbody>
+      </table>
+    </div>
+    <div class="show-more-bar" id="showMoreBar">
+      <button class="show-more-btn" id="showMoreBtn">
+        <span id="showMoreIcon">▾</span>
+        <span id="showMoreText">Show all 15 events</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- SECTION 2 -->
+  <div style="margin-top:40px;">
+    <div class="section-hdr">
+      <div class="section-hdr-line"></div>
+      <span class="section-hdr-text">Conjunction Analysis</span>
+      <div class="section-hdr-right">
+        <span class="section-hdr-count" id="selectedLabel">Select a row above</span>
+      </div>
+    </div>
+
+    <div id="chartsPlaceholder" class="charts-placeholder">
+      <div class="charts-placeholder-icon">◎</div>
+      Select a conjunction event above to visualise its geometry, risk magnitude, and urgency.
+    </div>
+
+    <div id="chartsContent" style="display:none;">
+
+      <!-- Object Identity Panel -->
+      <div class="obj-panel fade-in" id="objPanel">
+        <div class="obj-panel-inner">
+
+          <!-- Object 1 -->
+          <div class="obj-card">
+            <div class="obj-card-top-label">Object 1</div>
+            <div class="obj-id-row" id="obj1IdRow"></div>
+            <div class="obj-name" id="obj1Name"></div>
+            <div class="obj-type-row" id="obj1TypeRow"></div>
+          </div>
+
+          <!-- VS -->
+          <div class="obj-vs">
+            <div class="vs-inner">
+              <div class="vs-dot"></div>
+              <div class="vs-text">VS</div>
+              <div class="vs-dot"></div>
+            </div>
+          </div>
+
+          <!-- Object 2 -->
+          <div class="obj-card obj2">
+            <div class="obj-card-top-label">Object 2</div>
+            <div class="obj-id-row" id="obj2IdRow"></div>
+            <div class="obj-name" id="obj2Name"></div>
+            <div class="obj-type-row" id="obj2TypeRow"></div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="charts-grid fade-in">
+
+        <!-- Geometry: B-plane -->
+        <div class="chart-card">
+          <div class="chart-card-title">Geometry Awareness</div>
+          <div class="chart-card-sub">B-plane projection · perpendicular to relative velocity</div>
+          <div class="chart-canvas-wrap"><canvas id="geoChart"></canvas></div>
+          <div class="bplane-note" id="bplaneNote"></div>
+          <div class="metric-rows" id="geoMetrics"></div>
+        </div>
+
+        <!-- Risk Magnitude -->
+        <div class="chart-card">
+          <div class="chart-card-title">Risk Magnitude</div>
+          <div class="chart-card-sub">Pc vs Pc_max · Confidence ratio · MD / HBR</div>
+          <div class="chart-canvas-wrap"><canvas id="riskChart"></canvas></div>
+          <div class="metric-rows" id="riskMetrics"></div>
+        </div>
+
+        <!-- Urgency -->
+        <div class="chart-card">
+          <div class="chart-card-title">Urgency</div>
+          <div class="chart-card-sub">Time to TCA · Relative approach speed</div>
+          <div class="urgency-tca" id="urgencyTca"></div>
+          <div class="metric-rows" id="urgencyMetrics"></div>
+        </div>
+
+      </div><!-- end charts-grid -->
+
+      <!-- SEMANTIC ASSESSMENT PANEL -->
+      <div class="semantic-panel fade-in" id="semanticPanel">
+        <div class="semantic-hdr">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="section-hdr-line"></div>
+            <span class="semantic-hdr-title">Semantic Assessment</span>
+            <span class="semantic-hdr-sub">· operator-readable labels derived from quantitative analysis</span>
+          </div>
+          <button class="settings-btn" id="settingsToggle">⚙ Configure Thresholds</button>
+        </div>
+        <div class="semantic-strip" id="semanticStrip"></div>
+        <div class="settings-drawer" id="settingsDrawer">
+          <div class="settings-drawer-inner">
+            <div class="settings-group">
+              <div class="settings-group-title">Geometry</div>
+              <div class="settings-legend">
+                Regime (MD / HBR):<br>
+                <span>GEOMETRY_DOMINATED</span> &lt; th1 &nbsp;|&nbsp;
+                <span>TRANSITION</span> th1–th2 &nbsp;|&nbsp;
+                <span>PROBABILISTIC</span> &gt; th2
+              </div>
+              <div class="settings-row"><label class="settings-label">th1 · GEOMETRY_DOMINATED if MD/HBR &lt;</label><input class="settings-input" id="th_geo1" type="number" step="0.1" value="1"></div>
+              <div class="settings-row"><label class="settings-label">th2 · TRANSITION if MD/HBR &lt;</label><input class="settings-input" id="th_geo2" type="number" step="0.1" value="3"></div>
+              <div class="settings-legend" style="margin-top:10px;">
+                EncounterAlignment (dominant component):<br>
+                <span>RADIAL / INTRACK / CROSSTRACK _DOMINANT</span><br>
+                if largest component &gt; ratio × 2nd largest<br>
+                else <span>MIXED</span>
+              </div>
+              <div class="settings-row"><label class="settings-label">Dominance ratio (e.g. 1.5 = 50% larger)</label><input class="settings-input" id="th_dom" type="number" step="0.1" value="1.5"></div>
+            </div>
+            <div class="settings-group">
+              <div class="settings-group-title">Risk</div>
+              <div class="settings-legend">
+                RiskLevel (Pc):<br>
+                <span>NEGLIGIBLE</span> &lt; th1 &nbsp;|&nbsp; <span>LOW</span> th1–th2<br>
+                <span>ELEVATED</span> th2–th3 &nbsp;|&nbsp; <span>HIGH</span> &gt; th3
+              </div>
+              <div class="settings-row"><label class="settings-label">th1 · NEGLIGIBLE if Pc &lt;</label><input class="settings-input" id="th_pc1" type="number" step="1e-8" value="1e-7"></div>
+              <div class="settings-row"><label class="settings-label">th2 · LOW if Pc &lt;</label><input class="settings-input" id="th_pc2" type="number" step="1e-6" value="1e-5"></div>
+              <div class="settings-row"><label class="settings-label">th3 · ELEVATED if Pc &lt;</label><input class="settings-input" id="th_pc3" type="number" step="1e-5" value="1e-4"></div>
+              <div class="settings-legend" style="margin-top:10px;">
+                LatentRisk (Pc / Pc_max %):<br>
+                <span>STABLE_LOW</span> &gt; th1 &nbsp;|&nbsp;
+                <span>POSSIBLE_GROWTH</span> th2–th1<br>
+                <span>LATENT_HIGH</span> &lt; th2
+              </div>
+              <div class="settings-row"><label class="settings-label">th1 · STABLE_LOW if PcRatio &gt; (%)</label><input class="settings-input" id="th_lr1" type="number" step="1" value="85"></div>
+              <div class="settings-row"><label class="settings-label">th2 · POSSIBLE_GROWTH if PcRatio &gt; (%)</label><input class="settings-input" id="th_lr2" type="number" step="1" value="20"></div>
+            </div>
+            <div class="settings-group">
+              <div class="settings-group-title">Urgency</div>
+              <div class="settings-legend">
+                TimeWindow (hours to TCA):<br>
+                <span>LONG</span> &gt; th1 &nbsp;|&nbsp; <span>MEDIUM</span> th2–th1<br>
+                <span>SHORT</span> th3–th2 &nbsp;|&nbsp; <span>CRITICAL</span> &lt; th3
+              </div>
+              <div class="settings-row"><label class="settings-label">th1 · LONG if Time to TCA &gt; (h)</label><input class="settings-input" id="th_tw1" type="number" step="1" value="72"></div>
+              <div class="settings-row"><label class="settings-label">th2 · MEDIUM if Time to TCA &gt; (h)</label><input class="settings-input" id="th_tw2" type="number" step="1" value="48"></div>
+              <div class="settings-row"><label class="settings-label">th3 · CRITICAL if Time to TCA &lt; (h)</label><input class="settings-input" id="th_crit" type="number" step="1" value="12"></div>
+              <div class="settings-legend" style="margin-top:10px;">
+                ObservationOpp: <span>SUFFICIENT</span> &gt; th1 &nbsp;|&nbsp; <span>LIMITED</span> th2–th1 &nbsp;|&nbsp; <span>NONE</span> &lt; th2<br>
+                RelativeMotion: <span>FAST_PASS</span> &gt; th &nbsp;|&nbsp; <span>SLOW_PASS</span> ≤ th
+              </div>
+              <div class="settings-row"><label class="settings-label">th1 · SUFFICIENT if Time to TCA &gt; (h)</label><input class="settings-input" id="th_obs1" type="number" step="1" value="72"></div>
+              <div class="settings-row"><label class="settings-label">th2 · LIMITED if Time to TCA &gt; (h)</label><input class="settings-input" id="th_obs2" type="number" step="1" value="24"></div>
+              <div class="settings-row"><label class="settings-label">FAST_PASS if speed &gt; (m/s)</label><input class="settings-input" id="th_spd" type="number" step="100" value="8000"></div>
+            </div>
+          </div>
+          <div class="settings-footer">
+            <button class="settings-reset" id="settingsReset">↺ Reset defaults</button>
+            <span class="settings-note">Changes apply instantly · Values reset on page reload</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATA ─────────────────────────────────────────────────────────────────────
+const CDM = [
+  {id:"4708712",created:"12/30/2023 23:45",tca:"1/3/2024 02:05",md:360.998,rs:4152.541,rr:-99.162,rt:333.902,rn:-94.846,vr:5.580,vt:-1135.347,vn:-3994.315,pc:3.4180011777e-6,maxpc:0.0001328703714869,o1n:"STARLINK-1893",o1id:"46786",o1intl:"2020-074AZ",o1t:"PAYLOAD",o1m:"YES",o1hbr:7.672985,o2n:"STARLINK-2408",o2id:"47823",o2intl:"2021-018AN",o2t:"PAYLOAD",o2m:"YES",o2hbr:7.672985},
+  {id:"4796676",created:"12/31/2023 17:07",tca:"1/4/2024 02:42",md:230.331,rs:6774.705,rr:53.979,rt:-196.757,rn:-106.889,vr:-285.447,vt:-3278.221,vn:5921.859,pc:2.0938292338e-5,maxpc:0.0003998813471315,o1n:"SL-14 R/B",o1id:"20262",o1intl:"1989-080C",o1t:"ROCKET BODY",o1m:"NO",o1hbr:2.338,o2n:"STARLINK-4703",o2id:"53855",o2intl:"2022-114AP",o2t:"PAYLOAD",o2m:"YES",o2hbr:7.672985},
+  {id:"4714477",created:"12/30/2023 21:25",tca:"1/3/2024 03:50",md:203.940,rs:8049.963,rr:-131.908,rt:133.754,rn:-79.384,vr:2.437,vt:-4275.066,vn:-6820.976,pc:1.84409104e-8,maxpc:1.2586681492e-6,o1n:"STARLINK-30124",o1id:"56690",o1intl:"2023-067C",o1t:"PAYLOAD",o1m:"YES",o1hbr:1.0,o2n:"STARLINK-5512",o2id:"57256",o2intl:"2023-094AQ",o2t:"PAYLOAD",o2m:"YES",o2hbr:1.0},
+  {id:"4411173",created:"12/28/2023 07:09",tca:"1/1/2024 06:15",md:391.653,rs:9631.056,rr:-157.707,rt:278.858,rn:225.297,vr:-14.074,vt:-6108.392,vn:7446.112,pc:7.10008833e-8,maxpc:6.9340057836e-6,o1n:"STARLINK-1922",o1id:"46753",o1intl:"2020-074Q",o1t:"PAYLOAD",o1m:"YES",o1hbr:7.672985,o2n:"STARLINK-1441",o2id:"45658",o2intl:"2020-035B",o2t:"PAYLOAD",o2m:"YES",o2hbr:7.672985},
+  {id:"4654350",created:"12/30/2023 12:52",tca:"1/3/2024 06:16",md:394.310,rs:1069.289,rr:336.635,rt:-204.847,rn:-13.968,vr:-0.130,vt:-75.715,vn:1066.605,pc:2.04567895e-8,maxpc:1.3858038908e-6,o1n:"STARLINK-30874",o1id:"58227",o1intl:"2023-170X",o1t:"PAYLOAD",o1m:"YES",o1hbr:1.0,o2n:"STARLINK-6279",o2id:"56411",o2intl:"2023-061AP",o2t:"PAYLOAD",o2m:"YES",o2hbr:1.0},
+  {id:"4675646",created:"12/30/2023 22:00",tca:"1/4/2024 02:07",md:281.632,rs:6962.219,rr:-42.967,rt:247.395,rn:127.539,vr:-9.649,vt:-3192.111,vn:6187.312,pc:2.6411941497e-6,maxpc:0.0002268301711285,o1n:"STARLINK-2240",o1id:"48585",o1intl:"2021-041AJ",o1t:"PAYLOAD",o1m:"YES",o1hbr:7.672985,o2n:"STARLINK-2211",o2id:"47778",o2intl:"2021-017BJ",o2t:"PAYLOAD",o2m:"YES",o2hbr:7.672985},
+  {id:"4385318",created:"12/28/2023 09:58",tca:"1/1/2024 02:42",md:237.216,rs:9755.372,rr:38.233,rt:-179.933,rn:-149.779,vr:-5.192,vt:-6276.533,vn:7468.091,pc:3.40512499e-8,maxpc:3.1352256846e-6,o1n:"STARLINK-5481",o1id:"57255",o1intl:"2023-094AP",o1t:"PAYLOAD",o1m:"YES",o1hbr:1.0,o2n:"STARLINK-6340",o2id:"57361",o2intl:"2023-099AK",o2t:"PAYLOAD",o2m:"YES",o2hbr:1.0},
+  {id:"4794366",created:"12/31/2023 09:46",tca:"1/4/2024 03:31",md:383.835,rs:14659.266,rr:0.515,rt:-89.317,rn:373.298,vr:-13.500,vt:-14273.284,vn:-3341.743,pc:4.7426070405e-6,maxpc:0.0001825439568062,o1n:"NOAA 17 DEB",o1id:"48703",o1intl:"2002-032AL",o1t:"DEBRIS",o1m:"NO",o1hbr:1.0,o2n:"DELTA 1 DEB",o2id:"12237",o2intl:"1978-026CE",o2t:"DEBRIS",o2m:"NO",o2hbr:1.0},
+  {id:"4394678",created:"12/28/2023 09:04",tca:"1/1/2024 04:13",md:424.854,rs:4639.187,rr:-203.215,rt:-354.664,rn:115.839,vr:6.440,vt:-1416.407,vn:-4417.670,pc:1.4136140666e-6,maxpc:3.08693512748e-5,o1n:"STARLINK-5255",o1id:"54208",o1intl:"2022-141BD",o1t:"PAYLOAD",o1m:"YES",o1hbr:7.672985,o2n:"STARLINK-4800",o2id:"53854",o2intl:"2022-114AN",o2t:"PAYLOAD",o2m:"YES",o2hbr:7.672985},
+  {id:"4421002",created:"12/28/2023 22:33",tca:"1/1/2024 04:33",md:288.181,rs:14905.819,rr:-32.371,rt:-5.386,rn:-286.306,vr:16.729,vt:-14904.218,vn:217.817,pc:1.94998590939e-5,maxpc:7.03823440393e-5,o1n:"NOAA 16 DEB",o1id:"42359",o1intl:"2000-055RB",o1t:"DEBRIS",o1m:"NO",o1hbr:1.0,o2n:"SL-14 DEB",o2id:"39969",o2intl:"1987-068CV",o2t:"DEBRIS",o2m:"NO",o2hbr:1.0},
+  {id:"4668546",created:"12/30/2023 14:48",tca:"1/3/2024 04:35",md:288.456,rs:14905.786,rr:-33.913,rt:0.636,rn:-286.455,vr:16.730,vt:-14904.185,vn:217.814,pc:3.41765088547e-5,maxpc:3.95617423224e-5,o1n:"NOAA 16 DEB",o1id:"42359",o1intl:"2000-055RB",o1t:"DEBRIS",o1m:"NO",o1hbr:1.0,o2n:"SL-14 DEB",o2id:"39969",o2intl:"1987-068CV",o2t:"DEBRIS",o2m:"NO",o2hbr:1.0},
+  {id:"4778044",created:"12/31/2023 07:07",tca:"1/4/2024 07:26",md:237.292,rs:15088.956,rr:-135.946,rt:-16.401,rn:193.797,vr:10.305,vt:-15045.282,vn:-1147.170,pc:5.354527131e-5,maxpc:0.0009087177753044,o1n:"ONEWEB-0050",o1id:"45453",o1intl:"2020-020AF",o1t:"PAYLOAD",o1m:"YES",o1hbr:4.330,o2n:"STARLINK-4386",o2id:"53649",o2intl:"2022-105B",o2t:"PAYLOAD",o2m:"YES",o2hbr:7.672985},
+  {id:"4682622",created:"12/30/2023 16:56",tca:"1/3/2024 08:32",md:446.721,rs:4664.316,rr:148.697,rt:401.254,rn:-128.234,vr:5.351,vt:-1432.162,vn:-4439.001,pc:1.34863373174e-5,maxpc:6.6183541276e-5,o1n:"STARLINK-3851",o1id:"52344",o1intl:"2022-045P",o1t:"PAYLOAD",o1m:"YES",o1hbr:7.794,o2n:"STARLINK-4071",o2id:"52671",o2intl:"2022-053R",o2t:"PAYLOAD",o2m:"YES",o2hbr:7.672985},
+  {id:"4449423",created:"12/28/2023 10:50",tca:"1/1/2024 09:04",md:179.254,rs:4640.143,rr:160.431,rt:76.131,rn:-24.451,vr:1.180,vt:-1420.064,vn:-4417.504,pc:1.661699281e-6,maxpc:3.42142728119e-5,o1n:"STARLINK-3857",o1id:"52494",o1intl:"2022-049AV",o1t:"PAYLOAD",o1m:"YES",o1hbr:7.672985,o2n:"STARLINK-4254",o2id:"52998",o2intl:"2022-076N",o2t:"PAYLOAD",o2m:"YES",o2hbr:7.672985},
+  {id:"4842428",created:"12/31/2023 10:38",tca:"1/4/2024 20:04",md:482.097,rs:11333.507,rr:-142.126,rt:-289.640,rn:358.227,vr:-13.737,vt:-8847.082,vn:-7083.596,pc:9.00871376e-8,maxpc:6.84986818959e-5,o1n:"ONEWEB-0346",o1id:"49212",o1intl:"2021-083AC",o1t:"PAYLOAD",o1m:"YES",o1hbr:4.330,o2n:"SL-14 DEB",o2id:"45321",o2intl:"1991-056BK",o2t:"DEBRIS",o2m:"NO",o2hbr:1.0},
+];
+
+// ── VECTOR MATH ───────────────────────────────────────────────────────────────
+function vecNorm(v){const m=Math.sqrt(v[0]**2+v[1]**2+v[2]**2);return m===0?[0,0,0]:[v[0]/m,v[1]/m,v[2]/m];}
+function vecDot(a,b){return a[0]*b[0]+a[1]*b[1]+a[2]*b[2];}
+function vecCross(a,b){return[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];}
+function vecScale(v,s){return[v[0]*s,v[1]*s,v[2]*s];}
+function vecSub(a,b){return[a[0]-b[0],a[1]-b[1],a[2]-b[2]];}
+
+// B-plane projection
+// The B-plane is perpendicular to the relative velocity vector v_hat.
+// We define:
+//   v_hat = normalised relative velocity
+//   h_hat = normalised angular momentum surrogate = cross(r_hat, v_hat)
+//   b_hat = cross(v_hat, h_hat)  → in-plane perpendicular axis
+// Then project the miss distance vector onto (b_hat, h_hat) to get B-plane coords.
+function bplaneProject(r){
+  const rv=[r.rr,r.rt,r.rn];       // relative position vector
+  const vv=[r.vr,r.vt,r.vn];       // relative velocity vector
+  const v_hat=vecNorm(vv);
+
+  // Project out velocity component from position → miss vector (perpendicular part)
+  const r_dot_v=vecDot(rv,v_hat);
+  const r_perp=vecSub(rv,vecScale(v_hat,r_dot_v));
+
+  // Choose a reference vector not parallel to v_hat
+  // Use N-axis [0,0,1] as reference; if too parallel, use R-axis [1,0,0]
+  let ref=[0,0,1];
+  if(Math.abs(vecDot(v_hat,ref))>0.9) ref=[1,0,0];
+
+  // h_hat: perpendicular to v_hat, in plane of v_hat and ref
+  const h_raw=vecSub(ref,vecScale(v_hat,vecDot(ref,v_hat)));
+  const h_hat=vecNorm(h_raw);
+
+  // b_hat: completes the right-hand system
+  const b_hat=vecNorm(vecCross(v_hat,h_hat));
+
+  // Project r_perp onto B-plane axes
+  const bT=vecDot(r_perp,b_hat);  // B·T axis
+  const bR=vecDot(r_perp,h_hat);  // B·R axis
+
+  // Miss distance magnitude (should match r.md closely)
+  const bMag=Math.sqrt(bT**2+bR**2);
+
+  return{bT,bR,bMag,v_hat,b_hat,h_hat};
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function parseDT(s){
+  const[d,t]=s.split(' ');
+  const[m,dd,y]=d.split('/');
+  const[hh,mm]=t.split(':');
+  return new Date(+y,+m-1,+dd,+hh,+mm);
+}
+function pcClass(v){return v>1e-4?'danger':v>1e-5?'warning':'success';}
+function typeClass(t){return t==='PAYLOAD'?'type-PAYLOAD':t==='DEBRIS'?'type-DEBRIS':'type-ROCKET';}
+function typeLabel(t){return t==='ROCKET BODY'?'ROCKET':t;}
+function fmtPc(v){return v.toExponential(2);}
+
+// ── BUILD TABLE ───────────────────────────────────────────────────────────────
+const tbody=document.getElementById('cdmBody');
+let geoChart=null,riskChart=null;
+
+CDM.forEach((r,i)=>{
+  const tr=document.createElement('tr');
+  tr.dataset.idx=i;
+  tr.innerHTML=`
+    <td><input type="radio" class="radio-btn" name="sel" value="${i}"></td>
+    <td><span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">${r.id}</span></td>
+    <td style="font-weight:600;color:var(--text-primary);white-space:nowrap">${r.o1n}</td>
+    <td><span class="type-badge ${typeClass(r.o1t)}">${typeLabel(r.o1t)}</span></td>
+    <td style="font-weight:600;color:var(--text-primary);white-space:nowrap">${r.o2n}</td>
+    <td><span class="type-badge ${typeClass(r.o2t)}">${typeLabel(r.o2t)}</span></td>
+    <td><span class="pc-val pc-${pcClass(r.pc)}">${fmtPc(r.pc)}</span></td>
+    <td style="font-family:var(--font-mono);font-size:11px;white-space:nowrap">${r.tca}</td>
+    <td style="font-family:var(--font-mono);font-size:11px">${r.md.toFixed(1)}</td>
+    <td style="font-family:var(--font-mono);font-size:11px">${r.rs.toFixed(1)}</td>
+    <td><button class="expand-btn" data-idx="${i}">+ Details</button></td>`;
+  tbody.appendChild(tr);
+
+  const er=document.createElement('tr');
+  er.className='expand-row';
+  er.id=`exp-${i}`;
+  er.innerHTML=`<td colspan="11"><div class="expand-content">
+    <div class="expand-grid">
+      <div class="expand-field"><span class="expand-label">Conjunction ID</span><span class="expand-val">${r.id}</span></div>
+      <div class="expand-field"><span class="expand-label">Creation Date</span><span class="expand-val">${r.created}</span></div>
+      <div class="expand-field"><span class="expand-label">TCA</span><span class="expand-val">${r.tca}</span></div>
+      <div class="expand-field"><span class="expand-label">Miss Distance</span><span class="expand-val">${r.md.toFixed(3)} m</span></div>
+      <div class="expand-field"><span class="expand-label">Relative Speed</span><span class="expand-val">${r.rs.toFixed(3)} m/s</span></div>
+      <div class="expand-field"><span class="expand-label">Pc</span><span class="expand-val">${r.pc.toExponential(4)}</span></div>
+      <div class="expand-field"><span class="expand-label">Pc Max</span><span class="expand-val">${r.maxpc.toExponential(4)}</span></div>
+      <div class="expand-field"><span class="expand-label">Rel Pos R/T/N (m)</span><span class="expand-val">${r.rr.toFixed(2)} / ${r.rt.toFixed(2)} / ${r.rn.toFixed(2)}</span></div>
+      <div class="expand-field"><span class="expand-label">Rel Vel R/T/N (m/s)</span><span class="expand-val">${r.vr.toFixed(3)} / ${r.vt.toFixed(3)} / ${r.vn.toFixed(3)}</span></div>
+      <div class="expand-field"><span class="expand-label">Obj1 HBR</span><span class="expand-val">${r.o1hbr.toFixed(3)} m</span></div>
+      <div class="expand-field"><span class="expand-label">Obj2 HBR</span><span class="expand-val">${r.o2hbr.toFixed(3)} m</span></div>
+      <div class="expand-field"><span class="expand-label">Combined HBR</span><span class="expand-val">${(r.o1hbr+r.o2hbr).toFixed(3)} m</span></div>
+      <div class="expand-field"><span class="expand-label">Obj1 Maneuverable</span><span class="expand-val">${r.o1m}</span></div>
+      <div class="expand-field"><span class="expand-label">Obj2 Maneuverable</span><span class="expand-val">${r.o2m}</span></div>
+    </div>
+  </div></td>`;
+  tbody.appendChild(er);
+});
+
+// expand toggle
+document.querySelectorAll('.expand-btn').forEach(btn=>{
+  btn.addEventListener('click',e=>{
+    e.stopPropagation();
+    const idx=btn.dataset.idx;
+    const er=document.getElementById(`exp-${idx}`);
+    const open=er.classList.contains('open');
+    document.querySelectorAll('.expand-row.open').forEach(r=>r.classList.remove('open'));
+    document.querySelectorAll('.expand-btn').forEach(b=>b.textContent='+ Details');
+    if(!open){er.classList.add('open');btn.textContent='− Details';}
+  });
+});
+
+// show more toggle
+let tableExpanded=false;
+document.getElementById('showMoreBar').addEventListener('click',()=>{
+  tableExpanded=!tableExpanded;
+  const body=document.getElementById('tableScrollBody');
+  body.className='table-scroll-body '+(tableExpanded?'expanded':'collapsed');
+  document.getElementById('showMoreIcon').textContent=tableExpanded?'▴':'▾';
+  document.getElementById('showMoreText').textContent=tableExpanded?'Show less':'Show all 15 events';
+  document.getElementById('rowCount').textContent=tableExpanded?'15 events':'15 events · showing 5';
+});
+
+// radio
+document.querySelectorAll('.radio-btn').forEach(radio=>{
+  radio.addEventListener('change',()=>{
+    document.querySelectorAll('.cdm-table tbody tr[data-idx]').forEach(r=>r.classList.remove('selected'));
+    const idx=+radio.value;
+    document.querySelector(`tr[data-idx="${idx}"]`).classList.add('selected');
+    renderCharts(CDM[idx]);
+  });
+});
+
+// ── RENDER CHARTS ─────────────────────────────────────────────────────────────
+function renderCharts(r){
+  document.getElementById('chartsPlaceholder').style.display='none';
+  const cc=document.getElementById('chartsContent');
+  cc.style.display='block';
+  document.getElementById('selectedLabel').textContent=`CDM ${r.id}`;
+
+  const hbr=r.o1hbr+r.o2hbr;
+  const pcRatio=(r.pc/r.maxpc)*100;
+  const mdHbr=r.md/hbr;
+  const created=parseDT(r.created);
+  const tca=parseDT(r.tca);
+  const tcaH=(tca-created)/3600000;
+
+  // ── Object panel ──
+  const mkIdRow=(id,intl)=>`
+    <div class="obj-id-chip">
+      <span class="obj-id-chip-label">Designator</span>
+      <span class="obj-id-chip-val">${id}</span>
+    </div>
+    <div class="obj-id-chip">
+      <span class="obj-id-chip-label">Intl ID</span>
+      <span class="obj-id-chip-val">${intl}</span>
+    </div>`;
+  const mkTypeRow=(t,m)=>`
+    <span class="type-badge ${typeClass(t)}">${typeLabel(t)}</span>
+    <span class="obj-type-label">·</span>
+    <span class="obj-maneuver ${m==='YES'?'yes':'no'}">${m==='YES'?'Maneuverable':'Non-maneuverable'}</span>`;
+
+  document.getElementById('obj1IdRow').innerHTML=mkIdRow(r.o1id,r.o1intl);
+  document.getElementById('obj1Name').textContent=r.o1n;
+  document.getElementById('obj1TypeRow').innerHTML=mkTypeRow(r.o1t,r.o1m);
+
+  document.getElementById('obj2IdRow').innerHTML=mkIdRow(r.o2id,r.o2intl);
+  document.getElementById('obj2Name').textContent=r.o2n;
+  document.getElementById('obj2TypeRow').innerHTML=mkTypeRow(r.o2t,r.o2m);
+
+  // ── Chart 1: B-plane geometry ──
+  if(geoChart){geoChart.destroy();}
+  const bp=bplaneProject(r);
+  const geoCtx=document.getElementById('geoChart').getContext('2d');
+
+  // Build HBR circle in B-plane
+  const N=72;
+  const hbrCircle=[],mdCircle=[];
+  for(let i=0;i<=N;i++){
+    const a=(i/N)*Math.PI*2;
+    hbrCircle.push({x:hbr*Math.cos(a),y:hbr*Math.sin(a)});
+    mdCircle.push({x:r.md*Math.cos(a),y:r.md*Math.sin(a)});
+  }
+
+  const scale=Math.max(Math.abs(bp.bT),Math.abs(bp.bR),r.md,hbr*2)*1.4||400;
+
+  geoChart=new Chart(geoCtx,{
+    type:'scatter',
+    data:{datasets:[
+      {label:'Miss vector',data:[{x:bp.bT,y:bp.bR}],backgroundColor:'#40E0D0',pointRadius:8,pointHoverRadius:10,order:1},
+      {label:`HBR = ${hbr.toFixed(1)} m`,data:hbrCircle,type:'line',borderColor:'rgba(255,92,92,0.8)',borderWidth:2,pointRadius:0,fill:true,backgroundColor:'rgba(255,92,92,0.08)',tension:0,order:2},
+      {label:`Miss dist = ${r.md.toFixed(0)} m`,data:mdCircle,type:'line',borderColor:'rgba(64,224,208,0.2)',borderWidth:1,borderDash:[5,5],pointRadius:0,fill:false,tension:0,order:3},
+      {label:'Object 1',data:[{x:0,y:0}],backgroundColor:'#4f7cff',pointRadius:6,order:0},
+    ]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      scales:{
+        x:{min:-scale,max:scale,title:{display:true,text:'B·T (m)',color:'#4a4f6a',font:{size:10,family:'DM Mono'}},grid:{color:'rgba(35,38,56,0.5)'},ticks:{color:'#4a4f6a',font:{size:9},maxTicksLimit:7}},
+        y:{min:-scale,max:scale,title:{display:true,text:'B·R (m)',color:'#4a4f6a',font:{size:10,family:'DM Mono'}},grid:{color:'rgba(35,38,56,0.5)'},ticks:{color:'#4a4f6a',font:{size:9},maxTicksLimit:7}},
+      },
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>{
+          if(ctx.datasetIndex===0)return [`B·T: ${bp.bT.toFixed(1)} m`,`B·R: ${bp.bR.toFixed(1)} m`,`|B|: ${bp.bMag.toFixed(1)} m`];
+          return ctx.dataset.label;
+        }}}
+      },
+    }
+  });
+
+  document.getElementById('bplaneNote').textContent=
+    `B-plane is perpendicular to the relative velocity vector. Axes B·T and B·R span the encounter plane. The miss distance vector projected here gives the true conjunction geometry.`;
+
+  // Along-track residual: r projected onto v̂ (≈0 at TCA by definition)
+  const rv=[r.rr,r.rt,r.rn];
+  const vhat=vecNorm([r.vr,r.vt,r.vn]);
+  const alongTrack=vecDot(rv,vhat);
+  const atClass=Math.abs(alongTrack)<5?'success':Math.abs(alongTrack)<20?'warning':'danger';
+
+  document.getElementById('geoMetrics').innerHTML=`
+    <div class="metric-row"><span class="metric-label">B·T component</span><span class="metric-val calc">${bp.bT.toFixed(1)} m</span></div>
+    <div class="metric-row"><span class="metric-label">B·R component</span><span class="metric-val calc">${bp.bR.toFixed(1)} m</span></div>
+    <div class="metric-row"><span class="metric-label">|B| modulus</span><span class="metric-val calc">${bp.bMag.toFixed(1)} m</span></div>
+    <div class="metric-row"><span class="metric-label">Along-track residual (r·v̂)</span><span class="metric-val indicator">${alongTrack.toFixed(3)} m <span style="font-size:9px;color:var(--text-muted)">≈0 at TCA</span></span></div>`;
+
+  // ── Chart 2: Risk Magnitude ──
+  if(riskChart){riskChart.destroy();}
+  const riskCtx=document.getElementById('riskChart').getContext('2d');
+  const logPc=Math.log10(r.pc);
+  const logMax=Math.log10(r.maxpc);
+  const logMin=Math.min(logPc,logMax)-1;
+
+  riskChart=new Chart(riskCtx,{
+    type:'bar',
+    data:{
+      labels:['Pc','Pc max'],
+      datasets:[{
+        data:[logPc-logMin,logMax-logMin],
+        backgroundColor:['rgba(255,92,92,0.65)','rgba(240,167,66,0.5)'],
+        borderColor:['#ff5c5c','#f0a742'],
+        borderWidth:1.5,borderRadius:4,
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      indexAxis:'y',
+      scales:{
+        x:{min:0,grid:{color:'rgba(35,38,56,0.5)'},ticks:{color:'#4a4f6a',font:{size:9},callback:v=>`10^${(v+logMin).toFixed(0)}`}},
+        y:{grid:{display:false},ticks:{color:'#7a7f9a',font:{size:11,family:'Plus Jakarta Sans'}}},
+      },
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>`${ctx.datasetIndex===0?r.pc.toExponential(3):r.maxpc.toExponential(3)}`}}
+      }
+    }
+  });
+
+  document.getElementById('riskMetrics').innerHTML=`
+    <div class="metric-row"><span class="metric-label">Pc</span><span class="metric-val" style="color:var(--text-primary)">${r.pc.toExponential(3)}</span></div>
+    <div class="metric-row"><span class="metric-label">Pc Max</span><span class="metric-val cdm">${r.maxpc.toExponential(3)}</span></div>
+    <div class="metric-row"><span class="metric-label">Pc Ratio (Pc / Pc_max)</span><span class="metric-val indicator">${pcRatio.toFixed(2)}%</span></div>
+    <div class="metric-row"><span class="metric-label">Miss Distance</span><span class="metric-val" style="color:var(--text-primary)">${r.md.toFixed(1)} m</span></div>
+    <div class="metric-row"><span class="metric-label">Combined HBR</span><span class="metric-val calc">${hbr.toFixed(2)} m</span></div>
+    <div class="metric-row"><span class="metric-label">MD / HBR ratio</span><span class="metric-val indicator">${mdHbr.toFixed(1)}×</span></div>`;
+
+  // ── Chart 3: Urgency ──
+  const uClass=tcaH<24?'danger':tcaH<48?'warning':'success';
+  const uColor=uClass==='danger'?'var(--danger)':uClass==='warning'?'var(--warning)':'var(--success)';
+  const barPct=Math.max(2,Math.min(100,100-(tcaH/168)*100));
+  const sClass=r.rs>10000?'danger':r.rs>5000?'warning':'success';
+
+  document.getElementById('urgencyTca').innerHTML=`
+    <div class="urgency-tca-label">Time to TCA</div>
+    <div>
+      <span class="urgency-tca-val" style="color:${uColor}">${tcaH.toFixed(1)}</span>
+      <span class="urgency-tca-unit">hours · ${(tcaH/24).toFixed(1)} days</span>
+    </div>
+    <div class="urgency-bar-wrap">
+      <div class="urgency-bar" style="width:${barPct}%;background:${uColor}"></div>
+    </div>`;
+
+  document.getElementById('urgencyMetrics').innerHTML=`
+    <div class="metric-row"><span class="metric-label">Created</span><span class="metric-val" style="color:var(--text-primary);font-size:11px">${r.created}</span></div>
+    <div class="metric-row"><span class="metric-label">TCA</span><span class="metric-val" style="color:var(--text-primary);font-size:11px">${r.tca}</span></div>
+    <div class="metric-row"><span class="metric-label">Time to TCA</span><span class="metric-val indicator">${tcaH.toFixed(1)} h</span></div>
+    <div class="metric-row"><span class="metric-label">Relative Speed</span><span class="metric-val cdm">${r.rs.toFixed(0)} m/s</span></div>`;
+
+  // Scroll to charts smoothly
+  renderSemantic(r);
+  setTimeout(()=>document.getElementById('chartsContent').scrollIntoView({behavior:'smooth',block:'start'}),100);
+}
+
+// ── SEMANTIC LABELS ───────────────────────────────────────────────────────────
+const DEFAULTS = {geo1:1,geo2:3,dom:1.5,pc1:1e-7,pc2:1e-5,pc3:1e-4,lr1:85,lr2:20,tw1:72,tw2:48,crit:12,obs1:72,obs2:24,spd:8000};
+let TH = {...DEFAULTS};
+
+// settings toggle
+document.getElementById('settingsToggle').addEventListener('click',()=>{
+  const d=document.getElementById('settingsDrawer');
+  const btn=document.getElementById('settingsToggle');
+  const open=d.classList.contains('open');
+  d.classList.toggle('open',!open);
+  btn.classList.toggle('active',!open);
+});
+
+// reset
+document.getElementById('settingsReset').addEventListener('click',()=>{
+  TH={...DEFAULTS};
+  Object.keys(DEFAULTS).forEach(k=>{
+    const el=document.getElementById('th_'+k);
+    if(el) el.value=DEFAULTS[k];
+  });
+  if(window._lastCDMRow) renderSemantic(window._lastCDMRow);
+});
+
+// live update on any input change
+document.querySelectorAll('.settings-input').forEach(inp=>{
+  inp.addEventListener('input',()=>{
+    const k=inp.id.replace('th_','');
+    TH[k]=parseFloat(inp.value)||DEFAULTS[k];
+    if(window._lastCDMRow) renderSemantic(window._lastCDMRow);
+  });
+});
+
+function semLabel(val,cls,extra){
+  return `<span class="sem-val ${cls}">${val}</span>${extra||''}`;
+}
+
+function semItem(key, why, label, cls){
+  return `<div class="sem-item">
+    <div class="sem-item-left">
+      <span class="sem-key">${key}</span>
+      <span class="sem-why">${why}</span>
+    </div>
+    <span class="sem-val ${cls}">${label}</span>
+  </div>`;
+}
+
+function renderSemantic(r){
+  window._lastCDMRow=r;
+  const hbr=r.o1hbr+r.o2hbr;
+  const mdHbr=r.md/hbr;
+  const pcRatio=(r.pc/r.maxpc)*100;
+  const created=parseDT(r.created);
+  const tca=parseDT(r.tca);
+  const tcaH=(tca-created)/3600000;
+
+  // ── Geometry: Regime ──
+  let regime,regimeCls;
+  if(mdHbr<TH.geo1){regime='GEOMETRY_DOMINATED';regimeCls='sem-alert';}
+  else if(mdHbr<TH.geo2){regime='TRANSITION';regimeCls='sem-caution';}
+  else{regime='PROBABILISTIC';regimeCls='sem-nominal';}
+  const regimeWhy=`MD/HBR = ${mdHbr.toFixed(2)}×`;
+
+  // ── Geometry: Encounter Alignment with dominance ratio ──
+  const absR=Math.abs(r.rr),absT=Math.abs(r.rt),absN=Math.abs(r.rn);
+  const vals=[absR,absT,absN];
+  const sorted=[...vals].sort((a,b)=>b-a);
+  const largest=sorted[0], second=sorted[1];
+  let alignment,alignCls;
+  if(second===0||largest/second>=TH.dom){
+    if(absR===largest){alignment='RADIAL_DOMINANT';alignCls='sem-neutral';}
+    else if(absT===largest){alignment='INTRACK_DOMINANT';alignCls='sem-neutral';}
+    else{alignment='CROSSTRACK_DOMINANT';alignCls='sem-neutral';}
+  } else {
+    alignment='MIXED';alignCls='sem-caution';
+  }
+  const domAxis=absR===largest?'R':absT===largest?'T':'N';
+  const alignWhy=second>0?`${domAxis}=${largest.toFixed(0)}m · ratio=${(largest/second).toFixed(2)}×`:`${domAxis}=${largest.toFixed(0)}m dominant`;
+
+  // ── Risk: RiskLevel ──
+  let riskLevel,riskCls;
+  if(r.pc<TH.pc1){riskLevel='NEGLIGIBLE';riskCls='sem-nominal';}
+  else if(r.pc<TH.pc2){riskLevel='LOW';riskCls='sem-nominal';}
+  else if(r.pc<TH.pc3){riskLevel='ELEVATED';riskCls='sem-caution';}
+  else{riskLevel='HIGH';riskCls='sem-alert';}
+  const riskWhy=`Pc = ${r.pc.toExponential(2)}`;
+
+  // ── Risk: LatentRisk ──
+  let latent,latentCls;
+  if(pcRatio>TH.lr1){latent='STABLE_LOW';latentCls='sem-nominal';}
+  else if(pcRatio>TH.lr2){latent='POSSIBLE_GROWTH';latentCls='sem-caution';}
+  else{latent='LATENT_HIGH';latentCls='sem-alert';}
+  const latentWhy=`PcRatio = ${pcRatio.toFixed(1)}%`;
+
+  // ── Urgency: TimeWindow ──
+  let timeWindow,twCls;
+  if(tcaH<TH.crit){timeWindow='CRITICAL';twCls='sem-alert';}
+  else if(tcaH<TH.tw2){timeWindow='SHORT';twCls='sem-alert';}
+  else if(tcaH<TH.tw1){timeWindow='MEDIUM';twCls='sem-caution';}
+  else{timeWindow='LONG';twCls='sem-nominal';}
+  const twWhy=`${tcaH.toFixed(1)} h to TCA`;
+
+  // ── Urgency: ObservationOpp ──
+  let obsOpp,obsCls;
+  if(tcaH>TH.obs1){obsOpp='SUFFICIENT';obsCls='sem-nominal';}
+  else if(tcaH>TH.obs2){obsOpp='LIMITED';obsCls='sem-caution';}
+  else{obsOpp='NONE';obsCls='sem-alert';}
+  const obsWhy=`${tcaH.toFixed(1)} h remaining`;
+
+  // ── Urgency: RelativeMotion ──
+  const motion=r.rs>TH.spd?'FAST_PASS':'SLOW_PASS';
+  const motionCls='sem-neutral';
+  const motionWhy=`${r.rs.toFixed(0)} m/s`;
+
+  document.getElementById('semanticStrip').innerHTML=`
+    <div class="sem-group">
+      <div class="sem-group-title">Geometry</div>
+      ${semItem('Regime',regimeWhy,regime,regimeCls)}
+      ${semItem('EncounterAlignment',alignWhy,alignment,alignCls)}
+    </div>
+    <div class="sem-group">
+      <div class="sem-group-title">Risk</div>
+      ${semItem('RiskLevel',riskWhy,riskLevel,riskCls)}
+      ${semItem('LatentRisk',latentWhy,latent,latentCls)}
+    </div>
+    <div class="sem-group">
+      <div class="sem-group-title">Urgency</div>
+      ${semItem('TimeWindow',twWhy,timeWindow,twCls)}
+      ${semItem('ObservationOpp',obsWhy,obsOpp,obsCls)}
+      ${semItem('RelativeMotion',motionWhy,motion,motionCls)}
+    </div>`;
+}
+
+</script>
+</body>
+</html>

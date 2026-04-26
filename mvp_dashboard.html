@@ -208,6 +208,73 @@ nav{position:sticky;top:0;z-index:100;background:rgba(12,14,20,0.92);backdrop-fi
 .settings-reset:hover{border-color:var(--danger);color:var(--danger);}
 .settings-note{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:0.04em;}
 
+
+/* ── DECISION INTELLIGENCE ── */
+.decision-panel{margin-top:20px;border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--border);}
+.decision-panel.wait{border-color:rgba(79,124,255,0.4);}
+.decision-panel.monitor{border-color:rgba(240,167,66,0.4);}
+.decision-panel.act{border-color:rgba(255,92,92,0.5);}
+
+.decision-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 22px;background:var(--surface-2);border-bottom:1px solid var(--border);}
+.decision-hdr-left{display:flex;align-items:center;gap:12px;}
+.decision-hdr-line{width:20px;height:1px;background:var(--turquoise);}
+.decision-hdr-title{font-family:var(--font-mono);font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--turquoise);}
+
+.decision-badge{font-family:var(--font-display);font-size:15px;font-weight:800;letter-spacing:0.06em;padding:6px 20px;border-radius:var(--radius-sm);border:2px solid;}
+.decision-badge.wait{color:#4f7cff;border-color:#4f7cff;background:rgba(79,124,255,0.1);}
+.decision-badge.monitor{color:#f0a742;border-color:#f0a742;background:rgba(240,167,66,0.1);}
+.decision-badge.act{color:#ff5c5c;border-color:#ff5c5c;background:rgba(255,92,92,0.1);}
+
+.confidence-chip{display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;padding:4px 10px;border-radius:2px;border:1px solid;}
+.confidence-HIGH{color:var(--success);border-color:rgba(52,199,123,0.3);background:rgba(52,199,123,0.07);}
+.confidence-MEDIUM{color:var(--warning);border-color:rgba(240,167,66,0.3);background:rgba(240,167,66,0.07);}
+.confidence-LOW{color:var(--danger);border-color:rgba(255,92,92,0.3);background:rgba(255,92,92,0.07);}
+
+.decision-body{display:grid;grid-template-columns:1fr 1fr;gap:0;background:var(--surface);}
+.decision-col{padding:22px 24px;}
+.decision-col:first-child{border-right:1px solid var(--border);}
+.decision-col-title{font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);margin-bottom:14px;}
+
+.rationale-list{display:flex;flex-direction:column;gap:8px;}
+.rationale-item{display:flex;align-items:flex-start;gap:10px;font-size:13px;line-height:1.55;color:var(--text-secondary);}
+.rationale-dot{width:5px;height:5px;border-radius:50%;background:var(--turquoise);flex-shrink:0;margin-top:7px;}
+
+.interp-list{display:flex;flex-direction:column;gap:10px;}
+.interp-item{font-size:13px;line-height:1.6;color:var(--text-secondary);padding-left:12px;border-left:2px solid var(--border-light);}
+.interp-item.wait-accent{border-left-color:#4f7cff;}
+.interp-item.monitor-accent{border-left-color:#f0a742;}
+.interp-item.act-accent{border-left-color:#ff5c5c;}
+
+.decision-footer{display:flex;align-items:center;justify-content:space-between;padding:12px 22px;background:var(--bg-alt,#10121a);border-top:1px solid var(--border);}
+.decision-footer-meta{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:0.05em;display:flex;gap:16px;}
+.decision-footer-meta span{display:flex;align-items:center;gap:5px;}
+
+
+/* ── CONFIDENCE BREAKDOWN ── */
+.conf-breakdown-btn{background:none;border:1px solid var(--border-light);color:var(--text-secondary);border-radius:var(--radius-sm);padding:4px 9px;font-size:16px;cursor:pointer;line-height:1;transition:all var(--transition);font-family:monospace;}
+.conf-breakdown-btn:hover,.conf-breakdown-btn.active{border-color:var(--turquoise);color:var(--turquoise);}
+.conf-breakdown-panel{border-bottom:1px solid var(--border);background:var(--bg);padding:0 22px 16px;}
+.conf-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:14px;}
+.conf-table thead tr{border-bottom:1px solid var(--border);}
+.conf-table th{font-family:var(--font-mono);font-size:9px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);padding:8px 12px;text-align:left;}
+.conf-table td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.conf-table tbody tr:last-child td{border-bottom:none;}
+.conf-table tbody tr:hover td{background:var(--surface-2);}
+.conf-td-input{font-family:var(--font-mono);font-size:11px;font-weight:500;color:var(--text-primary);}
+.conf-td-val{font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);}
+.conf-td-aligns{font-family:var(--font-mono);font-size:11px;color:var(--text-muted);}
+.conf-td-note{font-size:12px;color:var(--text-secondary);line-height:1.5;}
+.conf-check{font-size:14px;font-weight:700;color:var(--success);}
+.conf-cross{font-size:14px;font-weight:700;color:var(--danger);}
+.conf-breakdown-score{display:flex;align-items:center;gap:12px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-family:var(--font-mono);font-size:11px;color:var(--text-muted);}
+.conf-score-val{font-weight:600;}
+.conf-score-val.HIGH{color:var(--success);}
+.conf-score-val.MEDIUM{color:var(--warning);}
+.conf-score-val.LOW{color:var(--danger);}
+
+.sim-btn{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-display);font-weight:700;font-size:13px;background:transparent;border:1px solid var(--border-light);color:var(--text-secondary);padding:8px 18px;border-radius:var(--radius-sm);cursor:pointer;transition:all var(--transition);text-decoration:none;}
+.sim-btn:hover{border-color:var(--turquoise);color:var(--turquoise);}
+
 @keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
 .fade-in{animation:fadeUp 0.3s ease forwards;}
 
@@ -429,6 +496,52 @@ nav{position:sticky;top:0;z-index:100;background:rgba(12,14,20,0.92);backdrop-fi
             <button class="settings-reset" id="settingsReset">↺ Reset defaults</button>
             <span class="settings-note">Changes apply instantly · Values reset on page reload</span>
           </div>
+        </div>
+      </div>
+
+
+      <!-- DECISION INTELLIGENCE PANEL -->
+      <div class="decision-panel fade-in" id="decisionPanel" style="display:none;">
+        <div class="decision-hdr">
+          <div class="decision-hdr-left">
+            <div class="decision-hdr-line"></div>
+            <span class="decision-hdr-title">Decision Intelligence</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="confidence-chip" id="confidenceChip"></div>
+            <button class="conf-breakdown-btn" id="confBreakdownBtn" title="Show confidence breakdown">&#8801;</button>
+            <div class="decision-badge" id="decisionBadge"></div>
+          </div>
+        </div>
+        <!-- Confidence breakdown dropdown -->
+        <div class="conf-breakdown-panel" id="confBreakdownPanel" style="display:none;">
+          <table class="conf-table">
+            <thead>
+              <tr>
+                <th>Input</th>
+                <th>Current Value</th>
+                <th>Aligns If</th>
+                <th></th>
+                <th>Note</th>
+              </tr>
+            </thead>
+            <tbody id="confTableBody"></tbody>
+          </table>
+          <div class="conf-breakdown-score" id="confBreakdownScore"></div>
+        </div>
+        <div class="decision-body">
+          <div class="decision-col">
+            <div class="decision-col-title">Decision Rationale</div>
+            <div class="rationale-list" id="rationaleList"></div>
+          </div>
+          <div class="decision-col">
+            <div class="decision-col-title">Interpretation</div>
+            <div class="interp-list" id="interpList"></div>
+          </div>
+        </div>
+        <div class="decision-footer">
+          <div class="decision-footer-meta" id="decisionMeta"></div>
+          <a href="mvp_simulation.html" class="sim-btn">Decision Simulation Check →</a>
         </div>
       </div>
 
@@ -864,6 +977,11 @@ function renderSemantic(r){
   const motionCls='sem-neutral';
   const motionWhy=`${r.rs.toFixed(0)} m/s`;
 
+  // expose labels for decision engine
+  const _regime=regime, _alignment=alignment, _riskLevel=riskLevel, _latent=latent;
+  const _timeWindow=timeWindow, _obsOpp=obsOpp;
+  const _operable=(r.o1m==='YES');
+
   document.getElementById('semanticStrip').innerHTML=`
     <div class="sem-group">
       <div class="sem-group-title">Geometry</div>
@@ -881,6 +999,246 @@ function renderSemantic(r){
       ${semItem('ObservationOpp',obsWhy,obsOpp,obsCls)}
       ${semItem('RelativeMotion',motionWhy,motion,motionCls)}
     </div>`;
+
+  renderDecision(r,_regime,_alignment,_riskLevel,_latent,_timeWindow,_obsOpp,_operable,pcRatio,tcaH);
+}
+
+
+// ── DECISION INTELLIGENCE ─────────────────────────────────────────────────────
+
+function buildInterpSentences(r, regime, alignment, riskLevel, latent, timeWindow, obsOpp, operable, pcRatio, tcaH){
+  const s=[];
+
+  // Sentence 1 — Geometry
+  const geoMap={
+    GEOMETRY_DOMINATED:"Physical size of objects dominates this encounter. Collision is geometrically possible regardless of probability estimate.",
+    TRANSITION:"Encounter sits between geometry and probability regimes. Both hard-body size and Pc contribute meaningfully to risk assessment.",
+    PROBABILISTIC:"Collision driven by orbital uncertainty, not physical proximity. Covariance quality is the primary risk driver."
+  };
+  const alignMap={
+    INTRACK_DOMINANT:"Miss vector is along-track — sensitive to timing errors in ephemeris.",
+    RADIAL_DOMINANT:"Miss vector is radial — sensitive to altitude determination accuracy.",
+    CROSSTRACK_DOMINANT:"Miss vector is cross-track — sensitive to inclination and RAAN uncertainty.",
+    MIXED:"No dominant encounter axis — uncertainty distributed across all directions."
+  };
+  s.push((geoMap[regime]||'') + ' ' + (alignMap[alignment]||''));
+
+  // Sentence 2 — Risk + Latent
+  const riskKey = riskLevel+'_'+latent;
+  const riskMap={
+    'NEGLIGIBLE_STABLE_LOW':"Collision probability is negligible. No immediate risk concern.",
+    'NEGLIGIBLE_POSSIBLE_GROWTH':"Collision probability is negligible. No immediate risk concern.",
+    'NEGLIGIBLE_LATENT_HIGH':"Collision probability is negligible. No immediate risk concern.",
+    'LOW_STABLE_LOW':`Risk is low and near its maximum possible value (PcRatio ${pcRatio.toFixed(1)}%). Estimate is stable — unlikely to worsen with new data.`,
+    'LOW_POSSIBLE_GROWTH':`Risk is currently low but Pc represents only ${pcRatio.toFixed(1)}% of its maximum. Future CDM updates may increase the estimate significantly.`,
+    'LOW_LATENT_HIGH':`Risk appears low but Pc is only ${pcRatio.toFixed(1)}% of its worst-case value. High latent risk — current estimate may significantly understate true danger.`,
+    'ELEVATED_STABLE_LOW':`Risk is elevated and near its maximum possible value (PcRatio ${pcRatio.toFixed(1)}%). Estimate is reliable — treat at face value.`,
+    'ELEVATED_POSSIBLE_GROWTH':`Risk is elevated and has meaningful room to grow. PcRatio at ${pcRatio.toFixed(1)}% — monitor closely for escalation.`,
+    'ELEVATED_LATENT_HIGH':`Risk is elevated with significant latent potential. Pc is only ${pcRatio.toFixed(1)}% of worst case — treat as higher than current estimate suggests.`,
+    'HIGH_STABLE_LOW':"Collision probability exceeds actionable threshold. Immediate assessment required.",
+    'HIGH_POSSIBLE_GROWTH':"Collision probability exceeds actionable threshold with further growth possible. Immediate assessment required.",
+    'HIGH_LATENT_HIGH':"Collision probability exceeds actionable threshold with high latent risk. Immediate assessment required."
+  };
+  s.push(riskMap[riskKey] || `RiskLevel: ${riskLevel}, LatentRisk: ${latent}.`);
+
+  // Sentence 3 — Urgency + Operability
+  if(!operable){
+    s.push(`Object 1 cannot maneuver. Decision authority rests with conjunction owner or mission control. Escalate immediately if risk warrants.`);
+  } else {
+    const urgKey=timeWindow+'_'+obsOpp;
+    const urgMap={
+      'LONG_SUFFICIENT':"Ample time to refine estimate before decision deadline. Waiting is operationally defensible.",
+      'MEDIUM_SUFFICIENT':`Sufficient observation window remains (${tcaH.toFixed(0)}h). Next CDM update should inform whether to escalate or stand down.`,
+      'MEDIUM_LIMITED':`Observation window is narrowing (${tcaH.toFixed(0)}h). Begin contingency maneuver planning in parallel with monitoring.`,
+      'SHORT_LIMITED':`Decision window is closing (${tcaH.toFixed(0)}h). Maneuver planning should begin now if risk does not reduce with next update.`,
+      'SHORT_NONE':`Insufficient time for further observation (${tcaH.toFixed(0)}h). Decision required imminently.`,
+      'CRITICAL_NONE':"No time remaining for further observation. Decision required now.",
+      'CRITICAL_LIMITED':"No time remaining for further observation. Decision required now.",
+    };
+    s.push(urgMap[urgKey] || `Time to TCA: ${tcaH.toFixed(1)}h. ${obsOpp} observation opportunity.`);
+  }
+  return s;
+}
+
+function computeDecision(r, regime, riskLevel, latent, timeWindow, obsOpp, operable){
+  // Priority ruleset
+  let decision, reasons=[];
+
+  // P1 — Geometry override
+  if(regime==='GEOMETRY_DOMINATED'){
+    decision='ACT';
+    reasons.push({label:'Geometry override',text:'MD/HBR < 1 — physical collision geometry demands immediate action regardless of Pc.'});
+  }
+  // P2 — HIGH risk
+  else if(riskLevel==='HIGH'){
+    decision='ACT';
+    reasons.push({label:'High risk',text:'Collision probability exceeds actionable threshold.'});
+  }
+  // P3 — ELEVATED + no observation time
+  else if(riskLevel==='ELEVATED'&&(obsOpp==='NONE'||obsOpp==='LIMITED')){
+    decision='ACT';
+    reasons.push({label:'Elevated risk + closing window',text:'Insufficient time to gather further data before decision deadline.'});
+  }
+  // P4 — ELEVATED + sufficient observation
+  else if(riskLevel==='ELEVATED'&&obsOpp==='SUFFICIENT'){
+    decision='MONITOR';
+    reasons.push({label:'Elevated risk, time available',text:'Risk warrants active monitoring but sufficient window exists to refine before acting.'});
+  }
+  // P5 — Non-operable (not high risk)
+  else if(!operable){
+    decision='MONITOR';
+    reasons.push({label:'Non-operable object',text:'Object 1 cannot maneuver. Escalate to conjunction owner — document and track.'});
+  }
+  // P6 — LOW + latent risk
+  else if(riskLevel==='LOW'&&(latent==='LATENT_HIGH'||latent==='POSSIBLE_GROWTH')){
+    decision='MONITOR';
+    reasons.push({label:'Latent risk present',text:'Current Pc is low but may increase significantly with future data. Active monitoring required.'});
+  }
+  // P7 — LOW + stable
+  else if(riskLevel==='LOW'&&latent==='STABLE_LOW'){
+    decision='WAIT';
+    reasons.push({label:'Low stable risk',text:'Risk is low and near its maximum estimate. Maneuver not economically justified.'});
+  }
+  // P8 — NEGLIGIBLE
+  else {
+    decision='WAIT';
+    reasons.push({label:'Negligible risk',text:'Collision probability below concern threshold. No action warranted.'});
+  }
+
+  // Add supporting rationale lines
+  reasons.push({label:`Geometry: ${regime}`,text:`Encounter alignment: ${r._alignment||'—'}`});
+  reasons.push({label:`Risk: ${riskLevel} / ${latent}`,text:`Pc = ${r.pc.toExponential(2)} · Pc_max = ${r.maxpc.toExponential(2)}`});
+  reasons.push({label:`Urgency: ${timeWindow}`,text:`${r._tcaH?r._tcaH.toFixed(1):'—'}h to TCA · Observation: ${obsOpp}`});
+  if(!operable) reasons.push({label:'Operability: NON_OPERABLE',text:'Object 1 maneuverable: NO'});
+  else reasons.push({label:'Operability: OPERABLE',text:'Object 1 maneuverable: YES'});
+
+  return {decision, reasons};
+}
+
+function computeConfidence(decision, regime, riskLevel, latent, timeWindow, obsOpp, operable){
+  const rows=[];
+  let agree=0;
+
+  if(decision==='ACT'){
+    const g=regime==='GEOMETRY_DOMINATED';
+    rows.push({input:'Geometry',val:regime,alignsIf:'GEOMETRY_DOMINATED',ok:g,
+      note:g?'Geometry override active — physical collision possible regardless of Pc.':'Probabilistic regime — geometry alone does not force action.'});
+    const rk=riskLevel==='HIGH'||riskLevel==='ELEVATED';
+    rows.push({input:'Risk Level',val:riskLevel,alignsIf:'HIGH or ELEVATED',ok:rk,
+      note:rk?'Risk level supports ACT decision.':'Risk level is below ACT threshold — conflicts with decision.'});
+    const ob=obsOpp==='NONE'||obsOpp==='LIMITED';
+    rows.push({input:'Observation Opp',val:obsOpp,alignsIf:'NONE or LIMITED',ok:ob,
+      note:ob?'Insufficient time to gather more data before action required.':'Sufficient time remains — conflicts with urgency to act.'});
+    const op=!operable;
+    rows.push({input:'Operability',val:operable?'OPERABLE':'NON_OPERABLE',alignsIf:'NON_OPERABLE (escalate)',ok:op,
+      note:op?'Object cannot maneuver — escalation required.':'Object is maneuverable — action is possible and justified.'});
+  } else if(decision==='MONITOR'){
+    const rk=riskLevel==='ELEVATED'||riskLevel==='LOW';
+    rows.push({input:'Risk Level',val:riskLevel,alignsIf:'LOW or ELEVATED',ok:rk,
+      note:rk?'Risk level warrants monitoring without immediate action.':'Risk level conflicts with MONITOR recommendation.'});
+    const lt=latent==='LATENT_HIGH'||latent==='POSSIBLE_GROWTH';
+    rows.push({input:'Latent Risk',val:latent,alignsIf:'LATENT_HIGH or POSSIBLE_GROWTH',ok:lt,
+      note:lt?'Latent risk present — situation could evolve, active tracking needed.':'Latent risk is stable — partial conflict with MONITOR.'});
+    const ob=obsOpp==='SUFFICIENT'||obsOpp==='LIMITED';
+    rows.push({input:'Observation Opp',val:obsOpp,alignsIf:'SUFFICIENT or LIMITED',ok:ob,
+      note:ob?'Observation window supports continued monitoring.':'No observation time remaining — conflicts with MONITOR.'});
+    rows.push({input:'Operability',val:operable?'OPERABLE':'NON_OPERABLE',alignsIf:'Either (neutral)',ok:true,
+      note:'Operability does not conflict with MONITOR decision.'});
+  } else { // WAIT
+    const rk=riskLevel==='NEGLIGIBLE'||riskLevel==='LOW';
+    rows.push({input:'Risk Level',val:riskLevel,alignsIf:'NEGLIGIBLE or LOW',ok:rk,
+      note:rk?'Risk level is low — waiting is defensible.':'Risk level conflicts with WAIT recommendation.'});
+    const lt=latent==='STABLE_LOW';
+    rows.push({input:'Latent Risk',val:latent,alignsIf:'STABLE_LOW',ok:lt,
+      note:lt?'Latent risk is stable — estimate unlikely to worsen.':'Latent risk may grow — partially conflicts with WAIT.'});
+    const tw=timeWindow==='LONG'||timeWindow==='MEDIUM';
+    rows.push({input:'Time Window',val:timeWindow,alignsIf:'LONG or MEDIUM',ok:tw,
+      note:tw?'Sufficient time to observe before committing to action.':'Short time window — conflicts with WAIT decision.'});
+    const op=operable;
+    rows.push({input:'Operability',val:operable?'OPERABLE':'NON_OPERABLE',alignsIf:'OPERABLE',ok:op,
+      note:op?'Object can maneuver if situation escalates — WAIT is viable.':'Non-operable object — escalation path differs from maneuver.'});
+  }
+
+  rows.forEach(r=>{ if(r.ok) agree++; });
+  const total=rows.length;
+  const ratio=agree/total;
+  let level,note;
+  if(ratio>=0.75){level='HIGH';note=`${agree}/${total} inputs aligned`;}
+  else if(ratio>=0.5){level='MEDIUM';note=`${agree}/${total} inputs aligned — some conflict`;}
+  else{level='LOW';note=`${agree}/${total} inputs aligned — conflicting signals`;}
+  return{level,note,rows,agree,total};
+}
+
+function renderDecision(r, regime, alignment, riskLevel, latent, timeWindow, obsOpp, operable, pcRatio, tcaH){
+  // Store alignment and tcaH on r for reuse
+  r._alignment=alignment; r._tcaH=tcaH;
+
+  const panel=document.getElementById('decisionPanel');
+  const {decision,reasons}=computeDecision(r,regime,riskLevel,latent,timeWindow,obsOpp,operable);
+  const conf=computeConfidence(decision,regime,riskLevel,latent,timeWindow,obsOpp,operable);
+  const sentences=buildInterpSentences(r,regime,alignment,riskLevel,latent,timeWindow,obsOpp,operable,pcRatio,tcaH);
+
+  const decLower=decision.toLowerCase();
+
+  // Badge + panel border
+  panel.className=`decision-panel fade-in ${decLower}`;
+  panel.style.display='block';
+  document.getElementById('decisionBadge').className=`decision-badge ${decLower}`;
+  document.getElementById('decisionBadge').textContent=decision;
+
+  // Confidence chip
+  const cc=document.getElementById('confidenceChip');
+  cc.className=`confidence-chip confidence-${conf.level}`;
+  cc.innerHTML=`<span>Confidence: ${conf.level}</span><span style="color:var(--text-muted)">· ${conf.note}</span>`;
+
+  // Populate breakdown table
+  const tbody=document.getElementById('confTableBody');
+  tbody.innerHTML=conf.rows.map(row=>`
+    <tr>
+      <td class="conf-td-input">${row.input}</td>
+      <td class="conf-td-val">${row.val}</td>
+      <td class="conf-td-aligns">${row.alignsIf}</td>
+      <td>${row.ok?'<span class="conf-check">✓</span>':'<span class="conf-cross">✗</span>'}</td>
+      <td class="conf-td-note" style="${row.ok?'':'color:var(--warning)'}">${row.note}</td>
+    </tr>`).join('');
+
+  document.getElementById('confBreakdownScore').innerHTML=`
+    <span>Score:</span>
+    <span class="conf-score-val ${conf.level}">${conf.agree}/${conf.total} inputs aligned</span>
+    <span>·</span>
+    <span>Confidence: <strong class="conf-score-val ${conf.level}">${conf.level}</strong></span>
+    <span style="margin-left:8px;color:var(--text-muted)">${conf.level==='HIGH'?'Decision well-supported by all inputs.':conf.level==='MEDIUM'?'Some inputs conflict — review breakdown.':'Significant conflict across inputs — treat with caution.'}</span>`;
+
+  // Wire hamburger toggle (remove old listener, add fresh)
+  const btn=document.getElementById('confBreakdownBtn');
+  const bpanel=document.getElementById('confBreakdownPanel');
+  const newBtn=btn.cloneNode(true);
+  btn.parentNode.replaceChild(newBtn,btn);
+  newBtn.addEventListener('click',()=>{
+    const open=bpanel.style.display!=='none';
+    bpanel.style.display=open?'none':'block';
+    newBtn.classList.toggle('active',!open);
+  });
+  // Reset panel to closed on new selection
+  bpanel.style.display='none';
+  newBtn.classList.remove('active');
+
+  // Rationale
+  document.getElementById('rationaleList').innerHTML=reasons.map(item=>`
+    <div class="rationale-item">
+      <div class="rationale-dot"></div>
+      <div><strong style="color:var(--text-primary);font-size:12px;">${item.label}</strong><br>${item.text}</div>
+    </div>`).join('');
+
+  // Interpretation
+  document.getElementById('interpList').innerHTML=sentences.map(s=>`
+    <div class="interp-item ${decLower}-accent">${s}</div>`).join('');
+
+  // Footer meta
+  document.getElementById('decisionMeta').innerHTML=`
+    <span>◈ CDM ${r.id}</span>
+    <span>· ${r.o1n} × ${r.o2n}</span>
+    <span>· Assessed ${new Date().toLocaleTimeString()}</span>`;
 }
 
 </script>

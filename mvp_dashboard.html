@@ -990,8 +990,8 @@ function renderCharts(r){
   // Scroll to charts smoothly
   renderSemantic(r);
   // Show concurrence section with system recommendation
-  const decBadgeEl = document.getElementById('decisionBadge');
-  if(decBadgeEl) showConcurSection(decBadgeEl.textContent.trim(), r);
+  // Pass system recommendation directly from computed value
+  if(r._sysRec) showConcurSection(r._sysRec, r);
 
   setTimeout(()=>document.getElementById('chartsContent').scrollIntoView({behavior:'smooth',block:'start'}),100);
 }
@@ -1317,11 +1317,18 @@ function renderDecision(r, regime, alignment, riskLevel, latent, timeWindow, obs
 
   const decLower=decision.toLowerCase();
 
+  // Store decision directly on row for logging
+  r._sysRec = decision;
+
   // Badge + panel border
   panel.className=`decision-panel fade-in ${decLower}`;
   panel.style.display='block';
   document.getElementById('decisionBadge').className=`decision-badge ${decLower}`;
   document.getElementById('decisionBadge').textContent=decision;
+
+  // Store confidence directly on row for logging
+  r._confidenceLevel = conf.level;
+  r._confidenceScore = conf.note;
 
   // Confidence chip
   const cc=document.getElementById('confidenceChip');
@@ -1429,30 +1436,51 @@ function logDecision(){
   const isConcur = _currentAction === _sysRec;
   _logCounter++;
 
+  // Compute B-plane for log
+  const _bp = bplaneProject(r);
+  const _hbr = r.o1hbr + r.o2hbr;
+  const _mdHbr = r.md / _hbr;
+
   const record = {
     log_id: `LOG-${String(_logCounter).padStart(3,'0')}`,
     timestamp: new Date().toISOString().replace('T',' ').slice(0,19) + ' UTC',
-    cdm_id: r.id,
-    object_1: `${r.o1n} / ${r.o1intl} / ${r.o1t}`,
-    object_2: `${r.o2n} / ${r.o2intl} / ${r.o2t}`,
-    tca: r.tca,
-    miss_distance_m: r.md,
-    collision_probability: r.pc.toExponential(3),
-    system_recommendation: _sysRec,
-    operator_decision: _currentAction,
-    concurrence: isConcur,
-    override_reasons: isConcur ? [] : selectedReasons,
-    override_note: isConcur ? '' : note,
-    semantic_context: {
-      regime: r._regime || '—',
-      encounter_alignment: r._alignment || '—',
-      risk_level: r._riskLevel || '—',
-      latent_risk: r._latent || '—',
-      time_window: r._timeWindow || '—',
-      obs_opportunity: r._obsOpp || '—',
-      relative_motion: r._motion || '—'
+
+    conjunction_analysis: {
+      cdm_id: r.id,
+      object_1: `${r.o1n} / ${r.o1intl} / ${r.o1t}`,
+      object_2: `${r.o2n} / ${r.o2intl} / ${r.o2t}`,
+      tca: r.tca,
+      miss_distance_m: r.md,
+      collision_probability: r.pc.toExponential(3),
+      pc_max: r.maxpc.toExponential(3),
+      miss_distance_hbr_ratio: parseFloat(_mdHbr.toFixed(3)),
+      relative_speed_ms: r.rs,
+      b_plane_bt: parseFloat(_bp.bT.toFixed(3)),
+      b_plane_br: parseFloat(_bp.bR.toFixed(3)),
     },
-    confidence: r._confidence || '—',
+
+    semantic_assessment: {
+      regime:               r._regime       || '—',
+      encounter_alignment:  r._alignment    || '—',
+      risk_level:           r._riskLevel    || '—',
+      latent_risk:          r._latent       || '—',
+      time_window:          r._timeWindow   || '—',
+      obs_opportunity:      r._obsOpp       || '—',
+      relative_motion:      r._motion       || '—',
+    },
+
+    decision_intelligence: {
+      system_recommendation: _sysRec,
+      confidence_level: r._confidenceLevel || '—',
+      confidence_score: r._confidenceScore || '—',
+    },
+
+    operator_decision: {
+      action:           _currentAction,
+      concurrence:      isConcur,
+      override_reasons: isConcur ? [] : selectedReasons,
+      override_note:    isConcur ? '' : note,
+    },
   };
 
   // Store in sessionStorage
@@ -1479,8 +1507,8 @@ function showConcurSection(sysRec, r){
   _sysRec = sysRec;
   _currentAction = null;
 
-  // Store semantic labels on row for logging
-  r._confidence = document.getElementById('confidenceChip')?.textContent || '—';
+  // r._sysRec already set in renderDecision — this is backup
+  r._sysRec = r._sysRec || sysRec;
 
   const section = document.getElementById('concurSection');
   section.style.display = 'block';

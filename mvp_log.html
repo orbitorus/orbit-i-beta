@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Orbit-I — Decision Log</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&display=swap');
+
+:root{
+  --bg:#0c0e14; --bg-alt:#10121a; --surface:#14161f; --surface-2:#1a1d2a;
+  --border:#232638; --border-light:#2d3147;
+  --text-primary:#dde1f0; --text-secondary:#7a7f9a; --text-muted:#4a4f6a;
+  --accent:#4f7cff; --accent-glow:rgba(79,124,255,0.25);
+  --turquoise:#40E0D0; --turquoise-dim:rgba(64,224,208,0.10);
+  --success:#34c77b; --danger:#ff5c5c; --warning:#f0a742;
+  --font-display:'Plus Jakarta Sans',sans-serif;
+  --font-mono:'DM Mono',monospace;
+  --radius-sm:4px; --radius:8px; --radius-lg:12px;
+  --transition:0.2s ease;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text-primary);font-family:var(--font-display);font-size:14px;line-height:1.6;min-height:100vh;-webkit-font-smoothing:antialiased;}
+a{color:inherit;text-decoration:none;}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:100;background:rgba(12,14,20,0.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;height:56px;max-width:1300px;margin:0 auto;padding:0 28px;}
+.nav-logo{font-size:16px;font-weight:800;letter-spacing:-0.02em;}
+.nav-logo span{color:var(--turquoise);}
+.nav-center{font-family:var(--font-mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);}
+.nav-back{font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-secondary);transition:color var(--transition);}
+.nav-back:hover{color:var(--turquoise);}
+
+/* MAIN */
+.main{max-width:1300px;margin:0 auto;padding:32px 28px 80px;}
+
+/* SECTION HEADER */
+.section-hdr{display:flex;align-items:center;gap:10px;margin-bottom:20px;}
+.section-hdr-line{width:20px;height:1px;background:var(--turquoise);}
+.section-hdr-text{font-family:var(--font-mono);font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--turquoise);}
+.section-hdr-right{margin-left:auto;display:flex;align-items:center;gap:12px;}
+
+/* SUMMARY STRIP */
+.summary-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px;}
+.summary-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px;}
+.summary-label{font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;}
+.summary-val{font-family:var(--font-display);font-size:24px;font-weight:800;line-height:1;}
+.summary-val.wait{color:#4f7cff;}
+.summary-val.monitor{color:var(--warning);}
+.summary-val.act{color:var(--danger);}
+.summary-val.total{color:var(--turquoise);}
+
+/* TOOLBAR */
+.toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+.toolbar-left{display:flex;align-items:center;gap:10px;}
+.toolbar-right{display:flex;align-items:center;gap:8px;}
+.filter-btn{font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;padding:5px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;transition:all var(--transition);}
+.filter-btn:hover{border-color:var(--border-light);color:var(--text-primary);}
+.filter-btn.active{border-color:var(--turquoise);color:var(--turquoise);background:var(--turquoise-dim);}
+.export-btn{font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;padding:6px 14px;border-radius:var(--radius-sm);border:1px solid var(--border-light);background:transparent;color:var(--text-secondary);cursor:pointer;transition:all var(--transition);display:flex;align-items:center;gap:6px;}
+.export-btn:hover{border-color:var(--turquoise);color:var(--turquoise);}
+.clear-btn{font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;padding:6px 14px;border-radius:var(--radius-sm);border:1px solid rgba(255,92,92,0.3);background:transparent;color:var(--danger);cursor:pointer;transition:all var(--transition);}
+.clear-btn:hover{background:rgba(255,92,92,0.08);border-color:var(--danger);}
+
+/* LOG TABLE */
+.log-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;}
+.log-table{width:100%;border-collapse:collapse;font-size:12px;}
+.log-table thead tr{border-bottom:1px solid var(--border);background:var(--surface-2);}
+.log-table th{font-family:var(--font-mono);font-size:9px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);padding:10px 14px;text-align:left;white-space:nowrap;}
+.log-table tbody tr.log-row{border-bottom:1px solid var(--border);transition:background var(--transition);cursor:pointer;}
+.log-table tbody tr.log-row:hover{background:var(--surface-2);}
+.log-table tbody tr.log-row.concur-row{border-left:2px solid var(--success);}
+.log-table tbody tr.log-row.override-row{border-left:2px solid var(--warning);}
+.log-table td{padding:11px 14px;color:var(--text-secondary);vertical-align:middle;}
+
+/* expand row */
+.log-expand-row{display:none;background:var(--bg);}
+.log-expand-row.open{display:table-row;}
+.expand-inner{padding:20px 24px;}
+.expand-cols{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;}
+.expand-group{}
+.expand-group-title{font-family:var(--font-mono);font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--turquoise);margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid var(--border);}
+.expand-field{display:flex;flex-direction:column;gap:2px;margin-bottom:8px;}
+.expand-field-label{font-family:var(--font-mono);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);}
+.expand-field-val{font-size:12px;color:var(--text-secondary);}
+.expand-field-val.highlight{color:var(--text-primary);font-weight:600;}
+.expand-field-val.turquoise{color:var(--turquoise);}
+.expand-field-val.warning{color:var(--warning);}
+.expand-field-val.danger{color:var(--danger);}
+.expand-field-val.success{color:var(--success);}
+
+/* badges */
+.dec-badge{font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:0.06em;padding:2px 10px;border-radius:2px;border:1px solid;white-space:nowrap;}
+.dec-badge.wait{color:#4f7cff;border-color:rgba(79,124,255,0.4);background:rgba(79,124,255,0.08);}
+.dec-badge.monitor{color:var(--warning);border-color:rgba(240,167,66,0.4);background:rgba(240,167,66,0.08);}
+.dec-badge.act{color:var(--danger);border-color:rgba(255,92,92,0.4);background:rgba(255,92,92,0.08);}
+.status-badge{font-family:var(--font-mono);font-size:10px;padding:2px 8px;border-radius:2px;border:1px solid;white-space:nowrap;}
+.status-badge.concur{color:var(--success);border-color:rgba(52,199,123,0.3);background:rgba(52,199,123,0.07);}
+.status-badge.override{color:var(--warning);border-color:rgba(240,167,66,0.3);background:rgba(240,167,66,0.07);}
+.sem-tag{font-family:var(--font-mono);font-size:9px;padding:1px 6px;border-radius:2px;border:1px solid var(--border);color:var(--text-muted);margin:2px 2px 0 0;display:inline-block;}
+
+/* delete btn */
+.del-btn{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;padding:2px 6px;border-radius:var(--radius-sm);transition:all var(--transition);line-height:1;}
+.del-btn:hover{color:var(--danger);background:rgba(255,92,92,0.08);}
+
+/* empty state */
+.empty-state{padding:72px 40px;text-align:center;}
+.empty-icon{font-size:32px;opacity:0.25;margin-bottom:16px;}
+.empty-title{font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--text-secondary);margin-bottom:8px;}
+.empty-sub{font-family:var(--font-mono);font-size:11px;color:var(--text-muted);letter-spacing:0.06em;}
+
+/* footer */
+.page-footer{margin-top:24px;display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);}
+.footer-note{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:0.05em;}
+
+/* overrides tag chips */
+.reason-tags{display:flex;flex-wrap:wrap;gap:4px;}
+.reason-tag{font-family:var(--font-mono);font-size:9px;padding:1px 7px;border-radius:2px;border:1px solid rgba(240,167,66,0.35);color:var(--warning);background:rgba(240,167,66,0.07);}
+
+/* scrollbar */
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border-light);border-radius:3px;}
+
+/* animations */
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.fade-in{animation:fadeUp 0.3s ease forwards;}
+
+@media(max-width:900px){
+  .expand-cols{grid-template-columns:1fr 1fr;}
+  .summary-strip{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <div class="nav-logo">Orbit<span>-I</span></div>
+    <div class="nav-center">Decision Log</div>
+    <a href="mvp_dashboard.html" class="nav-back">← Back to Dashboard</a>
+  </div>
+</nav>
+
+<div class="main">
+
+  <!-- HEADER -->
+  <div class="section-hdr">
+    <div class="section-hdr-line"></div>
+    <span class="section-hdr-text">Decision Concurrence &amp; Override Log</span>
+    <div class="section-hdr-right">
+      <span id="sessionLabel" style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:0.06em;"></span>
+    </div>
+  </div>
+
+  <!-- SUMMARY STRIP -->
+  <div class="summary-strip" id="summaryStrip">
+    <div class="summary-card">
+      <div class="summary-label">Total Logged</div>
+      <div class="summary-val total" id="sumTotal">0</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Wait</div>
+      <div class="summary-val wait" id="sumWait">0</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Monitor</div>
+      <div class="summary-val monitor" id="sumMonitor">0</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Act</div>
+      <div class="summary-val act" id="sumAct">0</div>
+    </div>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <button class="filter-btn active" data-filter="ALL" onclick="setFilter('ALL',this)">All</button>
+      <button class="filter-btn" data-filter="CONCUR" onclick="setFilter('CONCUR',this)">✓ Concur</button>
+      <button class="filter-btn" data-filter="OVERRIDE" onclick="setFilter('OVERRIDE',this)">⚠ Override</button>
+      <button class="filter-btn" data-filter="WAIT" onclick="setFilter('WAIT',this)">Wait</button>
+      <button class="filter-btn" data-filter="MONITOR" onclick="setFilter('MONITOR',this)">Monitor</button>
+      <button class="filter-btn" data-filter="ACT" onclick="setFilter('ACT',this)">Act</button>
+    </div>
+    <div class="toolbar-right">
+      <button class="export-btn" onclick="exportJSON()">⬇ Export JSON</button>
+      <button class="export-btn" onclick="exportCSV()">⬇ Export CSV</button>
+      <button class="clear-btn" onclick="clearAll()">✕ Clear All</button>
+    </div>
+  </div>
+
+  <!-- LOG TABLE -->
+  <div class="log-wrap fade-in">
+    <table class="log-table">
+      <thead>
+        <tr>
+          <th>Log ID</th>
+          <th>CDM ID</th>
+          <th>Object 1</th>
+          <th>Object 2</th>
+          <th>TCA</th>
+          <th>System Rec</th>
+          <th>Operator</th>
+          <th>Status</th>
+          <th>Override Reasons</th>
+          <th>Time</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="logBody"></tbody>
+    </table>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="page-footer" style="margin-top:20px;">
+    <div class="footer-note" id="footerNote">Session log · Stored in browser · Resets on page close</div>
+    <a href="mvp_dashboard.html" style="font-family:var(--font-mono);font-size:11px;color:var(--turquoise);letter-spacing:0.06em;">← Return to Dashboard</a>
+  </div>
+
+</div>
+
+<script>
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let logs = [];
+let activeFilter = 'ALL';
+
+function loadLogs(){
+  try{
+    logs = JSON.parse(sessionStorage.getItem('orbit_decisions')||'[]');
+  } catch(e){ logs=[]; }
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function render(){
+  loadLogs();
+  updateSummary();
+  renderTable();
+  updateSessionLabel();
+}
+
+function updateSessionLabel(){
+  const now = new Date();
+  document.getElementById('sessionLabel').textContent =
+    `Session ${now.toLocaleDateString()} ${now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`;
+}
+
+function updateSummary(){
+  document.getElementById('sumTotal').textContent   = logs.length;
+  document.getElementById('sumWait').textContent    = logs.filter(l=>l.operator_decision.action==='WAIT').length;
+  document.getElementById('sumMonitor').textContent = logs.filter(l=>l.operator_decision.action==='MONITOR').length;
+  document.getElementById('sumAct').textContent     = logs.filter(l=>l.operator_decision.action==='ACT').length;
+}
+
+function filtered(){
+  if(activeFilter==='ALL')      return logs;
+  if(activeFilter==='CONCUR')   return logs.filter(l=>l.operator_decision.concurrence);
+  if(activeFilter==='OVERRIDE') return logs.filter(l=>!l.operator_decision.concurrence);
+  return logs.filter(l=>l.operator_decision.action===activeFilter);
+}
+
+function setFilter(f, btn){
+  activeFilter=f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTable();
+}
+
+function decClass(d){ return d.toLowerCase(); }
+
+function renderTable(){
+  const tbody = document.getElementById('logBody');
+  const rows  = filtered();
+
+  if(rows.length===0){
+    tbody.innerHTML=`<tr><td colspan="11">
+      <div class="empty-state">
+        <div class="empty-icon">◎</div>
+        <div class="empty-title">${logs.length===0?'No decisions logged yet':'No results for this filter'}</div>
+        <div class="empty-sub">${logs.length===0?'Return to the dashboard, select a CDM event and log your decision.':'Try a different filter above.'}</div>
+      </div>
+    </td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map((rec,i) => {
+    const isConcur = rec.operator_decision.concurrence;
+    const reasons  = (rec.operator_decision.override_reasons||[]);
+    const reasonHtml = reasons.length
+      ? `<div class="reason-tags">${reasons.map(r=>`<span class="reason-tag">${r.replace(/_/g,' ')}</span>`).join('')}</div>`
+      : `<span style="color:var(--text-muted);font-family:var(--font-mono);font-size:10px;">—</span>`;
+    const timeStr  = rec.timestamp ? rec.timestamp.slice(11,19) : '—';
+    const sysD     = rec.decision_intelligence?.system_recommendation || '—';
+    const opD      = rec.operator_decision.action;
+    const cdmId    = rec.conjunction_analysis?.cdm_id || rec.cdm_id || '—';
+    const o1       = (rec.conjunction_analysis?.object_1||'').split('/')[0].trim();
+    const o2       = (rec.conjunction_analysis?.object_2||'').split('/')[0].trim();
+    const tca      = rec.conjunction_analysis?.tca || '—';
+
+    return `
+    <tr class="log-row ${isConcur?'concur-row':'override-row'}" onclick="toggleExpand('exp-${rec.log_id}')">
+      <td><span style="font-family:var(--font-mono);font-size:11px;color:var(--turquoise)">${rec.log_id}</span></td>
+      <td><span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">${cdmId}</span></td>
+      <td style="font-weight:600;color:var(--text-primary);white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis">${o1}</td>
+      <td style="font-weight:600;color:var(--text-primary);white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis">${o2}</td>
+      <td style="font-family:var(--font-mono);font-size:11px;white-space:nowrap">${tca}</td>
+      <td><span class="dec-badge ${decClass(sysD)}">${sysD}</span></td>
+      <td><span class="dec-badge ${decClass(opD)}">${opD}</span></td>
+      <td><span class="status-badge ${isConcur?'concur':'override'}">${isConcur?'✓ Concur':'⚠ Override'}</span></td>
+      <td>${reasonHtml}</td>
+      <td style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">${timeStr}</td>
+      <td onclick="event.stopPropagation()"><button class="del-btn" onclick="deleteLog('${rec.log_id}')" title="Delete">✕</button></td>
+    </tr>
+    <tr class="log-expand-row" id="exp-${rec.log_id}">
+      <td colspan="11">${buildExpandHTML(rec)}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('footerNote').textContent =
+    `${logs.length} decision${logs.length!==1?'s':''} logged · Session storage · Resets on page close`;
+}
+
+function buildExpandHTML(rec){
+  const ca  = rec.conjunction_analysis  || {};
+  const sem = rec.semantic_assessment   || {};
+  const di  = rec.decision_intelligence || {};
+  const op  = rec.operator_decision     || {};
+
+  const semFields = [
+    ['Regime',              sem.regime],
+    ['Encounter Alignment', sem.encounter_alignment],
+    ['Risk Level',          sem.risk_level],
+    ['Latent Risk',         sem.latent_risk],
+    ['Time Window',         sem.time_window],
+    ['Obs Opportunity',     sem.obs_opportunity||sem.observation_opportunity],
+    ['Relative Motion',     sem.relative_motion],
+  ];
+
+  const semColor = (v)=>{
+    if(!v) return '';
+    if(['HIGH','GEOMETRY_DOMINATED','CRITICAL','LATENT_HIGH','NONE'].includes(v)) return 'danger';
+    if(['ELEVATED','TRANSITION','SHORT','POSSIBLE_GROWTH','LIMITED','FAST_PASS'].includes(v)) return 'warning';
+    if(['NEGLIGIBLE','LOW','PROBABILISTIC','LONG','STABLE_LOW','SUFFICIENT','SLOW_PASS'].includes(v)) return 'success';
+    return '';
+  };
+
+  return `<div class="expand-inner">
+    <div class="expand-cols">
+
+      <div class="expand-group">
+        <div class="expand-group-title">Conjunction Analysis</div>
+        <div class="expand-field"><span class="expand-field-label">CDM ID</span><span class="expand-field-val highlight">${ca.cdm_id||'—'}</span></div>
+        <div class="expand-field"><span class="expand-field-label">Object 1</span><span class="expand-field-val">${ca.object_1||'—'}</span></div>
+        <div class="expand-field"><span class="expand-field-label">Object 2</span><span class="expand-field-val">${ca.object_2||'—'}</span></div>
+        <div class="expand-field"><span class="expand-field-label">TCA</span><span class="expand-field-val highlight">${ca.tca||'—'}</span></div>
+        <div class="expand-field"><span class="expand-field-label">Miss Distance</span><span class="expand-field-val turquoise">${ca.miss_distance_m!=null?ca.miss_distance_m.toFixed(3)+' m':'—'}</span></div>
+        <div class="expand-field"><span class="expand-field-label">Collision Probability</span><span class="expand-field-val highlight">${ca.collision_probability||'—'}</span></div>
+        <div class="expand-field"><span class="expand-field-label">Pc Max</span><span class="expand-field-val">${ca.pc_max||'—'}</span></div>
+        <div class="expand-field"><span class="expand-field-label">MD / HBR Ratio</span><span class="expand-field-val warning">${ca.miss_distance_hbr_ratio!=null?ca.miss_distance_hbr_ratio.toFixed(2)+'×':'—'}</span></div>
+        <div class="expand-field"><span class="expand-field-label">Relative Speed</span><span class="expand-field-val">${ca.relative_speed_ms!=null?ca.relative_speed_ms.toFixed(1)+' m/s':'—'}</span></div>
+        <div class="expand-field"><span class="expand-field-label">B·T / B·R</span><span class="expand-field-val">${ca.b_plane_bt!=null?ca.b_plane_bt.toFixed(1)+' / '+ca.b_plane_br.toFixed(1)+' m':'—'}</span></div>
+      </div>
+
+      <div class="expand-group">
+        <div class="expand-group-title">Semantic Assessment</div>
+        ${semFields.map(([label,val])=>`
+        <div class="expand-field">
+          <span class="expand-field-label">${label}</span>
+          <span class="expand-field-val ${semColor(val)}">${val||'—'}</span>
+        </div>`).join('')}
+      </div>
+
+      <div class="expand-group">
+        <div class="expand-group-title">Decision Intelligence</div>
+        <div class="expand-field"><span class="expand-field-label">System Recommendation</span>
+          <span class="dec-badge ${decClass(di.system_recommendation||'wait')}" style="margin-top:3px;display:inline-flex;">${di.system_recommendation||'—'}</span>
+        </div>
+        <div class="expand-field"><span class="expand-field-label">Confidence Level</span><span class="expand-field-val highlight">${di.confidence_level||'—'}</span></div>
+        <div class="expand-field"><span class="expand-field-label">Confidence Score</span><span class="expand-field-val">${di.confidence_score||'—'}</span></div>
+      </div>
+
+      <div class="expand-group">
+        <div class="expand-group-title">Operator Decision</div>
+        <div class="expand-field"><span class="expand-field-label">Action Taken</span>
+          <span class="dec-badge ${decClass(op.action||'wait')}" style="margin-top:3px;display:inline-flex;">${op.action||'—'}</span>
+        </div>
+        <div class="expand-field"><span class="expand-field-label">Concurrence</span>
+          <span class="status-badge ${op.concurrence?'concur':'override'}" style="margin-top:3px;display:inline-flex;">${op.concurrence?'✓ Concur':'⚠ Override'}</span>
+        </div>
+        ${!op.concurrence&&(op.override_reasons||[]).length?`
+        <div class="expand-field"><span class="expand-field-label">Override Reasons</span>
+          <div class="reason-tags" style="margin-top:3px;">${(op.override_reasons||[]).map(r=>`<span class="reason-tag">${r.replace(/_/g,' ')}</span>`).join('')}</div>
+        </div>`:''}
+        ${op.override_note?`
+        <div class="expand-field"><span class="expand-field-label">Notes</span>
+          <span class="expand-field-val" style="font-style:italic;line-height:1.5;">"${op.override_note}"</span>
+        </div>`:''}
+        <div class="expand-field" style="margin-top:8px;"><span class="expand-field-label">Logged At</span><span class="expand-field-val" style="font-family:var(--font-mono);font-size:10px;">${rec.timestamp||'—'}</span></div>
+      </div>
+
+    </div>
+  </div>`;
+}
+
+function toggleExpand(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const open = el.classList.contains('open');
+  // close all
+  document.querySelectorAll('.log-expand-row.open').forEach(r=>r.classList.remove('open'));
+  if(!open) el.classList.add('open');
+}
+
+// ── DELETE ────────────────────────────────────────────────────────────────────
+function deleteLog(logId){
+  logs = logs.filter(l=>l.log_id !== logId);
+  sessionStorage.setItem('orbit_decisions', JSON.stringify(logs));
+  render();
+}
+
+function clearAll(){
+  if(!confirm('Clear all logged decisions? This cannot be undone.')) return;
+  logs=[];
+  sessionStorage.removeItem('orbit_decisions');
+  sessionStorage.removeItem('orbit_log_count');
+  render();
+}
+
+// ── EXPORT ────────────────────────────────────────────────────────────────────
+function exportJSON(){
+  if(!logs.length){ alert('No decisions to export.'); return; }
+  const blob = new Blob([JSON.stringify(logs, null, 2)], {type:'application/json'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `orbit-i-decision-log-${datestamp()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportCSV(){
+  if(!logs.length){ alert('No decisions to export.'); return; }
+  const headers = [
+    'Log ID','Timestamp','CDM ID','Object 1','Object 2','TCA',
+    'Miss Distance (m)','Pc','Pc Max','MD/HBR Ratio','Relative Speed (m/s)',
+    'Regime','Encounter Alignment','Risk Level','Latent Risk',
+    'Time Window','Obs Opportunity','Relative Motion',
+    'System Recommendation','Confidence Level','Confidence Score',
+    'Operator Action','Concurrence','Override Reasons','Override Note'
+  ];
+  const rows = logs.map(rec=>{
+    const ca  = rec.conjunction_analysis  || {};
+    const sem = rec.semantic_assessment   || {};
+    const di  = rec.decision_intelligence || {};
+    const op  = rec.operator_decision     || {};
+    return [
+      rec.log_id, rec.timestamp,
+      ca.cdm_id, ca.object_1, ca.object_2, ca.tca,
+      ca.miss_distance_m, ca.collision_probability, ca.pc_max,
+      ca.miss_distance_hbr_ratio, ca.relative_speed_ms,
+      sem.regime, sem.encounter_alignment, sem.risk_level, sem.latent_risk,
+      sem.time_window, sem.obs_opportunity||sem.observation_opportunity, sem.relative_motion,
+      di.system_recommendation, di.confidence_level, di.confidence_score,
+      op.action, op.concurrence?'CONCUR':'OVERRIDE',
+      (op.override_reasons||[]).join('; '),
+      op.override_note||''
+    ].map(v=>JSON.stringify(v??'')).join(',');
+  });
+  const csv  = [headers.map(h=>JSON.stringify(h)).join(','), ...rows].join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `orbit-i-decision-log-${datestamp()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function datestamp(){
+  return new Date().toISOString().slice(0,10);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+render();
+
+// Auto-refresh every 5s in case operator logs from dashboard in another tab
+setInterval(()=>{ loadLogs(); updateSummary(); renderTable(); }, 5000);
+</script>
+</body>
+</html>

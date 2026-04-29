@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Orbit-I — CDM Visualizer</title>
+<title>Orbit-I — CDM Analytics & Decision Intelligence</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&display=swap');
@@ -162,6 +162,15 @@ nav{position:sticky;top:0;z-index:100;background:rgba(12,14,20,0.92);backdrop-fi
 .urgency-bar{height:100%;border-radius:3px;transition:width 0.6s ease;}
 
 /* bplane note */
+
+/* ── GEO LEGEND ── */
+.geo-legend{display:flex;flex-direction:column;gap:5px;margin:10px 0 4px;padding:10px 12px;background:var(--surface-2);border-radius:var(--radius-sm);border:1px solid var(--border);}
+.geo-legend-item{display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:0.04em;}
+.geo-legend-dot{width:9px;height:9px;flex-shrink:0;display:inline-block;}
+.geo-legend-line{width:24px;height:2px;flex-shrink:0;display:inline-block;border-radius:1px;}
+.geo-legend-line-dashed{width:24px;height:0;flex-shrink:0;display:inline-block;border-top:2px dashed rgba(64,224,208,0.45);}
+.geo-legend-label{color:var(--text-muted);font-family:var(--font-mono);font-size:10px;letter-spacing:0.04em;}
+
 .bplane-note{font-family:var(--font-mono);font-size:9px;color:var(--text-muted);letter-spacing:0.05em;margin-top:8px;line-height:1.5;padding:6px 8px;background:var(--surface-2);border-radius:var(--radius-sm);border:1px solid var(--border);}
 
 
@@ -272,6 +281,58 @@ nav{position:sticky;top:0;z-index:100;background:rgba(12,14,20,0.92);backdrop-fi
 .conf-score-val.MEDIUM{color:var(--warning);}
 .conf-score-val.LOW{color:var(--danger);}
 
+
+/* ── DECISION CONCURRENCE & OVERRIDE LOG ── */
+.concur-section{margin-top:20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;}
+.concur-hdr{display:flex;align-items:flex-start;justify-content:space-between;padding:16px 22px;background:var(--surface-2);border-bottom:1px solid var(--border);}
+.concur-hdr-left{}
+.concur-hdr-title{font-family:var(--font-mono);font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--turquoise);margin-bottom:3px;}
+.concur-hdr-sub{font-size:12px;color:var(--text-muted);}
+.concur-rec{display:flex;align-items:center;gap:10px;padding:16px 22px;border-bottom:1px solid var(--border);background:var(--bg);}
+.concur-rec-label{font-family:var(--font-mono);font-size:11px;color:var(--text-muted);letter-spacing:0.06em;text-transform:uppercase;}
+.concur-rec-badge{font-family:var(--font-display);font-size:13px;font-weight:800;letter-spacing:0.06em;padding:4px 16px;border-radius:var(--radius-sm);border:2px solid;}
+.concur-rec-badge.wait{color:#4f7cff;border-color:#4f7cff;background:rgba(79,124,255,0.1);}
+.concur-rec-badge.monitor{color:#f0a742;border-color:#f0a742;background:rgba(240,167,66,0.1);}
+.concur-rec-badge.act{color:#ff5c5c;border-color:#ff5c5c;background:rgba(255,92,92,0.1);}
+.concur-body{padding:20px 22px;}
+.concur-action-label{font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px;}
+.concur-btns{display:flex;gap:12px;margin-bottom:20px;}
+.concur-btn{font-family:var(--font-display);font-size:14px;font-weight:800;letter-spacing:0.06em;padding:10px 32px;border-radius:var(--radius-sm);border:2px solid;cursor:pointer;background:transparent;transition:all var(--transition);}
+.concur-btn.wait{color:#4f7cff;border-color:rgba(79,124,255,0.4);}
+.concur-btn.wait:hover,.concur-btn.wait.selected{background:rgba(79,124,255,0.12);border-color:#4f7cff;}
+.concur-btn.monitor{color:#f0a742;border-color:rgba(240,167,66,0.4);}
+.concur-btn.monitor:hover,.concur-btn.monitor.selected{background:rgba(240,167,66,0.12);border-color:#f0a742;}
+.concur-btn.act{color:#ff5c5c;border-color:rgba(255,92,92,0.4);}
+.concur-btn.act:hover,.concur-btn.act.selected{background:rgba(255,92,92,0.12);border-color:#ff5c5c;}
+
+/* result banner */
+.concur-result{display:none;align-items:center;gap:10px;padding:12px 16px;border-radius:var(--radius-sm);border-left:3px solid;margin-bottom:16px;font-size:13px;}
+.concur-result.concur{background:rgba(52,199,123,0.07);border-color:var(--success);color:var(--success);}
+.concur-result.override{background:rgba(240,167,66,0.07);border-color:var(--warning);color:var(--warning);}
+.concur-result.visible{display:flex;}
+
+/* override reasons */
+.override-block{display:none;margin-bottom:16px;}
+.override-block.visible{display:block;}
+.override-reason-label{font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px;}
+.override-reasons-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+.reason-chip{font-family:var(--font-mono);font-size:10px;letter-spacing:0.06em;text-transform:uppercase;padding:5px 12px;border-radius:2px;border:1px solid var(--border-light);color:var(--text-secondary);cursor:pointer;transition:all var(--transition);background:transparent;user-select:none;}
+.reason-chip:hover{border-color:var(--warning);color:var(--warning);}
+.reason-chip.selected{border-color:var(--warning);color:var(--warning);background:rgba(240,167,66,0.1);}
+.override-note-label{font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;}
+.override-note-input{width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:var(--font-body);font-size:13px;padding:10px 14px;outline:none;resize:vertical;min-height:72px;transition:border-color var(--transition);}
+.override-note-input:focus{border-color:var(--turquoise);}
+.override-note-input::placeholder{color:var(--text-muted);}
+
+/* log button */
+.concur-footer{display:flex;align-items:center;justify-content:space-between;padding:14px 22px;border-top:1px solid var(--border);background:var(--bg);}
+.log-btn{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-display);font-weight:700;font-size:13px;background:var(--accent);color:#fff;border:none;padding:9px 22px;border-radius:var(--radius-sm);cursor:pointer;transition:all var(--transition);}
+.log-btn:hover{background:#6b91ff;transform:translateY(-1px);box-shadow:0 6px 20px var(--accent-glow);}
+.log-btn:disabled{opacity:0.4;cursor:not-allowed;transform:none;box-shadow:none;}
+.log-btn-note{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:0.05em;}
+.log-link{font-family:var(--font-mono);font-size:11px;color:var(--turquoise);text-decoration:none;letter-spacing:0.06em;transition:opacity var(--transition);}
+.log-link:hover{opacity:0.7;}
+
 .sim-btn{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-display);font-weight:700;font-size:13px;background:transparent;border:1px solid var(--border-light);color:var(--text-secondary);padding:8px 18px;border-radius:var(--radius-sm);cursor:pointer;transition:all var(--transition);text-decoration:none;}
 .sim-btn:hover{border-color:var(--turquoise);color:var(--turquoise);}
 
@@ -296,7 +357,7 @@ nav{position:sticky;top:0;z-index:100;background:rgba(12,14,20,0.92);backdrop-fi
 <nav>
   <div class="nav-inner">
     <div class="nav-logo">Orbit<span>-I</span></div>
-    <div class="nav-center">CDM Visualizer</div>
+    <div class="nav-center">CDM Analytics &amp; Decision Intelligence</div>
     <div class="nav-right">
       <div class="live-dot"><div class="live-dot-circle"></div>Demo Mode</div>
       <a href="mvp_login.html" class="nav-back">← Sign out</a>
@@ -311,7 +372,7 @@ nav{position:sticky;top:0;z-index:100;background:rgba(12,14,20,0.92);backdrop-fi
     <div class="section-hdr-line"></div>
     <span class="section-hdr-text">Conjunction Data Messages</span>
     <div class="section-hdr-right">
-      <span class="section-hdr-count" id="rowCount">15 events · showing 5</span>
+      <span class="section-hdr-count" id="rowCount">20 events · showing 5</span>
     </div>
   </div>
 
@@ -339,7 +400,7 @@ nav{position:sticky;top:0;z-index:100;background:rgba(12,14,20,0.92);backdrop-fi
     <div class="show-more-bar" id="showMoreBar">
       <button class="show-more-btn" id="showMoreBtn">
         <span id="showMoreIcon">▾</span>
-        <span id="showMoreText">Show all 15 events</span>
+        <span id="showMoreText">Show all 20 events</span>
       </button>
     </div>
   </div>
@@ -399,9 +460,16 @@ nav{position:sticky;top:0;z-index:100;background:rgba(12,14,20,0.92);backdrop-fi
         <!-- Geometry: B-plane -->
         <div class="chart-card">
           <div class="chart-card-title">Geometry Awareness</div>
-          <div class="chart-card-sub">B-plane projection · perpendicular to relative velocity</div>
+          <div class="chart-card-sub">B-plane · perpendicular to relative velocity · Axes B·T and B·R span the encounter plane</div>
           <div class="chart-canvas-wrap"><canvas id="geoChart"></canvas></div>
-          <div class="bplane-note" id="bplaneNote"></div>
+
+          <div class="geo-legend">
+            <div class="geo-legend-item"><span class="geo-legend-dot" style="background:#4f7cff;border-radius:50%;"></span><span class="geo-legend-label">Object 1 — origin (0, 0)</span></div>
+            <div class="geo-legend-item"><span class="geo-legend-dot" style="background:#40E0D0;border-radius:50%;"></span><span class="geo-legend-label">Miss distance vector projected onto B-plane (B·T, B·R)</span></div>
+            <div class="geo-legend-item"><span class="geo-legend-line" style="background:rgba(255,92,92,0.85);"></span><span class="geo-legend-label">Combined HBR — hard body collision threshold</span></div>
+            <div class="geo-legend-item"><span class="geo-legend-line-dashed"></span><span class="geo-legend-label">Miss distance radius (CDM reported value)</span></div>
+          </div>
+
           <div class="metric-rows" id="geoMetrics"></div>
         </div>
 
@@ -541,8 +609,66 @@ nav{position:sticky;top:0;z-index:100;background:rgba(12,14,20,0.92);backdrop-fi
         </div>
         <div class="decision-footer">
           <div class="decision-footer-meta" id="decisionMeta"></div>
-          <a href="mvp_simulation.html" class="sim-btn">Decision Simulation Check →</a>
+          <a href="mvp_sim.html" class="sim-btn">Decision Simulation →</a>
         </div>
+      </div>
+
+
+      <!-- DECISION CONCURRENCE & OVERRIDE LOG -->
+      <div class="concur-section fade-in" id="concurSection" style="display:none;">
+
+        <div class="concur-hdr">
+          <div class="concur-hdr-left">
+            <div class="concur-hdr-title">Decision Concurrence &amp; Override Log</div>
+            <div class="concur-hdr-sub">Confirm or override the system recommendation — your decision will be logged with full context.</div>
+          </div>
+        </div>
+
+        <div class="concur-rec">
+          <span class="concur-rec-label">System Recommendation</span>
+          <span class="concur-rec-badge" id="concurRecBadge"></span>
+          <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-left:8px;" id="concurRecCdm"></span>
+        </div>
+
+        <div class="concur-body">
+          <div class="concur-action-label">Select your decision</div>
+          <div class="concur-btns">
+            <button class="concur-btn wait"    data-action="WAIT"    onclick="selectAction('WAIT')">WAIT</button>
+            <button class="concur-btn monitor" data-action="MONITOR" onclick="selectAction('MONITOR')">MONITOR</button>
+            <button class="concur-btn act"     data-action="ACT"     onclick="selectAction('ACT')">ACT</button>
+          </div>
+
+          <!-- Result banner -->
+          <div class="concur-result" id="concurResult"></div>
+
+          <!-- Override block -->
+          <div class="override-block" id="overrideBlock">
+            <div class="override-reason-label">Reason for override <span style="color:var(--text-muted)">(select all that apply)</span></div>
+            <div class="override-reasons-grid" id="overrideReasons">
+              <div class="reason-chip" data-reason="RISK_REGIME"           onclick="toggleReason(this)">Risk Regime</div>
+              <div class="reason-chip" data-reason="ENCOUNTER_ALIGNMENT"   onclick="toggleReason(this)">Encounter Alignment</div>
+              <div class="reason-chip" data-reason="RISK_LEVEL"            onclick="toggleReason(this)">Risk Level</div>
+              <div class="reason-chip" data-reason="LATENT_RISK"           onclick="toggleReason(this)">Latent Risk</div>
+              <div class="reason-chip" data-reason="TIME_WINDOW"           onclick="toggleReason(this)">Time Window</div>
+              <div class="reason-chip" data-reason="OBSERVATION_OPPORTUNITY" onclick="toggleReason(this)">Observation Opportunity</div>
+              <div class="reason-chip" data-reason="RELATIVE_MOTION"      onclick="toggleReason(this)">Relative Motion</div>
+              <div class="reason-chip" data-reason="OTHERS"               onclick="toggleReason(this)">Others</div>
+            </div>
+            <div class="override-note-label">Additional notes <span style="color:var(--text-muted)">(optional)</span></div>
+            <textarea class="override-note-input" id="overrideNote" placeholder="Describe your reasoning for overriding the system recommendation…"></textarea>
+          </div>
+        </div>
+
+        <div class="concur-footer">
+          <div>
+            <button class="log-btn" id="logBtn" disabled onclick="logDecision()">
+              ◈ Log Decision
+            </button>
+            <div class="log-btn-note" style="margin-top:5px;" id="logBtnNote">Select a decision to enable logging</div>
+          </div>
+          <a href="mvp_log.html" class="log-link">View Decision Log →</a>
+        </div>
+
       </div>
 
     </div>
@@ -552,21 +678,26 @@ nav{position:sticky;top:0;z-index:100;background:rgba(12,14,20,0.92);backdrop-fi
 <script>
 // ── DATA ─────────────────────────────────────────────────────────────────────
 const CDM = [
-  {id:"4708712",created:"12/30/2023 23:45",tca:"1/3/2024 02:05",md:360.998,rs:4152.541,rr:-99.162,rt:333.902,rn:-94.846,vr:5.580,vt:-1135.347,vn:-3994.315,pc:3.4180011777e-6,maxpc:0.0001328703714869,o1n:"STARLINK-1893",o1id:"46786",o1intl:"2020-074AZ",o1t:"PAYLOAD",o1m:"YES",o1hbr:7.672985,o2n:"STARLINK-2408",o2id:"47823",o2intl:"2021-018AN",o2t:"PAYLOAD",o2m:"YES",o2hbr:7.672985},
-  {id:"4796676",created:"12/31/2023 17:07",tca:"1/4/2024 02:42",md:230.331,rs:6774.705,rr:53.979,rt:-196.757,rn:-106.889,vr:-285.447,vt:-3278.221,vn:5921.859,pc:2.0938292338e-5,maxpc:0.0003998813471315,o1n:"SL-14 R/B",o1id:"20262",o1intl:"1989-080C",o1t:"ROCKET BODY",o1m:"NO",o1hbr:2.338,o2n:"STARLINK-4703",o2id:"53855",o2intl:"2022-114AP",o2t:"PAYLOAD",o2m:"YES",o2hbr:7.672985},
-  {id:"4714477",created:"12/30/2023 21:25",tca:"1/3/2024 03:50",md:203.940,rs:8049.963,rr:-131.908,rt:133.754,rn:-79.384,vr:2.437,vt:-4275.066,vn:-6820.976,pc:1.84409104e-8,maxpc:1.2586681492e-6,o1n:"STARLINK-30124",o1id:"56690",o1intl:"2023-067C",o1t:"PAYLOAD",o1m:"YES",o1hbr:1.0,o2n:"STARLINK-5512",o2id:"57256",o2intl:"2023-094AQ",o2t:"PAYLOAD",o2m:"YES",o2hbr:1.0},
-  {id:"4411173",created:"12/28/2023 07:09",tca:"1/1/2024 06:15",md:391.653,rs:9631.056,rr:-157.707,rt:278.858,rn:225.297,vr:-14.074,vt:-6108.392,vn:7446.112,pc:7.10008833e-8,maxpc:6.9340057836e-6,o1n:"STARLINK-1922",o1id:"46753",o1intl:"2020-074Q",o1t:"PAYLOAD",o1m:"YES",o1hbr:7.672985,o2n:"STARLINK-1441",o2id:"45658",o2intl:"2020-035B",o2t:"PAYLOAD",o2m:"YES",o2hbr:7.672985},
-  {id:"4654350",created:"12/30/2023 12:52",tca:"1/3/2024 06:16",md:394.310,rs:1069.289,rr:336.635,rt:-204.847,rn:-13.968,vr:-0.130,vt:-75.715,vn:1066.605,pc:2.04567895e-8,maxpc:1.3858038908e-6,o1n:"STARLINK-30874",o1id:"58227",o1intl:"2023-170X",o1t:"PAYLOAD",o1m:"YES",o1hbr:1.0,o2n:"STARLINK-6279",o2id:"56411",o2intl:"2023-061AP",o2t:"PAYLOAD",o2m:"YES",o2hbr:1.0},
-  {id:"4675646",created:"12/30/2023 22:00",tca:"1/4/2024 02:07",md:281.632,rs:6962.219,rr:-42.967,rt:247.395,rn:127.539,vr:-9.649,vt:-3192.111,vn:6187.312,pc:2.6411941497e-6,maxpc:0.0002268301711285,o1n:"STARLINK-2240",o1id:"48585",o1intl:"2021-041AJ",o1t:"PAYLOAD",o1m:"YES",o1hbr:7.672985,o2n:"STARLINK-2211",o2id:"47778",o2intl:"2021-017BJ",o2t:"PAYLOAD",o2m:"YES",o2hbr:7.672985},
-  {id:"4385318",created:"12/28/2023 09:58",tca:"1/1/2024 02:42",md:237.216,rs:9755.372,rr:38.233,rt:-179.933,rn:-149.779,vr:-5.192,vt:-6276.533,vn:7468.091,pc:3.40512499e-8,maxpc:3.1352256846e-6,o1n:"STARLINK-5481",o1id:"57255",o1intl:"2023-094AP",o1t:"PAYLOAD",o1m:"YES",o1hbr:1.0,o2n:"STARLINK-6340",o2id:"57361",o2intl:"2023-099AK",o2t:"PAYLOAD",o2m:"YES",o2hbr:1.0},
-  {id:"4794366",created:"12/31/2023 09:46",tca:"1/4/2024 03:31",md:383.835,rs:14659.266,rr:0.515,rt:-89.317,rn:373.298,vr:-13.500,vt:-14273.284,vn:-3341.743,pc:4.7426070405e-6,maxpc:0.0001825439568062,o1n:"NOAA 17 DEB",o1id:"48703",o1intl:"2002-032AL",o1t:"DEBRIS",o1m:"NO",o1hbr:1.0,o2n:"DELTA 1 DEB",o2id:"12237",o2intl:"1978-026CE",o2t:"DEBRIS",o2m:"NO",o2hbr:1.0},
-  {id:"4394678",created:"12/28/2023 09:04",tca:"1/1/2024 04:13",md:424.854,rs:4639.187,rr:-203.215,rt:-354.664,rn:115.839,vr:6.440,vt:-1416.407,vn:-4417.670,pc:1.4136140666e-6,maxpc:3.08693512748e-5,o1n:"STARLINK-5255",o1id:"54208",o1intl:"2022-141BD",o1t:"PAYLOAD",o1m:"YES",o1hbr:7.672985,o2n:"STARLINK-4800",o2id:"53854",o2intl:"2022-114AN",o2t:"PAYLOAD",o2m:"YES",o2hbr:7.672985},
-  {id:"4421002",created:"12/28/2023 22:33",tca:"1/1/2024 04:33",md:288.181,rs:14905.819,rr:-32.371,rt:-5.386,rn:-286.306,vr:16.729,vt:-14904.218,vn:217.817,pc:1.94998590939e-5,maxpc:7.03823440393e-5,o1n:"NOAA 16 DEB",o1id:"42359",o1intl:"2000-055RB",o1t:"DEBRIS",o1m:"NO",o1hbr:1.0,o2n:"SL-14 DEB",o2id:"39969",o2intl:"1987-068CV",o2t:"DEBRIS",o2m:"NO",o2hbr:1.0},
-  {id:"4668546",created:"12/30/2023 14:48",tca:"1/3/2024 04:35",md:288.456,rs:14905.786,rr:-33.913,rt:0.636,rn:-286.455,vr:16.730,vt:-14904.185,vn:217.814,pc:3.41765088547e-5,maxpc:3.95617423224e-5,o1n:"NOAA 16 DEB",o1id:"42359",o1intl:"2000-055RB",o1t:"DEBRIS",o1m:"NO",o1hbr:1.0,o2n:"SL-14 DEB",o2id:"39969",o2intl:"1987-068CV",o2t:"DEBRIS",o2m:"NO",o2hbr:1.0},
-  {id:"4778044",created:"12/31/2023 07:07",tca:"1/4/2024 07:26",md:237.292,rs:15088.956,rr:-135.946,rt:-16.401,rn:193.797,vr:10.305,vt:-15045.282,vn:-1147.170,pc:5.354527131e-5,maxpc:0.0009087177753044,o1n:"ONEWEB-0050",o1id:"45453",o1intl:"2020-020AF",o1t:"PAYLOAD",o1m:"YES",o1hbr:4.330,o2n:"STARLINK-4386",o2id:"53649",o2intl:"2022-105B",o2t:"PAYLOAD",o2m:"YES",o2hbr:7.672985},
-  {id:"4682622",created:"12/30/2023 16:56",tca:"1/3/2024 08:32",md:446.721,rs:4664.316,rr:148.697,rt:401.254,rn:-128.234,vr:5.351,vt:-1432.162,vn:-4439.001,pc:1.34863373174e-5,maxpc:6.6183541276e-5,o1n:"STARLINK-3851",o1id:"52344",o1intl:"2022-045P",o1t:"PAYLOAD",o1m:"YES",o1hbr:7.794,o2n:"STARLINK-4071",o2id:"52671",o2intl:"2022-053R",o2t:"PAYLOAD",o2m:"YES",o2hbr:7.672985},
-  {id:"4449423",created:"12/28/2023 10:50",tca:"1/1/2024 09:04",md:179.254,rs:4640.143,rr:160.431,rt:76.131,rn:-24.451,vr:1.180,vt:-1420.064,vn:-4417.504,pc:1.661699281e-6,maxpc:3.42142728119e-5,o1n:"STARLINK-3857",o1id:"52494",o1intl:"2022-049AV",o1t:"PAYLOAD",o1m:"YES",o1hbr:7.672985,o2n:"STARLINK-4254",o2id:"52998",o2intl:"2022-076N",o2t:"PAYLOAD",o2m:"YES",o2hbr:7.672985},
+  {id:"13362472",created:"4/9/2024 17:18",tca:"4/14/2024 02:20",md:2.374,rs:4648.728,rr:-1.121,rt:-1.202,rn:1.713,vr:5.800,vt:-1422.494,vn:-4425.737,pc:3.2891875933e-6,maxpc:0.0003286747105961,o1n:"STARLINK-4299",o1id:"53172",o1intl:"2022-083AS",o1t:"PAYLOAD",o1m:"YES",o1hbr:7.673,o2n:"STARLINK-4500",o2id:"53413",o2intl:"2022-097AB",o2t:"PAYLOAD",o2m:"YES",o2hbr:7.673},
+  {id:"13084843",created:"4/7/2024 0:27",tca:"4/12/2024 10:55",md:2.367,rs:7505.120,rr:-1.711,rt:-0.749,rn:-1.454,vr:92.012,vt:-3830.180,vn:6453.533,pc:5.2969324296e-5,maxpc:0.0050258527226243,o1n:"FENGYUN 1C DEB",o1id:"29851",o1intl:"1999-025EV",o1t:"DEBRIS",o1m:"NO",o1hbr:1.0,o2n:"THORAD AGENA D DEB",o2id:"4988",o2intl:"1970-025HJ",o2t:"DEBRIS",o2m:"NO",o2hbr:1.0},
+  {id:"12570870",created:"4/1/2024 19:34",tca:"4/6/2024 12:34",md:1.912,rs:0.113,rr:-0.697,rt:-0.568,rn:-1.687,vr:0.103,vt:-0.033,vn:-0.032,pc:0.0003712506234783,maxpc:0.0076711657611657,o1n:"SHIYAN 24C 01",o1id:"58650",o1intl:"2023-206A",o1t:"PAYLOAD",o1m:"YES",o1hbr:1.0,o2n:"SHIYAN 24C 03",o2id:"58652",o2intl:"2023-206C",o2t:"PAYLOAD",o2m:"YES",o2hbr:1.0},
+  {id:"12207966",created:"3/29/2024 9:10",tca:"4/3/2024 08:46",md:2.509,rs:6982.461,rr:2.009,rt:-0.332,rn:1.465,vr:10.526,vt:-3209.071,vn:-6201.332,pc:3.575180687e-7,maxpc:3.57500231466e-5,o1n:"STARLINK-3849",o1id:"52343",o1intl:"2022-045N",o1t:"PAYLOAD",o1m:"YES",o1hbr:7.794,o2n:"STARLINK-4278",o2id:"53182",o2intl:"2022-083BC",o2t:"PAYLOAD",o2m:"YES",o2hbr:7.673},
+  {id:"11457506",created:"3/19/2024 8:08",tca:"3/24/2024 22:42",md:33.146,rs:13885.143,rr:-1.182,rt:-18.024,rn:-27.791,vr:-10.359,vt:-12929.674,vn:5061.681,pc:0.0311999902180448,maxpc:0.1130445546661392,o1n:"SL-16 DEB",o1id:"22358",o1intl:"1992-093AX",o1t:"DEBRIS",o1m:"NO",o1hbr:1.0,o2n:"SL-16 R/B",o2id:"16182",o2intl:"1985-097B",o2t:"ROCKET BODY",o2m:"NO",o2hbr:9.007},
+  {id:"11023234",created:"3/12/2024 23:57",tca:"3/17/2024 16:35",md:171.974,rs:13248.764,rr:2.048,rt:76.563,rn:-153.977,vr:22.938,vt:-11932.279,vn:-5757.598,pc:0.0531018928024925,maxpc:0.0655367254918644,o1n:"SL-8 R/B",o1id:"10138",o1intl:"1977-062B",o1t:"ROCKET BODY",o1m:"NO",o1hbr:5.690,o2n:"COSMOS 1241",o2id:"12149",o2intl:"1981-006A",o2t:"PAYLOAD",o2m:"YES",o2hbr:19.919},
+  {id:"9432220",created:"2/28/2024 21:44",tca:"3/4/2024 09:47",md:49.407,rs:14085.154,rr:-14.697,rt:-20.779,rn:42.347,vr:13.508,vt:-13138.350,vn:-5076.922,pc:0.0348419659921263,maxpc:0.1618701716390227,o1n:"TIMED",o1id:"26998",o1intl:"2001-055B",o1t:"PAYLOAD",o1m:"YES",o1hbr:10.132,o2n:"COSMOS 2221",o2id:"22236",o2intl:"1992-080A",o2t:"PAYLOAD",o2m:"YES",o2hbr:11.380},
+  {id:"9303659",created:"2/27/2024 22:19",tca:"3/3/2024 09:20",md:70.613,rs:14280.127,rr:-5.917,rt:-6.839,rn:-70.032,vr:-70.411,vt:-14042.832,vn:2591.512,pc:0.0410478122947665,maxpc:0.1154189662053088,o1n:"SL-16 DEB",o1id:"18412",o1intl:"1987-041E",o1t:"DEBRIS",o1m:"NO",o1hbr:1.0,o2n:"TRANSIT 5B-2",o2id:"704",o2intl:"1963-049B",o2t:"PAYLOAD",o2m:"YES",o2hbr:25.981},
+  {id:"9213156",created:"2/24/2024 4:08",tca:"2/29/2024 09:20",md:8.466,rs:14280.134,rr:-4.443,rt:-0.405,rn:-7.196,vr:70.434,vt:-14046.350,vn:-2572.416,pc:0.0662929909446613,maxpc:0.9583040054165936,o1n:"TRANSIT 5B-2",o1id:"704",o1intl:"1963-049B",o1t:"PAYLOAD",o1m:"YES",o1hbr:25.981,o2n:"SL-16 DEB",o2id:"18412",o2intl:"1987-041E",o2t:"DEBRIS",o2m:"NO",o2hbr:1.0},
+  {id:"9133863",created:"2/22/2024 21:44",tca:"2/27/2024 12:53",md:100.390,rs:14486.273,rr:-55.064,rt:-0.845,rn:-83.937,vr:3.501,vt:-14482.865,vn:314.186,pc:0.0452756473924573,maxpc:0.0452756473924585,o1n:"OPS 8464 (TRANSIT 5B-7)",o1id:"1514",o1intl:"1965-065F",o1t:"PAYLOAD",o1m:"YES",o1hbr:25.981,o2n:"ONEWEB-0597",o2id:"54663",o2intl:"2022-166X",o2t:"PAYLOAD",o2m:"YES",o2hbr:4.330},
+  {id:"8304733",created:"2/9/2024 22:48",tca:"2/14/2024 00:48",md:3.372,rs:4645.137,rr:-3.277,rt:-0.445,rn:0.663,vr:-5.935,vt:-1420.967,vn:4422.456,pc:1.1645029893e-6,maxpc:0.0001163840017596,o1n:"STARLINK-2586",o1id:"48390",o1intl:"2021-038AP",o1t:"PAYLOAD",o1m:"YES",o1hbr:7.673,o2n:"STARLINK-1208",o2id:"45205",o2intl:"2020-012AD",o2t:"PAYLOAD",o2m:"YES",o2hbr:7.673},
+  {id:"8122135",created:"2/8/2024 22:38",tca:"2/13/2024 10:02",md:77.094,rs:14579.944,rr:14.746,rt:-20.449,rn:-72.856,vr:-98.345,vt:-14230.326,vn:3172.212,pc:0.0403399295910638,maxpc:0.1300274073338605,o1n:"COSMOS 2251 DEB",o1id:"34056",o1intl:"1993-036JT",o1t:"DEBRIS",o1m:"NO",o1hbr:1.0,o2n:"ADEOS 2",o2id:"27597",o2intl:"2002-056A",o2t:"PAYLOAD",o2m:"YES",o2hbr:24.249},
+  {id:"7638373",created:"2/4/2024 19:23",tca:"2/9/2024 14:34",md:381.583,rs:15007.047,rr:379.970,rt:14.181,rn:-32.056,vr:831.599,vt:-14983.844,vn:65.627,pc:0.0446855330568761,maxpc:0.068005840555763,o1n:"ALOUETTE 2",o1id:"1804",o1intl:"1965-098A",o1t:"PAYLOAD",o1m:"YES",o1hbr:63.220,o2n:"THORAD AGENA D DEB",o2id:"4753",o2intl:"1970-025DB",o2t:"DEBRIS",o2m:"NO",o2hbr:1.0},
+  {id:"5277143",created:"1/5/2024 15:39",tca:"1/10/2024 01:11",md:12.285,rs:13682.407,rr:11.861,rt:-1.442,rn:-2.855,vr:23.587,vt:-13136.518,vn:3826.171,pc:0.042655370495686,maxpc:0.0649349280118906,o1n:"COSMOS 2509",o1id:"40922",o1intl:"2015-050C",o1t:"PAYLOAD",o1m:"YES",o1hbr:6.062,o2n:"COSMOS 450",o2id:"5553",o2intl:"1971-086G",o2t:"PAYLOAD",o2m:"YES",o2hbr:0.693},
   {id:"4842428",created:"12/31/2023 10:38",tca:"1/4/2024 20:04",md:482.097,rs:11333.507,rr:-142.126,rt:-289.640,rn:358.227,vr:-13.737,vt:-8847.082,vn:-7083.596,pc:9.00871376e-8,maxpc:6.84986818959e-5,o1n:"ONEWEB-0346",o1id:"49212",o1intl:"2021-083AC",o1t:"PAYLOAD",o1m:"YES",o1hbr:4.330,o2n:"SL-14 DEB",o2id:"45321",o2intl:"1991-056BK",o2t:"DEBRIS",o2m:"NO",o2hbr:1.0},
+  {id:"4796676",created:"12/31/2023 17:07",tca:"1/4/2024 02:42",md:230.331,rs:6774.705,rr:53.979,rt:-196.757,rn:-106.889,vr:-285.447,vt:-3278.221,vn:5921.859,pc:2.0938292338e-6,maxpc:0.0003998813471315,o1n:"SL-14 R/B",o1id:"20262",o1intl:"1989-080C",o1t:"ROCKET BODY",o1m:"NO",o1hbr:2.338,o2n:"STARLINK-4703",o2id:"53855",o2intl:"2022-114AP",o2t:"PAYLOAD",o2m:"YES",o2hbr:7.672985},
+  {id:"4778044",created:"12/31/2023 07:07",tca:"1/4/2024 07:26",md:237.292,rs:15088.956,rr:-135.946,rt:-16.401,rn:193.797,vr:10.305,vt:-15045.282,vn:-1147.170,pc:5.354527131e-5,maxpc:0.0009087177753044,o1n:"ONEWEB-0050",o1id:"45453",o1intl:"2020-020AF",o1t:"PAYLOAD",o1m:"YES",o1hbr:4.330,o2n:"STARLINK-4386",o2id:"53649",o2intl:"2022-105B",o2t:"PAYLOAD",o2m:"YES",o2hbr:7.672985},
+  {id:"4758991",created:"12/31/2023 14:56",tca:"1/1/2024 16:14",md:2.186,rs:0.034,rr:-1.423,rt:1.628,rn:-0.320,vr:0.009,vt:0.001,vn:-0.033,pc:6.14570785e-8,maxpc:6.1448959099e-6,o1n:"OBJECT C",o1id:"56155",o1intl:"2023-047C",o1t:"UNKNOWN",o1m:"UNK",o1hbr:3.464,o2n:"OBJECT D",o2id:"56156",o2intl:"2023-047D",o2t:"UNKNOWN",o2m:"UNK",o2hbr:3.464},
+  {id:"4668546",created:"12/30/2023 14:48",tca:"1/3/2024 04:35",md:288.456,rs:14905.786,rr:-33.913,rt:0.636,rn:-286.455,vr:16.730,vt:-14904.185,vn:217.814,pc:3.41765088547e-5,maxpc:3.95617423224e-5,o1n:"NOAA 16 DEB",o1id:"42359",o1intl:"2000-055RB",o1t:"DEBRIS",o1m:"NO",o1hbr:1.0,o2n:"SL-14 DEB",o2id:"39969",o2intl:"1987-068CV",o2t:"DEBRIS",o2m:"NO",o2hbr:1.0},
+  {id:"4449423",created:"12/28/2023 10:50",tca:"1/1/2024 09:04",md:179.254,rs:4640.143,rr:160.431,rt:76.131,rn:-24.451,vr:1.180,vt:-1420.064,vn:-4417.504,pc:1.661699281e-6,maxpc:3.42142728119e-5,o1n:"STARLINK-3857",o1id:"52494",o1intl:"2022-049AV",o1t:"PAYLOAD",o1m:"YES",o1hbr:7.672985,o2n:"STARLINK-4254",o2id:"52998",o2intl:"2022-076N",o2t:"PAYLOAD",o2m:"YES",o2hbr:7.672985},
 ];
 
 // ── VECTOR MATH ───────────────────────────────────────────────────────────────
@@ -691,8 +822,8 @@ document.getElementById('showMoreBar').addEventListener('click',()=>{
   const body=document.getElementById('tableScrollBody');
   body.className='table-scroll-body '+(tableExpanded?'expanded':'collapsed');
   document.getElementById('showMoreIcon').textContent=tableExpanded?'▴':'▾';
-  document.getElementById('showMoreText').textContent=tableExpanded?'Show less':'Show all 15 events';
-  document.getElementById('rowCount').textContent=tableExpanded?'15 events':'15 events · showing 5';
+  document.getElementById('showMoreText').textContent=tableExpanded?'Show less':'Show all 20 events';
+  document.getElementById('rowCount').textContent=tableExpanded?'20 events':'20 events · showing 5';
 });
 
 // radio
@@ -782,9 +913,6 @@ function renderCharts(r){
     }
   });
 
-  document.getElementById('bplaneNote').textContent=
-    `B-plane is perpendicular to the relative velocity vector. Axes B·T and B·R span the encounter plane. The miss distance vector projected here gives the true conjunction geometry.`;
-
   // Along-track residual: r projected onto v̂ (≈0 at TCA by definition)
   const rv=[r.rr,r.rt,r.rn];
   const vhat=vecNorm([r.vr,r.vt,r.vn]);
@@ -861,6 +989,10 @@ function renderCharts(r){
 
   // Scroll to charts smoothly
   renderSemantic(r);
+  // Show concurrence section with system recommendation
+  const decBadgeEl = document.getElementById('decisionBadge');
+  if(decBadgeEl) showConcurSection(decBadgeEl.textContent.trim(), r);
+
   setTimeout(()=>document.getElementById('chartsContent').scrollIntoView({behavior:'smooth',block:'start'}),100);
 }
 
@@ -999,6 +1131,11 @@ function renderSemantic(r){
       ${semItem('ObservationOpp',obsWhy,obsOpp,obsCls)}
       ${semItem('RelativeMotion',motionWhy,motion,motionCls)}
     </div>`;
+
+  // Store semantic labels on row object for concurrence logging
+  r._regime=_regime; r._alignment=_alignment; r._riskLevel=_riskLevel;
+  r._latent=_latent; r._timeWindow=_timeWindow; r._obsOpp=_obsOpp;
+  r._motion=(r.rs>TH.spd?'FAST_PASS':'SLOW_PASS');
 
   renderDecision(r,_regime,_alignment,_riskLevel,_latent,_timeWindow,_obsOpp,_operable,pcRatio,tcaH);
 }
@@ -1239,6 +1376,131 @@ function renderDecision(r, regime, alignment, riskLevel, latent, timeWindow, obs
     <span>◈ CDM ${r.id}</span>
     <span>· ${r.o1n} × ${r.o2n}</span>
     <span>· Assessed ${new Date().toLocaleTimeString()}</span>`;
+}
+
+
+// ── DECISION CONCURRENCE & OVERRIDE LOG ──────────────────────────────────────
+let _currentAction = null;
+let _sysRec = null;
+let _logCounter = parseInt(sessionStorage.getItem('orbit_log_count')||'0');
+
+function selectAction(action){
+  _currentAction = action;
+
+  // Update button states
+  document.querySelectorAll('.concur-btn').forEach(b=>{
+    b.classList.toggle('selected', b.dataset.action === action);
+  });
+
+  const result   = document.getElementById('concurResult');
+  const override = document.getElementById('overrideBlock');
+  const logBtn   = document.getElementById('logBtn');
+  const logNote  = document.getElementById('logBtnNote');
+
+  if(action === _sysRec){
+    // Concurrence
+    result.className = 'concur-result concur visible';
+    result.innerHTML = `✓ &nbsp; Concur with system recommendation — <strong>${action}</strong>`;
+    override.classList.remove('visible');
+    // clear reason chips
+    document.querySelectorAll('.reason-chip').forEach(c=>c.classList.remove('selected'));
+    document.getElementById('overrideNote').value='';
+  } else {
+    // Override
+    result.className = 'concur-result override visible';
+    result.innerHTML = `⚠ &nbsp; Override — system recommended <strong>${_sysRec}</strong>, operator selected <strong>${action}</strong>`;
+    override.classList.add('visible');
+  }
+
+  logBtn.disabled = false;
+  logNote.textContent = 'Ready to log — click to record this decision';
+}
+
+function toggleReason(el){
+  el.classList.toggle('selected');
+}
+
+function logDecision(){
+  if(!_currentAction || !window._lastCDMRow) return;
+
+  const r = window._lastCDMRow;
+  const selectedReasons = [...document.querySelectorAll('.reason-chip.selected')].map(c=>c.dataset.reason);
+  const note = document.getElementById('overrideNote').value.trim();
+  const isConcur = _currentAction === _sysRec;
+  _logCounter++;
+
+  const record = {
+    log_id: `LOG-${String(_logCounter).padStart(3,'0')}`,
+    timestamp: new Date().toISOString().replace('T',' ').slice(0,19) + ' UTC',
+    cdm_id: r.id,
+    object_1: `${r.o1n} / ${r.o1intl} / ${r.o1t}`,
+    object_2: `${r.o2n} / ${r.o2intl} / ${r.o2t}`,
+    tca: r.tca,
+    miss_distance_m: r.md,
+    collision_probability: r.pc.toExponential(3),
+    system_recommendation: _sysRec,
+    operator_decision: _currentAction,
+    concurrence: isConcur,
+    override_reasons: isConcur ? [] : selectedReasons,
+    override_note: isConcur ? '' : note,
+    semantic_context: {
+      regime: r._regime || '—',
+      encounter_alignment: r._alignment || '—',
+      risk_level: r._riskLevel || '—',
+      latent_risk: r._latent || '—',
+      time_window: r._timeWindow || '—',
+      obs_opportunity: r._obsOpp || '—',
+      relative_motion: r._motion || '—'
+    },
+    confidence: r._confidence || '—',
+  };
+
+  // Store in sessionStorage
+  sessionStorage.setItem('orbit_log_count', _logCounter);
+  const existing = JSON.parse(sessionStorage.getItem('orbit_decisions')||'[]');
+  existing.unshift(record); // newest first
+  sessionStorage.setItem('orbit_decisions', JSON.stringify(existing));
+
+  // Visual feedback
+  const logBtn = document.getElementById('logBtn');
+  logBtn.textContent = '✓ Logged';
+  logBtn.style.background = 'var(--success)';
+  logBtn.disabled = true;
+  document.getElementById('logBtnNote').textContent = `Decision saved as ${record.log_id} — view in Decision Log`;
+
+  setTimeout(()=>{
+    logBtn.textContent = '◈ Log Decision';
+    logBtn.style.background = '';
+    logBtn.disabled = false;
+  }, 2500);
+}
+
+function showConcurSection(sysRec, r){
+  _sysRec = sysRec;
+  _currentAction = null;
+
+  // Store semantic labels on row for logging
+  r._confidence = document.getElementById('confidenceChip')?.textContent || '—';
+
+  const section = document.getElementById('concurSection');
+  section.style.display = 'block';
+
+  // Set rec badge
+  const badge = document.getElementById('concurRecBadge');
+  badge.className = 'concur-rec-badge ' + sysRec.toLowerCase();
+  badge.textContent = sysRec;
+  document.getElementById('concurRecCdm').textContent = `CDM ${r.id} · ${r.o1n} × ${r.o2n}`;
+
+  // Reset state
+  document.querySelectorAll('.concur-btn').forEach(b=>b.classList.remove('selected'));
+  document.querySelectorAll('.reason-chip').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('overrideNote').value='';
+  document.getElementById('concurResult').className='concur-result';
+  document.getElementById('overrideBlock').classList.remove('visible');
+  document.getElementById('logBtn').disabled=true;
+  document.getElementById('logBtn').textContent='◈ Log Decision';
+  document.getElementById('logBtn').style.background='';
+  document.getElementById('logBtnNote').textContent='Select a decision to enable logging';
 }
 
 </script>

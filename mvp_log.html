@@ -249,16 +249,16 @@ function updateSessionLabel(){
 
 function updateSummary(){
   document.getElementById('sumTotal').textContent   = logs.length;
-  document.getElementById('sumWait').textContent    = logs.filter(l=>l.operator_decision.action==='WAIT').length;
-  document.getElementById('sumMonitor').textContent = logs.filter(l=>l.operator_decision.action==='MONITOR').length;
-  document.getElementById('sumAct').textContent     = logs.filter(l=>l.operator_decision.action==='ACT').length;
+  document.getElementById('sumWait').textContent    = logs.filter(l=>l.operator_decision?.action==='WAIT').length;
+  document.getElementById('sumMonitor').textContent = logs.filter(l=>l.operator_decision?.action==='MONITOR').length;
+  document.getElementById('sumAct').textContent     = logs.filter(l=>l.operator_decision?.action==='ACT').length;
 }
 
 function filtered(){
   if(activeFilter==='ALL')      return logs;
-  if(activeFilter==='CONCUR')   return logs.filter(l=>l.operator_decision.concurrence);
-  if(activeFilter==='OVERRIDE') return logs.filter(l=>!l.operator_decision.concurrence);
-  return logs.filter(l=>l.operator_decision.action===activeFilter);
+  if(activeFilter==='CONCUR')   return logs.filter(l=>l.operator_decision?.concurrence===true);
+  if(activeFilter==='OVERRIDE') return logs.filter(l=>l.operator_decision?.concurrence===false);
+  return logs.filter(l=>l.operator_decision?.action===activeFilter);
 }
 
 function setFilter(f, btn){
@@ -286,17 +286,17 @@ function renderTable(){
   }
 
   tbody.innerHTML = rows.map((rec,i) => {
-    const isConcur = rec.operator_decision.concurrence;
-    const reasons  = (rec.operator_decision.override_reasons||[]);
+    const isConcur = rec.operator_decision?.concurrence ?? false;
+    const reasons  = (rec.operator_decision?.override_reasons||[]);
     const reasonHtml = reasons.length
       ? `<div class="reason-tags">${reasons.map(r=>`<span class="reason-tag">${r.replace(/_/g,' ')}</span>`).join('')}</div>`
       : `<span style="color:var(--text-muted);font-family:var(--font-mono);font-size:10px;">—</span>`;
     const timeStr  = rec.timestamp ? rec.timestamp.slice(11,19) : '—';
     const sysD     = rec.decision_intelligence?.system_recommendation || '—';
-    const opD      = rec.operator_decision.action;
+    const opD      = rec.operator_decision?.action || '—';
     const cdmId    = rec.conjunction_analysis?.cdm_id || rec.cdm_id || '—';
-    const o1       = (rec.conjunction_analysis?.object_1||'').split('/')[0].trim();
-    const o2       = (rec.conjunction_analysis?.object_2||'').split('/')[0].trim();
+    const o1       = (rec.conjunction_analysis?.object_1||'').split(' / ')[0].trim();
+    const o2       = (rec.conjunction_analysis?.object_2||'').split(' / ')[0].trim();
     const tca      = rec.conjunction_analysis?.tca || '—';
 
     return `
@@ -442,34 +442,64 @@ function exportJSON(){
 
 function exportCSV(){
   if(!logs.length){ alert('No decisions to export.'); return; }
+
   const headers = [
-    'Log ID','Timestamp','CDM ID','Object 1','Object 2','TCA',
-    'Miss Distance (m)','Pc','Pc Max','MD/HBR Ratio','Relative Speed (m/s)',
+    'Log ID','Timestamp',
+    'CDM ID','Object 1','Object 2','TCA',
+    'Miss Distance (m)','Collision Probability','Pc Max',
+    'MD/HBR Ratio','Relative Speed (m/s)','B.T (m)','B.R (m)',
     'Regime','Encounter Alignment','Risk Level','Latent Risk',
     'Time Window','Obs Opportunity','Relative Motion',
     'System Recommendation','Confidence Level','Confidence Score',
-    'Operator Action','Concurrence','Override Reasons','Override Note'
+    'Operator Action','Concurrence',
+    'Override Reasons','Override Note'
   ];
+
+  function esc(v){
+    if(v==null||v===undefined) return '""';
+    const s = String(v).replace(/"/g,'""');
+    return `"${s}"`;
+  }
+
   const rows = logs.map(rec=>{
     const ca  = rec.conjunction_analysis  || {};
     const sem = rec.semantic_assessment   || {};
     const di  = rec.decision_intelligence || {};
     const op  = rec.operator_decision     || {};
     return [
-      rec.log_id, rec.timestamp,
-      ca.cdm_id, ca.object_1, ca.object_2, ca.tca,
-      ca.miss_distance_m, ca.collision_probability, ca.pc_max,
-      ca.miss_distance_hbr_ratio, ca.relative_speed_ms,
-      sem.regime, sem.encounter_alignment, sem.risk_level, sem.latent_risk,
-      sem.time_window, sem.obs_opportunity||sem.observation_opportunity, sem.relative_motion,
-      di.system_recommendation, di.confidence_level, di.confidence_score,
-      op.action, op.concurrence?'CONCUR':'OVERRIDE',
-      (op.override_reasons||[]).join('; '),
-      op.override_note||''
-    ].map(v=>JSON.stringify(v??'')).join(',');
+      esc(rec.log_id),
+      esc(rec.timestamp),
+      esc(ca.cdm_id),
+      esc((ca.object_1||'').split(' / ')[0]),
+      esc((ca.object_2||'').split(' / ')[0]),
+      esc(ca.tca),
+      esc(ca.miss_distance_m),
+      esc(ca.collision_probability),
+      esc(ca.pc_max),
+      esc(ca.miss_distance_hbr_ratio),
+      esc(ca.relative_speed_ms),
+      esc(ca.b_plane_bt),
+      esc(ca.b_plane_br),
+      esc(sem.regime),
+      esc(sem.encounter_alignment),
+      esc(sem.risk_level),
+      esc(sem.latent_risk),
+      esc(sem.time_window),
+      esc(sem.obs_opportunity||sem.observation_opportunity),
+      esc(sem.relative_motion),
+      esc(di.system_recommendation),
+      esc(di.confidence_level),
+      esc(di.confidence_score),
+      esc(op.action),
+      esc(op.concurrence ? 'CONCUR' : 'OVERRIDE'),
+      esc((op.override_reasons||[]).join('; ')),
+      esc(op.override_note||'')
+    ].join(',');
   });
-  const csv  = [headers.map(h=>JSON.stringify(h)).join(','), ...rows].join('\n');
-  const blob = new Blob([csv], {type:'text/csv'});
+
+  const headerRow = headers.map(h=>esc(h)).join(',');
+  const csv = [headerRow, ...rows].join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href     = url;

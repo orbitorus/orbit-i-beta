@@ -1,0 +1,585 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Conjunction Triage (SSA + SDA)</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: flight-dynamics console — event workspace left, decision rail right, session log below */
+:root{
+  --bg:#e8ecf0; --panel:#fbfcfd; --sunk:#f1f4f7; --ink:#15212c; --muted:#5a6a79; --line:#cfd7df;
+  --accent:#b4560f; --accent-soft:#f6e3d2;
+  --ok:#2d7a4b; --ok-soft:#dcefe3; --warn:#9a6210; --warn-soft:#f4e6c9;
+  --crit:#b3312a; --crit-soft:#f6dad7; --info:#2a5f9e; --info-soft:#dbe6f3;
+  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e141a; --panel:#151e27; --sunk:#111921; --ink:#e2e8ee; --muted:#8d9cab; --line:#26333f;
+  --accent:#ef9a45; --accent-soft:#3a2a1b;
+  --ok:#5fbf86; --ok-soft:#183427; --warn:#e2b25a; --warn-soft:#352a14;
+  --crit:#ef7a70; --crit-soft:#3b1d1b; --info:#7aa9e3; --info-soft:#18283b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e141a; --panel:#151e27; --sunk:#111921; --ink:#e2e8ee; --muted:#8d9cab; --line:#26333f;
+  --accent:#ef9a45; --accent-soft:#3a2a1b;
+  --ok:#5fbf86; --ok-soft:#183427; --warn:#e2b25a; --warn-soft:#352a14;
+  --crit:#ef7a70; --crit-soft:#3b1d1b; --info:#7aa9e3; --info-soft:#18283b; color-scheme:dark}
+
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:20px}
+h1,h2,h3{font-family:var(--f-display);font-weight:600;letter-spacing:.01em;margin:0;text-wrap:balance}
+h1{font-size:2rem;line-height:1.05}
+h2{font-size:1.3rem}
+.eyebrow{font-family:var(--f-display);text-transform:uppercase;letter-spacing:.12em;font-size:.8rem;color:var(--muted);font-weight:600}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+p{margin:0;max-width:68ch}
+
+header.top{display:flex;flex-wrap:wrap;gap:16px 28px;align-items:end;justify-content:space-between}
+.intro{display:grid;gap:6px;min-width:0}
+.controls{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
+select,button{font:inherit;color:var(--ink)}
+select{background:var(--panel);border:1px solid var(--line);padding:7px 10px;border-radius:4px}
+.btn{background:var(--ink);color:var(--panel);border:0;padding:8px 14px;border-radius:4px;cursor:pointer;font-weight:500}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn:focus-visible,.act:focus-visible,select:focus-visible,.switch input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+.switch{display:inline-flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+.switch input{position:absolute;opacity:0;width:1px;height:1px}
+.switch span.track{width:38px;height:22px;border-radius:11px;background:var(--line);position:relative;transition:background .15s;flex:none}
+.switch span.track::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--panel);transition:transform .15s}
+.switch input:checked+span.track{background:var(--accent)}
+.switch input:checked+span.track::after{transform:translateX(16px)}
+
+.grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:880px){.grid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:18px;display:grid;gap:14px;min-width:0}
+.rail{display:grid;gap:20px;min-width:0}
+
+.evhead{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline;justify-content:space-between}
+.evtitle{font-family:var(--f-display);font-size:1.55rem;font-weight:600}
+.meta{display:flex;flex-wrap:wrap;gap:6px 14px;color:var(--muted);font-size:.88rem}
+.chip{display:inline-block;font-size:.76rem;font-weight:600;padding:2px 8px;border-radius:3px;letter-spacing:.02em;white-space:nowrap}
+.chip.ok{background:var(--ok-soft);color:var(--ok)} .chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.crit{background:var(--crit-soft);color:var(--crit)} .chip.info{background:var(--info-soft);color:var(--info)}
+.chip.acc{background:var(--accent-soft);color:var(--accent)}
+
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:4px;overflow:hidden}
+@media (max-width:560px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.stat{background:var(--sunk);padding:10px 12px;display:grid;gap:2px;min-width:0}
+.stat .k{font-size:.74rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.stat .v{font-family:var(--f-mono);font-size:1.15rem;font-variant-numeric:tabular-nums}
+.stat .v.hot{color:var(--crit)}
+
+.charts{display:grid;gap:4px}
+.chart-t{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.chart{width:100%;height:auto;display:block}
+.chart .grid-l{stroke:var(--line);stroke-width:1}
+.chart .ax{fill:var(--muted);font-family:var(--f-mono);font-size:10.5px}
+.chart .thr{stroke:var(--crit);stroke-width:1.2;stroke-dasharray:5 4;fill:none}
+.chart .thr-t{fill:var(--crit);font-family:var(--f-mono);font-size:10.5px}
+.chart .rep{stroke:var(--accent);stroke-width:2;fill:none}
+.chart .rep-p{fill:var(--accent);stroke:var(--panel);stroke-width:1.5}
+.chart .band{fill:var(--accent-soft);stroke:none}
+.chart .tru{stroke:var(--info);stroke-width:1.8;fill:none;stroke-dasharray:3 3}
+.chart .tru-p{fill:var(--info)}
+.chart .obs{stroke:var(--ok);stroke-width:1.2;stroke-dasharray:2 3}
+.chart .obs-t{fill:var(--ok);font-family:var(--f-mono);font-size:10px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.8rem;color:var(--muted)}
+.legend i{display:inline-block;width:18px;height:0;border-top:2px solid;vertical-align:middle;margin-right:6px}
+.legend i.sw{height:10px;border:0;background:var(--accent-soft)}
+
+.tbl-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th{font-weight:600;text-align:left;color:var(--muted);font-size:.74rem;text-transform:uppercase;letter-spacing:.06em;padding:6px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:7px 10px;border-bottom:1px solid var(--line);font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+td.txt{font-family:var(--f-body)}
+td.txt .chip+.chip{margin-left:4px}
+tr.cur td{background:var(--accent-soft)}
+
+.actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.act{display:grid;gap:3px;text-align:left;background:var(--sunk);border:1px solid var(--line);border-radius:4px;padding:11px 12px;cursor:pointer;position:relative}
+.act.wide{grid-column:1/-1}
+.act strong{font-weight:600;font-size:.95rem}
+.act span{font-size:.8rem;color:var(--muted)}
+.act:hover:not(:disabled){border-color:var(--accent)}
+.act:disabled{opacity:.42;cursor:not-allowed}
+.act.rec{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.act.rec::after{content:"Recommended";position:absolute;top:-9px;right:8px;background:var(--accent);color:var(--panel);font-size:.68rem;font-weight:600;padding:1px 6px;border-radius:3px;letter-spacing:.03em}
+
+.assist ul{margin:0;padding-left:18px;display:grid;gap:6px;font-size:.9rem}
+.assist .rec-line{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.assist .rec-line b{font-family:var(--f-display);font-size:1.25rem;font-weight:600}
+
+.reveal{border-left:3px solid var(--info)}
+.reveal .verdict{font-family:var(--f-display);font-size:1.6rem;font-weight:700}
+.reveal dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;margin:0;font-size:.9rem}
+.reveal dt{color:var(--muted)} .reveal dd{margin:0}
+
+.tally{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.tally div{display:grid;gap:0}
+.tally .n{font-family:var(--f-mono);font-size:1.25rem;font-variant-numeric:tabular-nums}
+.tally .l{font-size:.75rem;color:var(--muted)}
+.dots{display:flex;gap:5px;flex-wrap:wrap}
+.dot{width:14px;height:14px;border-radius:3px;background:var(--line)}
+.dot.ok{background:var(--ok)} .dot.warn{background:var(--warn)} .dot.crit{background:var(--crit)} .dot.info{background:var(--info)} .dot.now{outline:2px solid var(--accent);outline-offset:1px}
+
+.matrix{display:grid;grid-template-columns:auto repeat(2,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:4px;overflow:hidden;font-size:.88rem}
+.matrix div{background:var(--sunk);padding:10px 12px}
+.matrix .h{background:var(--panel);font-weight:600;font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.matrix .c b{font-family:var(--f-mono);font-size:1.3rem;display:block}
+
+details{font-size:.92rem}
+details summary{cursor:pointer;font-family:var(--f-display);font-size:1.15rem;font-weight:600}
+details .body{display:grid;gap:10px;margin-top:10px}
+.empty{color:var(--muted);font-size:.9rem;padding:8px 0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="intro">
+      <div class="eyebrow">Orbitorus · Training &amp; benchmark sample</div>
+      <h1>Conjunction Triage <span style="color:var(--muted);font-weight:500">(SSA + SDA handoff)</span></h1>
+      <p class="muted">Each event has a hidden truth. You only see the CDMs, as in operations. Most events are collision questions. Some involve an active satellite whose behavior may be deliberate, and the right move there is to hand it to SDA review rather than treat it as a collision risk.</p>
+    </div>
+    <div class="controls">
+      <label for="set" class="muted">Scenario set</label>
+      <select id="set">
+        <option value="A">Set A (fixed)</option>
+        <option value="B">Set B (fixed)</option>
+        <option value="R">Random</option>
+      </select>
+      <label class="switch" for="sda"><input type="checkbox" id="sda" checked><span class="track"></span><span>SDA handoff events</span></label>
+      <label class="switch" for="assist"><input type="checkbox" id="assist"><span class="track"></span><span>Triage assistant</span></label>
+      <button class="btn" id="restart" type="button">New session</button>
+    </div>
+  </header>
+
+  <div class="grid">
+    <section class="panel" id="event"></section>
+    <aside class="rail">
+      <section class="panel assist" id="assistPanel"></section>
+      <section class="panel" id="actionPanel"></section>
+      <section class="panel reveal" id="reveal" hidden></section>
+      <section class="panel" id="tally"></section>
+    </aside>
+  </div>
+
+  <section class="panel">
+    <div class="evhead"><h2>Session log</h2><span class="muted" style="font-size:.85rem">Play the same set with the assistant off, then on, to compare.</span></div>
+    <div id="sessions"></div>
+  </section>
+
+  <section class="panel">
+    <details>
+      <summary>How scoring works</summary>
+      <div class="body">
+        <p><b>Truth first.</b> Each scenario starts from a true miss distance. Noisy CDMs are generated from it about every 12 hours, from about 72 h to 12 h before closest approach. As in real data, the timing is irregular and an update is sometimes missing. About 30% of collision events are genuinely close, far more than in reality (in ESA's public CDM data, 0.8% of events end high-risk), so poor judgment shows up within one session. Some events carry optimistic covariance: the reported uncertainty is about a third of the real spread. A Pc below 10⁻¹² is shown as ≈0, as real CDMs often report zero.</p>
+        <p><b>Patterns from real data.</b> Four event shapes found in ESA's public CDMs appear in the sets. <i>Sharp collapse</i>: Pc reaches a notable level, then one poor orbit update reports it as near zero (Set A). <i>Resolves itself</i>: early CDMs look close, later ones show the objects pass far apart, and closing is right (Set A). <i>Thin evidence</i>: the first CDM arrives only 36 h out and the second shows a drop (Set B). <i>Dilution</i>: Pc stays low only because the uncertainty is huge (Set B). Each random session has one. Closing an event on a sudden collapse, or on a couple of CDMs while the risk is not negligible, is scored as a poor decision even if nothing happens.</p>
+        <p><b>Costs.</b> A maneuver costs fuel and mission downtime, rising from 25 at 72 h to 55 at 12 h. A tracking pass costs 8 and makes later CDMs sharper and honest about their uncertainty. A handoff to SDA review costs 5 in analyst time. A collision costs 100,000. The maneuver line is where the expected collision cost equals the maneuver cost, about 3×10⁻⁴.</p>
+        <p><b>SDA handoff events.</b> With the switch on, one event per session involves an active satellite that changes its orbit between updates. Its collision probability stays low, so collision logic alone says dismiss. What matters is the pattern: a deliberate approach closes in step after step, each step larger than the uncertainty band can explain. A routine station-keeping burn shifts the geometry once and then stops. Handing off with at least two consistent approach steps is a sound call. Handing off routine behavior costs analyst time and weakens the credibility of future flags. Judging intent stays with the SDA analysts; this desk only decides whether to pass it on.</p>
+        <p><b>Two scores.</b> Outcome is what actually happened. Decision quality compares your call with what a calibrated analyst would conclude from the same information. That separates a good call from a lucky one.</p>
+        <p class="muted">Sample only. Geometry is simplified to a 2D encounter plane with isotropic uncertainty and a 20 m combined hard-body radius. Approach patterns are generic and do not describe any real operator or capability.</p>
+      </div>
+    </details>
+  </section>
+</div>
+
+<script>
+(function(){
+const R=20, COLL=100000, HOURS=[72,60,48,36,24,12], OBS_COST=8, HANDOFF_COST=5, N=8;
+const SETS={A:{seed:101,bridgeIdx:5,deliberate:true},B:{seed:202,bridgeIdx:2,deliberate:false}};
+const SECONDARIES=[
+  {name:"FENGYUN 1C DEB",type:"Debris"},
+  {name:"COSMOS 1408 DEB",type:"Debris"},
+  {name:"SL-16 R/B",type:"Rocket body"},
+  {name:"IRIDIUM 33 DEB",type:"Debris"},
+  {name:"Active satellite",type:"Other operator, may maneuver"},
+  {name:"Analyst object",type:"Uncatalogued"}
+];
+// quadrant: S/P = sound/poor decision, G/B = good/bad outcome
+const VERDICT={
+  "Good call":{cls:"ok",q:"SG",txt:"You accepted a risk that was genuinely low, and the event closed safely."},
+  "Lucky":{cls:"warn",q:"PG",txt:"The objects missed, but with realistic uncertainty the risk was above the maneuver line. The outcome was luck. Real operations would have logged this as a success."},
+  "Avoidable collision":{cls:"crit",q:"PB",txt:"With realistic uncertainty the risk was above the maneuver line, and the collision happened."},
+  "Unlucky":{cls:"info",q:"SB",txt:"The informed risk was low and dismissing was reasonable. A collision from a low-risk event is rare bad luck."},
+  "Save":{cls:"ok",q:"SG",txt:"The maneuver avoided a real collision, and the information at the time supported it."},
+  "Justified caution":{cls:"ok",q:"SG",txt:"The objects would have missed, but the risk at the time justified the maneuver. A good decision that still has a cost."},
+  "Wasted fuel":{cls:"crit",q:"PB",txt:"The risk was well below the maneuver line. The maneuver spent fuel and downtime without a reason."},
+  "Lucky save":{cls:"warn",q:"PG",txt:"The maneuver avoided a real collision, but the information at the time did not support it."},
+  "Correct handoff":{cls:"ok",q:"SG",txt:"The approach was deliberate, and you passed it to SDA review once the pattern was clear. Collision logic alone would have dismissed it."},
+  "Lucky handoff":{cls:"warn",q:"PG",txt:"The approach was deliberate, but you handed it off before the evidence showed a pattern. Right result, weak basis. Early flags like this are what erode trust when they turn out wrong."},
+  "Missed approach":{cls:"crit",q:"PB",txt:"A deliberate approach closed in step by step, and it was dismissed as a low-risk conjunction. Low Pc did not mean benign."},
+  "Evaded, not reported":{cls:"warn",q:"PB",txt:"Moving away kept your satellite safe, but nobody was told. A deliberate approach is information others need."},
+  "Unneeded handoff":{cls:"warn",q:"PB",txt:"The behavior was routine. The handoff used analyst time and makes future flags easier to ignore."},
+  "Collision after a collapse":{cls:"crit",q:"PB",txt:"You closed the event on a Pc that had just collapsed from a notable level. The drop came from a poor orbit update; the objects stayed on course and collided."},
+  "Collision on thin evidence":{cls:"crit",q:"PB",txt:"You closed the event after only a couple of CDMs, while the risk was not negligible. More data would have shown the objects on a collision course."},
+  "Trusted a collapse":{cls:"warn",q:"PG",txt:"Pc fell from a notable level to almost zero in one update, and you closed the event on it. A sudden collapse often comes from a poor orbit update. Track or wait for the next CDM before closing."},
+  "Trusted thin evidence":{cls:"warn",q:"PG",txt:"Only a couple of CDMs existed, and the risk at the time was not negligible. A drop backed by so little data is weak ground for closing an event."}
+};
+const ACT_LABEL={wait:"Wait for next CDM",observe:"Request tracking pass",maneuver:"Maneuver",dismiss:"Dismiss",handoff:"Hand off to SDA review"};
+
+function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function gauss(r){let u=0;while(u===0)u=r();const v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+function pcOf(d,s){return Math.min(0.9,(R*R/(2*s*s))*Math.exp(-d*d/(2*s*s)));}
+function manCost(h){return Math.round(25+(72-h)*0.5);}
+function pcStar(h){return manCost(h)/COLL;}
+const SUP={"-":"⁻","0":"⁰","1":"¹","2":"²","3":"³","4":"⁴","5":"⁵","6":"⁶","7":"⁷","8":"⁸","9":"⁹"};
+function fmtPc(p){if(p<1e-12)return"≈0";const e=Math.floor(Math.log10(p));const m=p/Math.pow(10,e);return m.toFixed(1)+"×10"+String(e).split("").map(c=>SUP[c]).join("");}
+function fmtM(m){return m>=1000?(m/1000).toFixed(2)+" km":Math.round(m)+" m";}
+
+function baseScenario(r){
+  const close=r()<0.3;
+  return {miss:close?r()*30:120+r()*1400,ang:r()*2*Math.PI,s0:250+r()*600,optimistic:r()<0.35,
+    sec:SECONDARIES[Math.floor(r()*SECONDARIES.length)],
+    z:HOURS.map(()=>[gauss(r),gauss(r)]),jitter:HOURS.map(()=>0.9+0.2*r()),
+    vrel:(2+r()*13).toFixed(1),prim:"ORB-SAT "+(1+Math.floor(r()*4))};
+}
+function bridgeScenario(r,deliberate){
+  const k=0.9+0.2*r();let seq;
+  if(deliberate){const hold=260+r()*80;seq=[3000*k,1900*k,1150*k,650*k,hold+60,hold];}
+  else{const jumpAt=1+Math.floor(r()*3),start=2400*k,after=1100*k;seq=HOURS.map((h,i)=>i<jumpAt?start:after+(i-jumpAt)*180);}
+  return {bridge:true,deliberate,missSeq:seq,miss:seq[seq.length-1],ang:r()*2*Math.PI,s0:150+r()*150,optimistic:false,
+    sec:SECONDARIES[4],z:HOURS.map(()=>[gauss(r),gauss(r)]),jitter:HOURS.map(()=>0.9+0.2*r()),
+    vrel:(2+r()*13).toFixed(1),prim:"ORB-SAT "+(1+Math.floor(r()*4))};
+}
+function makeScenarios(setKey,seed,sda){
+  const r=rng(seed), out=[];
+  for(let k=0;k<N;k++)out.push(baseScenario(r));
+  let bIdx=-1;
+  if(sda){
+    const rb=rng(seed+7919);
+    const cfg=SETS[setKey];
+    bIdx=cfg?cfg.bridgeIdx:Math.floor(rb()*N);
+    const deliberate=cfg?cfg.deliberate:rb()<0.5;
+    out[bIdx]=bridgeScenario(rb,deliberate);
+  }
+  const rh=rng(seed+333);
+  out.forEach(s=>{if(!s.bridge)s.hours=irregularHours(rh);else s.hours=HOURS.slice();});
+  const fixed={A:[[2,"collapse"],[6,"settles"]],B:[[1,"thin"],[5,"dilution"]]}[setKey];
+  const rp=rng(seed+555);
+  if(fixed)fixed.forEach(x=>{if(x[0]!==bIdx)out[x[0]]=patternScenario(rp,x[1]);});
+  else{const free=[0,1,2,3,4,5,6,7].filter(i=>i!==bIdx);out[free[Math.floor(rp()*free.length)]]=patternScenario(rp,["collapse","dilution","thin","settles"][Math.floor(rp()*4)]);}
+  if(!out.some(s=>!s.bridge&&s.miss<R)){const f=bIdx===4?1:4;out[f].miss=8+r()*8;}
+  out.forEach((s,i)=>{s.id=i+1;});
+  return out;
+}
+const PATTERN_LABEL={collapse:"Sharp collapse",dilution:"Dilution",thin:"Thin evidence",settles:"Resolves itself"};
+const PATTERN_NOTE={
+  collapse:"The CDMs that showed Pc near zero came from a poor orbit update: the reported position jumped away while the objects stayed on course. Pattern seen in ESA's public CDM data.",
+  dilution:"Pc stayed low only because the uncertainty was very large. The nominal miss sat well inside it. Pattern seen in ESA's public CDM data.",
+  thin:"The first CDM arrived only 36 h out. With so few updates, one low reading was not enough to trust. Pattern seen in ESA's public CDM data.",
+  settles:"Early CDMs placed the objects closer than they were. Later, better data showed they pass far apart; closing at the end was right. Pattern seen in ESA's public CDM data."
+};
+// patterns from ESA's real CDMs; dF[i] places the reported miss at k x reported sigma (outlier = a poor update, not the honest estimate)
+function patternScenario(r,kind){
+  const sc=baseScenario(r);sc.pattern=kind;sc.optimistic=false;sc.hours=HOURS.map((x,i)=>x+(i===HOURS.length-1?0:Math.round((r()-0.5)*6)));sc.dF=[];
+  if(kind==="collapse"){sc.miss=12;sc.s0=1100;sc.sec=SECONDARIES[2];sc.dF[3]={k:6,outlier:true};sc.dF[4]={k:6,outlier:true};}
+  else if(kind==="dilution"){sc.miss=30;sc.s0=5000;sc.sec=SECONDARIES[5];for(let i=0;i<6;i++)sc.dF[i]={k:0.1};}
+  else if(kind==="thin"){sc.miss=15;sc.s0=1500;sc.sec=SECONDARIES[3];sc.hours=[36,24,12];sc.dF[0]={k:0.15};sc.dF[1]={k:2.5};}
+  else {sc.miss=3000;sc.s0=1800;sc.sec=SECONDARIES[1];sc.dF[0]={k:0.5};sc.dF[1]={k:0.7};}
+  return sc;
+}
+// real CDMs do not arrive on a fixed clock: jitter the times and sometimes drop an update
+function irregularHours(r){
+  const h=HOURS.map((x,i)=>i===HOURS.length-1?Math.round(12+(r()-0.5)*6):Math.round(x+(r()-0.5)*8));
+  if(r()<0.3)h.splice(1+Math.floor(r()*4),1);
+  return h;
+}
+function trueMiss(sc,i){return sc.bridge?sc.missSeq[i]:sc.miss;}
+function obsActive(ev,i){return ev.obsFrom!==null&&i>=ev.obsFrom;}
+function sigmaActual(ev,i){let s=ev.sc.s0*(0.2+0.8*ev.sc.hours[i]/72);if(obsActive(ev,i))s*=0.3;return s;}
+function makeCdm(ev,i){
+  const sc=ev.sc, sa=sigmaActual(ev,i), tm=trueMiss(sc,i);
+  const ex=tm*Math.cos(sc.ang)+sc.z[i][0]*sa, ey=tm*Math.sin(sc.ang)+sc.z[i][1]*sa;
+  const factor=(sc.optimistic&&!obsActive(ev,i))?0.35:1;
+  const sr=sa*factor*sc.jitter[i];
+  let d=Math.hypot(ex,ey), dJ=d;
+  const f=(sc.dF&&!obsActive(ev,i))?sc.dF[i]:null;
+  if(f){d=f.k*sr;if(!f.outlier)dJ=d;}
+  const secMan=!!(sc.bridge&&i>0&&Math.abs(sc.missSeq[i]-sc.missSeq[i-1])>100);
+  return {h:sc.hours[i],d,sr,sa,pc:pcOf(d,sr),pcTrue:pcOf(dJ,sa),obs:obsActive(ev,i),secMan,tm};
+}
+// longest run of consecutive closing steps that exceed 2x the combined reported uncertainty
+function evidence(cdms){
+  let run=0,best=0;
+  for(let i=1;i<cdms.length;i++){
+    const a=cdms[i-1],b=cdms[i],comb=Math.sqrt(a.sr*a.sr+b.sr*b.sr);
+    if(b.d-a.d<-2*comb){run++;best=Math.max(best,run);}else run=0;
+  }
+  return best;
+}
+
+function collapseFrom(list,star){for(let j=list.length-1;j>=Math.max(1,list.length-2);j--){const a=list[j-1],b=list[j];if(a.pc>=star/30&&b.pc<a.pc/1e4)return a.pc;}return 0;}
+// a one-update drop of more than 10,000x from a Pc within 30x of the maneuver line, in either of the last two updates
+function advise(ev){
+  const list=ev.cdms, c=list[list.length-1], prev=list.length>1?list[list.length-2]:null;
+  const last=ev.step===ev.sc.hours.length-1, star=pcStar(c.h), reasons=[];
+  const gap=last?0:ev.sc.hours[ev.step]-ev.sc.hours[ev.step+1];
+  if(state.sessSda&&list.some(x=>x.secMan)){
+    const evid=evidence(list);
+    if(evid>=2){
+      reasons.push("Miss distance has closed in "+evid+" consecutive steps, each larger than the uncertainty band can explain.");
+      reasons.push("Collision probability is low ("+fmtPc(c.pc)+"), but low Pc does not mean benign. Intent is for SDA analysts to judge.");
+      return {rec:"handoff",reasons,pcA:c.pc};
+    }
+    if(!last){
+      reasons.push("The secondary changed its orbit between updates. Watching for a consistent pattern before flagging.");
+      if(ev.obsFrom===null){reasons.push("A tracking pass shrinks the uncertainty band, so a real approach pattern becomes clear sooner.");return {rec:"observe",reasons,pcA:c.pc};}
+      return {rec:"wait",reasons,pcA:c.pc};
+    }
+    reasons.push("The secondary maneuvered, but there is no consistent approach pattern. Treat it as an ordinary conjunction.");
+  }
+  const prevMax=list.length>1?Math.max.apply(null,list.slice(0,-1).map(x=>x.pc)):0, maxAll=Math.max(prevMax,c.pc);
+  const cf=collapseFrom(list,star);
+  if(!last&&cf&&c.pc<star/1000){
+    reasons.push("Pc collapsed from "+fmtPc(cf)+" to "+fmtPc(c.pc)+" in a single update. A sudden drop from a notable level is not trusted without fresh data.");
+    return {rec:ev.obsFrom===null?"observe":"wait",reasons,pcA:c.pc};
+  }
+  if(!last&&ev.obsFrom===null&&list.length<=2&&maxAll>=star/30&&c.pc<star){
+    reasons.push("Only "+list.length+" CDM"+(list.length===1?"":"s")+" so far, and Pc has reached "+fmtPc(maxAll)+". Too little evidence to trust a low reading: track first.");
+    return {rec:"observe",reasons,pcA:c.pc};
+  }
+  let inflate=1;
+  if(prev){
+    const jump=Math.abs(c.d-prev.d)/Math.max(c.sr,prev.sr);
+    if(jump>2.5&&!c.obs&&!c.secMan){inflate=2.5;reasons.push("Miss distance moved "+jump.toFixed(1)+"σ between updates. The reported uncertainty looks optimistic, so risk is recomputed with it widened.");}
+    if(c.pc>prev.pc*1.5&&c.pc>1e-6)reasons.push("Pc is rising across updates ("+fmtPc(prev.pc)+" → "+fmtPc(c.pc)+").");
+  }
+  const pcA=Math.max(c.pc,pcOf(c.d,c.sr*inflate));
+  const dmin=Math.max(c.d,1);
+  const dilution=c.sr>1.5*dmin/Math.SQRT2&&(R*R/(dmin*dmin))*Math.exp(-1)>=star;
+  let rec;
+  if(pcA>=star){
+    if(!last&&ev.obsFrom===null&&c.sr>120&&c.h>=36){rec="observe";reasons.push("Risk is above the maneuver line, but uncertainty is large (1σ ≈ "+fmtM(c.sr)+"). A tracking pass now should settle it before committing fuel.");}
+    else{rec="maneuver";reasons.push("Risk "+fmtPc(pcA)+" is above the maneuver line "+fmtPc(star)+".");}
+  }else if(dilution&&!last){
+    rec=ev.obsFrom===null?"observe":"wait";
+    reasons.push("Low Pc here comes from large uncertainty, not from a safe geometry (dilution). The nominal miss is only "+fmtM(c.d)+".");
+  }else if(pcA>=star/30){
+    if(last){rec=pcA>=star/3?"maneuver":"dismiss";reasons.push("Final update. Risk "+fmtPc(pcA)+" against a line of "+fmtPc(star)+".");}
+    else if(ev.obsFrom===null&&c.sr>150){rec="observe";reasons.push("Close to the line and dominated by uncertainty. A tracking pass is cheaper than a precautionary maneuver.");}
+    else{rec="wait";reasons.push("Below the line for now. Next update is due in about "+gap+" h.");}
+  }else{
+    rec="dismiss";reasons.push("Risk "+fmtPc(pcA)+" is far below the maneuver line, even with widened uncertainty.");
+  }
+  if(ev.sc.sec.type.indexOf("may maneuver")>=0&&(rec==="maneuver"||rec==="observe"))reasons.push("Secondary is an active satellite. Coordinate with its operator before acting.");
+  return {rec,reasons,pcA};
+}
+
+let state={setKey:"A",assist:false,sda:true,scen:[],idx:0,ev:null,results:[],sessions:[],sessionDone:false};
+try{const s=localStorage.getItem("ct-sda-sessions");if(s)state.sessions=JSON.parse(s)||[];}catch(e){}
+function saveSessions(){try{localStorage.setItem("ct-sda-sessions",JSON.stringify(state.sessions.slice(-20)));}catch(e){}}
+
+function newSession(){
+  state.seed=state.setKey==="R"?Math.floor(Math.random()*1e9):SETS[state.setKey].seed;
+  state.sessSda=state.sda;state.sessAssist=state.assist;
+  state.scen=makeScenarios(state.setKey,state.seed,state.sessSda);state.idx=0;state.results=[];state.sessionDone=false;
+  startEvent();
+}
+function startEvent(){
+  const ev={sc:state.scen[state.idx],step:0,obsFrom:null,obsCost:0,cdms:[],done:false,result:null,recs:0,agrees:0};
+  ev.cdms.push(makeCdm(ev,0));state.ev=ev;render();
+}
+function act(a){
+  const ev=state.ev;if(!ev||ev.done)return;
+  const last=ev.step===ev.sc.hours.length-1;
+  if((a==="wait"||a==="observe")&&last)return;
+  if(a==="observe"&&ev.obsFrom!==null)return;
+  if(a==="handoff"&&!state.sessSda)return;
+  if(state.assist){const adv=advise(ev);ev.recs++;if(adv.rec===a)ev.agrees++;}
+  if(a==="wait"||a==="observe"){
+    if(a==="observe"){ev.obsFrom=ev.step+1;ev.obsCost+=OBS_COST;}
+    ev.step++;ev.cdms.push(makeCdm(ev,ev.step));render();return;
+  }
+  finalize(a);
+}
+function finalize(a){
+  const ev=state.ev, sc=ev.sc, c=ev.cdms[ev.cdms.length-1], star=pcStar(c.h), real=sc.miss<R;
+  let verdict, collided=false, fuel=a==="maneuver"?manCost(c.h):0;
+  const evid=evidence(ev.cdms);
+  if(a==="handoff")ev.obsCost+=HANDOFF_COST;
+  if(sc.bridge){
+    if(sc.deliberate)verdict=a==="handoff"?(evid>=2?"Correct handoff":"Lucky handoff"):(a==="maneuver"?"Evaded, not reported":"Missed approach");
+    else verdict=a==="handoff"?"Unneeded handoff":(a==="maneuver"?"Wasted fuel":"Good call");
+  }else if(a==="dismiss"||a==="handoff"){
+    const sound=c.pcTrue<star*3;collided=real;
+    const prevMax=ev.cdms.length>1?Math.max.apply(null,ev.cdms.slice(0,-1).map(x=>x.pc)):0;
+    const collapsed=collapseFrom(ev.cdms,star)>0&&c.pc<star/1000, thin=ev.cdms.length<=2&&ev.obsFrom===null&&c.pcTrue>=star/30;
+    if(a==="handoff")verdict=collided?"Avoidable collision":"Unneeded handoff";
+    else if(collapsed||thin)verdict=collided?(collapsed?"Collision after a collapse":"Collision on thin evidence"):(collapsed?"Trusted a collapse":"Trusted thin evidence");
+    else verdict=collided?(sound?"Unlucky":"Avoidable collision"):(sound?"Good call":"Lucky");
+  }else{
+    const just=c.pcTrue>star/10;
+    verdict=just?(real?"Save":"Justified caution"):(real?"Lucky save":"Wasted fuel");
+  }
+  ev.done=true;
+  ev.result={action:a,verdict,collided,fuel,obs:ev.obsCost,h:c.h,pcTrue:c.pcTrue,pcRep:c.pc,star,evid,bridge:!!sc.bridge,recs:ev.recs,agrees:ev.agrees};
+  state.results.push(ev.result);render();
+}
+function nextEvent(){
+  if(state.idx<N-1){state.idx++;startEvent();return;}
+  const rs=state.results, has=v=>rs.filter(r=>r.verdict===v).length;
+  const sum={set:state.setKey==="R"?"Random":"Set "+state.setKey,assist:state.sessAssist,sda:state.sessSda,n:rs.length,
+    collisions:rs.filter(r=>r.collided).length,fuel:rs.reduce((a,r)=>a+r.fuel,0),obs:rs.reduce((a,r)=>a+r.obs,0),
+    sound:rs.filter(r=>VERDICT[r.verdict].q[0]==="S").length,lucky:rs.filter(r=>VERDICT[r.verdict].q==="PG").length,
+    hCorrect:has("Correct handoff")+has("Lucky handoff"),hMissed:has("Missed approach")+has("Evaded, not reported"),hUnneeded:has("Unneeded handoff"),
+    recs:rs.reduce((a,r)=>a+r.recs,0),agrees:rs.reduce((a,r)=>a+r.agrees,0),when:new Date().toLocaleString()};
+  state.sessions.push(sum);saveSessions();state.sessionDone=true;render();
+}
+
+const $=id=>document.getElementById(id);
+const W=640,L=58,RP=18;
+const xOf=h=>L+(72-h)/72*(W-L-RP);
+
+function pcChart(ev){
+  const H=210,t=14,b=28,ph=H-t-b;
+  const y=p=>{const lp=Math.log10(Math.min(Math.max(p,1e-9),1e-1));return t+(-1-lp)/8*ph;};
+  let s='<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Collision probability across CDM updates">';
+  for(let e=-1;e>=-9;e--){const yy=y(Math.pow(10,e));s+='<line class="grid-l" x1="'+L+'" x2="'+(W-RP)+'" y1="'+yy+'" y2="'+yy+'"/>';if(e%2!==0)s+='<text class="ax" x="'+(L-6)+'" y="'+(yy+3.5)+'" text-anchor="end">'+fmtPc(Math.pow(10,e)).replace("1.0×","")+'</text>';}
+  HOURS.concat([0]).forEach(h=>{s+='<text class="ax" x="'+xOf(h)+'" y="'+(H-9)+'" text-anchor="middle">'+(h===0?"TCA":"−"+h+"h")+'</text>';});
+  const cur=ev.cdms[ev.cdms.length-1], ty=y(pcStar(cur.h));
+  s+='<line class="thr" x1="'+L+'" x2="'+(W-RP)+'" y1="'+ty+'" y2="'+ty+'"/><text class="thr-t" x="'+(W-RP-4)+'" y="'+(ty-5)+'" text-anchor="end">maneuver line</text>';
+  if(ev.obsFrom!==null){const ox=xOf(ev.sc.hours[ev.obsFrom]);s+='<line class="obs" x1="'+ox+'" x2="'+ox+'" y1="'+t+'" y2="'+(t+ph)+'"/><text class="obs-t" x="'+(ox+4)+'" y="'+(t+10)+'">tracking pass</text>';}
+  if(ev.done){s+='<polyline class="tru" points="'+ev.cdms.map(c=>xOf(c.h)+","+y(c.pcTrue)).join(" ")+'"/>';ev.cdms.forEach(c=>{s+='<circle class="tru-p" cx="'+xOf(c.h)+'" cy="'+y(c.pcTrue)+'" r="3"/>';});}
+  s+='<polyline class="rep" points="'+ev.cdms.map(c=>xOf(c.h)+","+y(c.pc)).join(" ")+'"/>';
+  ev.cdms.forEach(c=>{s+='<circle class="rep-p" cx="'+xOf(c.h)+'" cy="'+y(c.pc)+'" r="4.5"/>';});
+  return s+'</svg>';
+}
+function niceMax(v){const e=Math.pow(10,Math.floor(Math.log10(v)));const m=v/e;return (m<=1?1:m<=2?2:m<=2.5?2.5:m<=5?5:10)*e;}
+function missChart(ev){
+  const H=170,t=12,b=28,ph=H-t-b,cs=ev.cdms;
+  let mx=Math.max.apply(null,cs.map(c=>c.d+2*c.sr));
+  if(ev.done)mx=Math.max(mx,Math.max.apply(null,cs.map(c=>c.tm)));
+  mx=niceMax(mx*1.05);
+  const y=v=>t+(1-Math.max(0,v)/mx)*ph;
+  let s='<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Miss distance with reported uncertainty band across CDM updates">';
+  [0,0.5,1].forEach(f=>{const yy=y(mx*f);s+='<line class="grid-l" x1="'+L+'" x2="'+(W-RP)+'" y1="'+yy+'" y2="'+yy+'"/><text class="ax" x="'+(L-6)+'" y="'+(yy+3.5)+'" text-anchor="end">'+fmtM(mx*f)+'</text>';});
+  HOURS.concat([0]).forEach(h=>{s+='<text class="ax" x="'+xOf(h)+'" y="'+(H-9)+'" text-anchor="middle">'+(h===0?"TCA":"−"+h+"h")+'</text>';});
+  if(cs.length>1){
+    const up=cs.map(c=>xOf(c.h)+","+y(c.d+2*c.sr)), lo=cs.slice().reverse().map(c=>xOf(c.h)+","+y(c.d-2*c.sr));
+    s+='<polygon class="band" points="'+up.concat(lo).join(" ")+'"/>';
+  }else{const c=cs[0];s+='<line x1="'+xOf(c.h)+'" x2="'+xOf(c.h)+'" y1="'+y(c.d+2*c.sr)+'" y2="'+y(c.d-2*c.sr)+'" stroke="var(--accent-soft)" stroke-width="10"/>';}
+  if(ev.done){s+='<polyline class="tru" points="'+cs.map(c=>xOf(c.h)+","+y(c.tm)).join(" ")+'"/>';cs.forEach(c=>{s+='<circle class="tru-p" cx="'+xOf(c.h)+'" cy="'+y(c.tm)+'" r="3"/>';});}
+  s+='<polyline class="rep" points="'+cs.map(c=>xOf(c.h)+","+y(c.d)).join(" ")+'"/>';
+  cs.forEach(c=>{s+='<circle class="rep-p" cx="'+xOf(c.h)+'" cy="'+y(c.d)+'" r="4.5"/>';});
+  return s+'</svg>';
+}
+
+function renderEvent(){
+  const el=$("event");
+  if(state.sessionDone){el.innerHTML=summaryHTML();return;}
+  const ev=state.ev, sc=ev.sc, c=ev.cdms[ev.cdms.length-1], star=pcStar(c.h);
+  const secCls=sc.sec.type==="Debris"?"warn":(sc.sec.type.indexOf("Other")===0?"info":"acc");
+  const rows=ev.cdms.map((d,i)=>'<tr class="'+(i===ev.cdms.length-1&&!ev.done?"cur":"")+'"><td>−'+d.h+' h</td><td>'+fmtM(d.d)+'</td><td>'+fmtM(d.sr)+'</td><td>'+fmtPc(d.pc)+'</td>'+(ev.done?'<td>'+fmtM(d.tm)+'</td><td>'+fmtPc(d.pcTrue)+'</td>':'')+'<td class="txt">'+(d.secMan?'<span class="chip warn">secondary maneuvered</span>':'')+(d.obs?'<span class="chip ok">tracked</span>':'')+'</td></tr>').join("");
+  el.innerHTML=
+   '<div class="evhead"><div style="display:grid;gap:4px;min-width:0"><div class="eyebrow">Event '+sc.id+' of '+N+' · CDM '+(ev.step+1)+' of '+sc.hours.length+'</div>'+
+   '<div class="evtitle">'+sc.prim+' × '+sc.sec.name+'</div></div><span class="chip '+secCls+'">'+sc.sec.type+'</span></div>'+
+   '<div class="meta"><span>Relative speed <span class="mono">'+sc.vrel+' km/s</span></span><span>Combined hard-body radius <span class="mono">'+R+' m</span></span><span>Time to closest approach <span class="mono">'+c.h+' h</span></span></div>'+
+   '<div class="stats">'+
+    '<div class="stat"><span class="k">Miss distance</span><span class="v">'+fmtM(c.d)+'</span></div>'+
+    '<div class="stat"><span class="k">Reported 1σ</span><span class="v">'+fmtM(c.sr)+'</span></div>'+
+    '<div class="stat"><span class="k">Reported Pc</span><span class="v'+(c.pc>=star?' hot':'')+'">'+fmtPc(c.pc)+'</span></div>'+
+    '<div class="stat"><span class="k">Maneuver line</span><span class="v">'+fmtPc(star)+'</span></div></div>'+
+   '<div class="charts"><div class="chart-t">Collision probability</div>'+pcChart(ev)+'</div>'+
+   '<div class="charts"><div class="chart-t">Miss distance and reported ±2σ band</div>'+missChart(ev)+'</div>'+
+   '<div class="legend"><span><i style="border-color:var(--accent)"></i>From CDM (what you see)</span><span><i class="sw"></i>Reported ±2σ</span>'+(ev.done?'<span><i style="border-color:var(--info);border-top-style:dashed"></i>Truth (revealed)</span>':'')+'<span><i style="border-color:var(--crit);border-top-style:dashed"></i>Maneuver line</span></div>'+
+   '<div class="tbl-wrap"><table><thead><tr><th>CDM at</th><th>Miss</th><th>Reported 1σ</th><th>Pc</th>'+(ev.done?'<th>True miss</th><th>Realistic Pc</th>':'')+'<th>Notes</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+}
+
+function renderAssist(){
+  const el=$("assistPanel");
+  if(state.sessionDone){el.hidden=true;return;}
+  el.hidden=false;
+  if(!state.assist){el.innerHTML='<div class="eyebrow">Triage assistant</div><p class="muted" style="font-size:.9rem">Off. You are deciding from the CDMs alone. Turn it on in the header to see recommendations and their reasons.</p>';return;}
+  if(state.ev.done){el.innerHTML='<div class="eyebrow">Triage assistant</div><p class="muted" style="font-size:.9rem">Event closed. '+(state.ev.result.recs?'You followed '+state.ev.result.agrees+' of '+state.ev.result.recs+' recommendations in this event.':'')+'</p>';return;}
+  const a=advise(state.ev);
+  el.innerHTML='<div class="eyebrow">Triage assistant</div><div class="rec-line"><b>'+ACT_LABEL[a.rec]+'</b><span class="chip acc">Pc '+fmtPc(a.pcA)+'</span></div><ul>'+a.reasons.map(r=>'<li>'+r+'</li>').join("")+'</ul>';
+}
+
+function renderActions(){
+  const el=$("actionPanel");
+  if(state.sessionDone){el.hidden=true;return;}
+  el.hidden=false;
+  const ev=state.ev, c=ev.cdms[ev.cdms.length-1], last=ev.step===ev.sc.hours.length-1, dis=ev.done, gap=last?0:ev.sc.hours[ev.step]-ev.sc.hours[ev.step+1];
+  const rec=(state.assist&&!dis)?advise(ev).rec:null;
+  const b=(k,title,sub,disabled,wide)=>'<button type="button" class="act'+(wide?' wide':'')+(rec===k?' rec':'')+'" data-act="'+k+'"'+(disabled?' disabled':'')+'><strong>'+title+'</strong><span>'+sub+'</span></button>';
+  el.innerHTML='<div class="eyebrow">Your decision</div><div class="actions">'+
+    b("wait","Wait for next CDM",last?"No more updates before TCA":"Free · next CDM in "+gap+" h",dis||last)+
+    b("observe","Request tracking pass",ev.obsFrom!==null?"Already requested":(last?"Too late to schedule":"Cost "+OBS_COST+" · sharper next CDM"),dis||last||ev.obsFrom!==null)+
+    b("maneuver","Maneuver now","Cost "+manCost(c.h)+" in fuel and downtime",dis)+
+    b("dismiss","Dismiss","Free · catastrophic if real",dis)+
+    (state.sessSda?b("handoff","Hand off to SDA review","Cost "+HANDOFF_COST+" · closes the event here, analysts assess intent",dis,true):'')+'</div>';
+  el.querySelectorAll("[data-act]").forEach(x=>x.addEventListener("click",()=>act(x.dataset.act)));
+}
+
+function renderReveal(){
+  const el=$("reveal"), ev=state.ev;
+  if(state.sessionDone||!ev.done){el.hidden=true;return;}
+  el.hidden=false;
+  const r=ev.result, v=VERDICT[r.verdict], sc=ev.sc;
+  el.style.borderLeftColor="var(--"+v.cls+")";
+  let truth;
+  if(sc.bridge)truth=sc.deliberate?'Inspection-style approach. Closed in step by step, then held at about '+fmtM(sc.miss)+'.':'Single station-keeping maneuver. The geometry shifted once, then the object drifted away to '+fmtM(sc.miss)+'.';
+  else truth='Objects pass at '+fmtM(sc.miss)+(sc.miss<R?' <span class="chip crit">inside '+R+' m</span>':'')+'.'+(sc.pattern?' <span class="chip acc">'+PATTERN_LABEL[sc.pattern]+'</span> '+PATTERN_NOTE[sc.pattern]:'');
+  el.innerHTML='<div class="eyebrow">Truth revealed</div><div class="verdict" style="color:var(--'+v.cls+')">'+r.verdict+'</div><p style="font-size:.92rem">'+v.txt+'</p>'+
+   '<dl><dt>Your call</dt><dd>'+ACT_LABEL[r.action]+' at −'+r.h+' h</dd>'+
+   '<dt>Truth</dt><dd>'+truth+'</dd>'+
+   (sc.bridge?'<dt>Evidence</dt><dd>'+r.evid+' consecutive approach step'+(r.evid===1?'':'s')+' beyond the uncertainty band at your decision (2 needed)</dd>':
+     '<dt>Realistic risk</dt><dd class="mono">'+fmtPc(r.pcTrue)+' vs line '+fmtPc(r.star)+'</dd><dt>Reported risk</dt><dd class="mono">'+fmtPc(r.pcRep)+'</dd>')+
+   (sc.optimistic?'<dt>Covariance</dt><dd>Reported uncertainty was about a third of the real spread'+(ev.obsFrom!==null?' until your tracking pass corrected it':'')+'.</dd>':'')+
+   '<dt>Cost</dt><dd class="mono">'+(r.collided?'Collision':(r.fuel+r.obs))+'</dd></dl>'+
+   '<button type="button" class="btn" id="next">'+(state.idx<N-1?'Next event':'Finish session')+'</button>';
+  $("next").addEventListener("click",nextEvent);
+}
+
+function renderTally(){
+  const rs=state.results, has=v=>rs.filter(r=>r.verdict===v).length;
+  const dots=state.scen.map((s,i)=>{const r=rs[i];const cls=r?VERDICT[r.verdict].cls:"";return '<span class="dot '+cls+(i===state.idx&&!state.sessionDone?' now':'')+'" title="Event '+(i+1)+(r?': '+r.verdict:'')+'"></span>';}).join("");
+  $("tally").innerHTML='<div class="eyebrow">This session · '+(state.setKey==="R"?"Random":"Set "+state.setKey)+' · SDA '+(state.sessSda?'on':'off')+' · assistant '+(state.sessAssist?'on':'off')+'</div><div class="dots">'+dots+'</div>'+
+   '<div class="tally"><div><span class="n">'+rs.filter(r=>r.collided).length+'</span><span class="l">Collisions</span></div>'+
+   '<div><span class="n">'+rs.reduce((a,r)=>a+r.fuel,0)+'</span><span class="l">Fuel &amp; downtime</span></div>'+
+   '<div><span class="n">'+rs.reduce((a,r)=>a+r.obs,0)+'</span><span class="l">Tracking &amp; analyst</span></div>'+
+   '<div><span class="n">'+rs.filter(r=>VERDICT[r.verdict].q[0]==="S").length+'/'+rs.length+'</span><span class="l">Sound decisions</span></div>'+
+   '<div><span class="n">'+rs.filter(r=>VERDICT[r.verdict].q==="PG").length+'</span><span class="l">Lucky outcomes</span></div>'+
+   (state.sessSda?'<div><span class="n">'+(has("Correct handoff")+has("Lucky handoff"))+'/'+(has("Missed approach")+has("Evaded, not reported"))+'/'+has("Unneeded handoff")+'</span><span class="l">Handoffs right / missed / unneeded</span></div>'
+     :'<div><span class="n">'+rs.filter(r=>r.action==="maneuver").length+'</span><span class="l">Maneuvers</span></div>')+'</div>';
+}
+
+function summaryHTML(){
+  const rs=state.results, q=k=>rs.filter(r=>VERDICT[r.verdict].q===k).length;
+  const s=state.sessions[state.sessions.length-1];
+  return '<div class="eyebrow">Session complete</div><h2>'+s.sound+' of '+N+' decisions were sound, '+s.collisions+' collision'+(s.collisions===1?'':'s')+'</h2>'+
+   '<p class="muted">The grid separates judgment from luck. The bottom-left cell is the one real operations cannot see: poor calls that happened to turn out fine.</p>'+
+   '<div class="matrix"><div class="h"></div><div class="h">Good outcome</div><div class="h">Bad outcome</div>'+
+   '<div class="h">Sound decision</div><div class="c"><b style="color:var(--ok)">'+q("SG")+'</b>Good call, save, justified caution, correct handoff</div><div class="c"><b style="color:var(--info)">'+q("SB")+'</b>Unlucky</div>'+
+   '<div class="h">Poor decision</div><div class="c"><b style="color:var(--warn)">'+q("PG")+'</b>Lucky</div><div class="c"><b style="color:var(--crit)">'+q("PB")+'</b>Collision, waste, missed or unneeded handoff</div></div>'+
+   '<div class="tbl-wrap"><table><thead><tr><th>Event</th><th>Call</th><th>At</th><th>Truth</th><th>Verdict</th></tr></thead><tbody>'+
+   rs.map((r,i)=>{const sc=state.scen[i];const tr=sc.bridge?(sc.deliberate?'Deliberate approach':'Routine maneuver'):'Miss '+fmtM(sc.miss)+(sc.pattern?' · '+PATTERN_LABEL[sc.pattern]:'');return '<tr><td>'+(i+1)+'</td><td class="txt">'+ACT_LABEL[r.action]+'</td><td>−'+r.h+' h</td><td class="txt">'+tr+'</td><td class="txt"><span class="chip '+VERDICT[r.verdict].cls+'">'+r.verdict+'</span></td></tr>';}).join("")+
+   '</tbody></table></div><div class="controls"><button type="button" class="btn" id="again">Play again</button><span class="muted" style="font-size:.88rem">Tip: replay the same set with the assistant '+(s.assist?'off':'on')+' to compare.</span></div>';
+}
+
+function renderSessions(){
+  const el=$("sessions");
+  if(!state.sessions.length){el.innerHTML='<p class="empty">Finished sessions appear here with collisions, costs, sound decisions, SDA handoffs and how often the assistant was followed. Nothing logged yet.</p>';return;}
+  el.innerHTML='<div class="tbl-wrap"><table><thead><tr><th>Finished</th><th>Set</th><th>Assistant</th><th>Collisions</th><th>Fuel</th><th>Tracking &amp; analyst</th><th>Sound</th><th>Lucky</th><th>Handoffs right / missed / unneeded</th><th>Followed assistant</th></tr></thead><tbody>'+
+   state.sessions.slice().reverse().map(s=>'<tr><td class="txt">'+s.when+'</td><td class="txt">'+s.set+'</td><td class="txt">'+(s.assist?'On':'Off')+'</td><td>'+s.collisions+'</td><td>'+s.fuel+'</td><td>'+s.obs+'</td><td>'+s.sound+'/'+s.n+'</td><td>'+s.lucky+'</td><td>'+(s.sda?s.hCorrect+' / '+s.hMissed+' / '+s.hUnneeded:'SDA off')+'</td><td>'+(s.recs?Math.round(100*s.agrees/s.recs)+'%':'–')+'</td></tr>').join("")+
+   '</tbody></table></div><button type="button" class="btn ghost" id="clearLog" style="justify-self:start;margin-top:10px">Clear log</button>';
+  $("clearLog").addEventListener("click",()=>{state.sessions=[];saveSessions();renderSessions();});
+}
+
+function render(){
+  renderEvent();renderAssist();renderActions();renderReveal();renderTally();renderSessions();
+  const again=$("again");if(again)again.addEventListener("click",newSession);
+}
+
+$("set").addEventListener("change",e=>{state.setKey=e.target.value;newSession();});
+$("sda").addEventListener("change",e=>{state.sda=e.target.checked;newSession();});
+$("assist").addEventListener("change",e=>{state.assist=e.target.checked;if(!state.results.length&&state.idx===0&&state.ev&&!state.ev.done&&state.ev.step===0)state.sessAssist=state.assist;render();});
+$("restart").addEventListener("click",newSession);
+newSession();
+})();
+</script>
+
+</body></html>

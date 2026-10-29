@@ -3,7 +3,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+JP:wght@400;500;600;700&display=swap">
 <style>
 /* Layout: flight-dynamics console — event workspace left, decision rail right, session log below */
 :root{
@@ -26,6 +26,16 @@
   --ok:#5fbf86; --ok-soft:#183427; --warn:#e2b25a; --warn-soft:#352a14;
   --crit:#ef7a70; --crit-soft:#3b1d1b; --info:#7aa9e3; --info-soft:#18283b; color-scheme:dark}
 
+html[lang="ja"]{--f-display:"IBM Plex Sans JP","Hiragino Sans","Yu Gothic",system-ui,sans-serif;--f-body:"IBM Plex Sans JP","Hiragino Sans","Yu Gothic",system-ui,sans-serif}
+html[lang="ja"] .eyebrow,html[lang="ja"] .stat .k,html[lang="ja"] th,html[lang="ja"] .chart-t,html[lang="ja"] .matrix .h{letter-spacing:.02em}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.topbar .eyebrow{flex:1;min-width:0}
+.lang{flex:none}
+.lang{display:inline-flex;border:1px solid var(--line);border-radius:4px;overflow:hidden;background:var(--panel)}
+.lang button{border:0;background:transparent;padding:5px 12px;cursor:pointer;font-size:.85rem;color:var(--muted);font-family:var(--f-body)}
+.lang button+button{border-left:1px solid var(--line)}
+.lang button[aria-pressed="true"]{background:var(--ink);color:var(--panel);font-weight:600}
+.lang button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
 .wrap{max-width:1180px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:20px}
 h1,h2,h3{font-family:var(--f-display);font-weight:600;letter-spacing:.01em;margin:0;text-wrap:balance}
@@ -40,7 +50,11 @@ header.top{display:flex;flex-wrap:wrap;gap:16px 28px;align-items:end;justify-con
 .intro{display:grid;gap:6px;min-width:0}
 .controls{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
 select,button{font:inherit;color:var(--ink)}
-select{background:var(--panel);border:1px solid var(--line);padding:7px 10px;border-radius:4px}
+select,input.num{background:var(--panel);border:1px solid var(--line);padding:7px 10px;border-radius:4px;font:inherit;color:var(--ink)}
+input.num{width:96px}
+.ru{display:inline-flex;align-items:center;gap:6px}
+.ru input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tally .c{font-size:.72rem;color:var(--muted)}
 .btn{background:var(--ink);color:var(--panel);border:0;padding:8px 14px;border-radius:4px;cursor:pointer;font-weight:500}
 .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
 .btn:focus-visible,.act:focus-visible,select:focus-visible,.switch input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
@@ -105,7 +119,7 @@ tr.cur td{background:var(--accent-soft)}
 .act:hover:not(:disabled){border-color:var(--accent)}
 .act:disabled{opacity:.42;cursor:not-allowed}
 .act.rec{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
-.act.rec::after{content:"Recommended";position:absolute;top:-9px;right:8px;background:var(--accent);color:var(--panel);font-size:.68rem;font-weight:600;padding:1px 6px;border-radius:3px;letter-spacing:.03em}
+.act.rec::after{content:attr(data-rec);position:absolute;top:-9px;right:8px;background:var(--accent);color:var(--panel);font-size:.68rem;font-weight:600;padding:1px 6px;border-radius:3px;letter-spacing:.03em}
 
 .assist ul{margin:0;padding-left:18px;display:grid;gap:6px;font-size:.9rem}
 .assist .rec-line{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
@@ -134,25 +148,32 @@ details summary{cursor:pointer;font-family:var(--f-display);font-size:1.15rem;fo
 details .body{display:grid;gap:10px;margin-top:10px}
 .empty{color:var(--muted);font-size:.9rem;padding:8px 0}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+[hidden]{display:none!important}
 </style>
 
 <div class="wrap">
+  <div class="topbar">
+    <div class="eyebrow" data-i18n="eyebrow">Orbitorus · Training &amp; benchmark sample</div>
+    <div class="lang" role="group" aria-label="Language / 言語"><button type="button" data-lang="en" aria-pressed="true">EN</button><button type="button" data-lang="ja" aria-pressed="false">日本語</button></div>
+  </div>
   <header class="top">
     <div class="intro">
-      <div class="eyebrow">Orbitorus · Training &amp; benchmark sample</div>
-      <h1>Conjunction Triage <span style="color:var(--muted);font-weight:500">(SSA + SDA handoff)</span></h1>
-      <p class="muted">Each event has a hidden truth. You only see the CDMs, as in operations. Most events are collision questions. Some involve an active satellite whose behavior may be deliberate, and the right move there is to hand it to SDA review rather than treat it as a collision risk.</p>
+      <h1 data-i18n="h1">Conjunction Triage <span style="color:var(--muted);font-weight:500">(SSA + SDA handoff)</span></h1>
+      <p class="muted" data-i18n="intro">Each event has a hidden truth. You only see the CDMs, as in operations. Most events are collision questions. Some involve an active satellite whose behavior may be deliberate, and the right move there is to hand it to SDA review rather than treat it as a collision risk.</p>
     </div>
     <div class="controls">
-      <label for="set" class="muted">Scenario set</label>
+      <label for="set" class="muted" data-i18n="setL">Scenario set</label>
       <select id="set">
-        <option value="A">Set A (fixed)</option>
-        <option value="B">Set B (fixed)</option>
-        <option value="R">Random</option>
+        <option value="A" data-i18n="setA">Set A (fixed)</option>
+        <option value="B" data-i18n="setB">Set B (fixed)</option>
+        <option value="R" data-i18n="setR">Random</option>
       </select>
-      <label class="switch" for="sda"><input type="checkbox" id="sda" checked><span class="track"></span><span>SDA handoff events</span></label>
-      <label class="switch" for="assist"><input type="checkbox" id="assist"><span class="track"></span><span>Triage assistant</span></label>
-      <button class="btn" id="restart" type="button">New session</button>
+      <label class="switch" for="sda"><input type="checkbox" id="sda" checked><span class="track"></span><span data-i18n="sdaL">SDA handoff events</span></label>
+      <label class="switch" for="assist"><input type="checkbox" id="assist"><span class="track"></span><span data-i18n="assistL">Triage assistant</span></label>
+      <label for="thr" class="muted" data-i18n="thrL">Maneuver threshold</label>
+      <select id="thr"><option value="1e-5">1×10⁻⁵</option><option value="5e-5">5×10⁻⁵</option><option value="1e-4" selected>1×10⁻⁴</option><option value="2e-4">2×10⁻⁴</option><option value="5e-4">5×10⁻⁴</option></select>
+      <span class="ru"><label for="ruRate" class="muted" data-i18n="ruL">1 RU =</label><input id="ruRate" class="num" type="number" min="0" step="any" inputmode="decimal" placeholder="—"><select id="ruUnit" aria-label="Unit"><option value="usd" data-i18n="uUsd">$ (USD)</option><option value="jpy" data-i18n="uJpy">¥ (JPY)</option><option value="kg" data-i18n="uKg">kg fuel</option><option value="h" data-i18n="uH">hours</option></select></span>
+      <button class="btn" id="restart" type="button" data-i18n="restart">New session</button>
     </div>
   </header>
 
@@ -167,20 +188,20 @@ details .body{display:grid;gap:10px;margin-top:10px}
   </div>
 
   <section class="panel">
-    <div class="evhead"><h2>Session log</h2><span class="muted" style="font-size:.85rem">Play the same set with the assistant off, then on, to compare.</span></div>
+    <div class="evhead"><h2 data-i18n="logH">Session log</h2><span class="muted" style="font-size:.85rem" data-i18n="logHint">Play the same set with the assistant off, then on, to compare.</span></div>
     <div id="sessions"></div>
   </section>
 
   <section class="panel">
     <details>
-      <summary>How scoring works</summary>
+      <summary data-i18n="howH">How scoring works</summary>
       <div class="body">
-        <p><b>Truth first.</b> Each scenario starts from a true miss distance. Noisy CDMs are generated from it about every 12 hours, from about 72 h to 12 h before closest approach. As in real data, the timing is irregular and an update is sometimes missing. About 30% of collision events are genuinely close, far more than in reality (in ESA's public CDM data, 0.8% of events end high-risk), so poor judgment shows up within one session. Some events carry optimistic covariance: the reported uncertainty is about a third of the real spread. A Pc below 10⁻¹² is shown as ≈0, as real CDMs often report zero.</p>
-        <p><b>Patterns from real data.</b> Four event shapes found in ESA's public CDMs appear in the sets. <i>Sharp collapse</i>: Pc reaches a notable level, then one poor orbit update reports it as near zero (Set A). <i>Resolves itself</i>: early CDMs look close, later ones show the objects pass far apart, and closing is right (Set A). <i>Thin evidence</i>: the first CDM arrives only 36 h out and the second shows a drop (Set B). <i>Dilution</i>: Pc stays low only because the uncertainty is huge (Set B). Each random session has one. Closing an event on a sudden collapse, or on a couple of CDMs while the risk is not negligible, is scored as a poor decision even if nothing happens.</p>
-        <p><b>Costs.</b> A maneuver costs fuel and mission downtime, rising from 25 at 72 h to 55 at 12 h. A tracking pass costs 8 and makes later CDMs sharper and honest about their uncertainty. A handoff to SDA review costs 5 in analyst time. A collision costs 100,000. The maneuver line is where the expected collision cost equals the maneuver cost, about 3×10⁻⁴.</p>
-        <p><b>SDA handoff events.</b> With the switch on, one event per session involves an active satellite that changes its orbit between updates. Its collision probability stays low, so collision logic alone says dismiss. What matters is the pattern: a deliberate approach closes in step after step, each step larger than the uncertainty band can explain. A routine station-keeping burn shifts the geometry once and then stops. Handing off with at least two consistent approach steps is a sound call. Handing off routine behavior costs analyst time and weakens the credibility of future flags. Judging intent stays with the SDA analysts; this desk only decides whether to pass it on.</p>
-        <p><b>Two scores.</b> Outcome is what actually happened. Decision quality compares your call with what a calibrated analyst would conclude from the same information. That separates a good call from a lucky one.</p>
-        <p class="muted">Sample only. Geometry is simplified to a 2D encounter plane with isotropic uncertainty and a 20 m combined hard-body radius. Approach patterns are generic and do not describe any real operator or capability.</p>
+        <p data-i18n="how1"><b>Truth first.</b> Each scenario starts from a true miss distance. Noisy CDMs are generated from it about every 12 hours, from about 72 h to 12 h before closest approach. As in real data, the timing is irregular and an update is sometimes missing. About 30% of collision events are genuinely close, far more than in reality (in ESA's public CDM data, 0.8% of events end high-risk), so poor judgment shows up within one session. Some events carry optimistic covariance: the reported uncertainty is about a third of the real spread. A Pc below 10⁻¹² is shown as ≈0, as real CDMs often report zero.</p>
+        <p data-i18n="how2"><b>Patterns from real data.</b> Four event shapes found in ESA's public CDMs appear in the sets. <i>Sharp collapse</i>: Pc reaches a notable level, then one poor orbit update reports it as near zero (Set A). <i>Resolves itself</i>: early CDMs look close, later ones show the objects pass far apart, and closing is right (Set A). <i>Thin evidence</i>: the first CDM arrives only 36 h out and the second shows a drop (Set B). <i>Dilution</i>: Pc stays low only because the uncertainty is huge (Set B). Each random session has one. Closing an event on a sudden collapse, or on a couple of CDMs while the risk is not negligible, is scored as a poor decision even if nothing happens.</p>
+        <p data-i18n="how3"><b>Costs.</b> A maneuver costs fuel and mission downtime, rising from 25 at 72 h to 55 at 12 h. A tracking pass costs 8 and makes later CDMs sharper and honest about their uncertainty. A handoff to SDA review costs 5 in analyst time. A maneuver is required when the realistic Pc reaches the <b>maneuver threshold</b>, the operator's risk policy, set in the header (1×10⁻⁴ by default). It is the same for every event and every update: costs change how to act, never how much risk is accepted.</p>
+        <p data-i18n="how4"><b>SDA handoff events.</b> With the switch on, one event per session involves an active satellite that changes its orbit between updates. Its collision probability stays low, so collision logic alone says dismiss. What matters is the pattern: a deliberate approach closes in step after step, each step larger than the uncertainty band can explain. A routine station-keeping burn shifts the geometry once and then stops. Handing off with at least two consistent approach steps is a sound call. Handing off routine behavior costs analyst time and weakens the credibility of future flags. Judging intent stays with the SDA analysts; this desk only decides whether to pass it on.</p>
+        <p data-i18n="how5"><b>Two scores.</b> Outcome is what actually happened. Decision quality compares your call with what a calibrated analyst would conclude from the same information. That separates a good call from a lucky one.</p>
+        <p data-i18n="how6" class="muted">Sample only. Geometry is simplified to a 2D encounter plane with isotropic uncertainty and a 20 m combined hard-body radius. Approach patterns are generic and do not describe any real operator or capability.</p>
       </div>
     </details>
   </section>
@@ -188,7 +209,37 @@ details .body{display:grid;gap:10px;margin-top:10px}
 
 <script>
 (function(){
-const R=20, COLL=100000, HOURS=[72,60,48,36,24,12], OBS_COST=8, HANDOFF_COST=5, N=8;
+let LANG="en";try{const l=localStorage.getItem("ct-lang");if(l==="en"||l==="ja")LANG=l;else if((navigator.language||"").toLowerCase().startsWith("ja"))LANG="ja";}catch(e){}
+const T=(en,ja)=>LANG==="ja"?ja:en;
+/* Resource unit conversion, set by the viewer: 1 RU = rate × unit. Display only; scoring stays in RU. */
+let RU={rate:0,unit:"usd"};try{const r=JSON.parse(localStorage.getItem("ct-ru")||"null");if(r&&r.rate>0&&["usd","jpy","kg","h"].includes(r.unit))RU=r;}catch(e){}
+function conv(x){if(!RU.rate||!x)return "";const v=x*RU.rate,n=v<10?Math.round(v*10)/10:Math.round(v),t=n.toLocaleString(LANG==="ja"?"ja-JP":"en-US");
+  return RU.unit==="usd"?"$"+t:RU.unit==="jpy"?T("¥"+t,t+"円"):RU.unit==="kg"?T(t+" kg fuel","燃料"+t+" kg"):T(t+" h",t+"時間");}
+function ru(x){const c=conv(x);return x+" RU"+(c?" ≈ "+c:"");}
+const I18N={
+ eyebrow:["Orbitorus · Training &amp; benchmark sample","Orbitorus · 訓練・ベンチマーク用サンプル"],
+ h1:['Conjunction Triage <span style="color:var(--muted);font-weight:500">(SSA + SDA handoff)</span>','接近警報トリアージ <span style="color:var(--muted);font-weight:500">（SSA＋SDA引継ぎ）</span>'],
+ intro:["Each event has a hidden truth. You only see the CDMs, as in operations. Most events are collision questions. Some involve an active satellite whose behavior may be deliberate, and the right move there is to hand it to SDA review rather than treat it as a collision risk.",
+        "各事象には隠された「真実」があります。運用と同じく、見えるのはCDM（接近警報）だけです。多くは衝突リスクの判断ですが、一部には意図的に動いている可能性のある運用中の衛星が含まれます。その場合は衝突リスクとして扱うのではなく、SDA分析へ引き継ぐのが正しい対応です。"],
+ setL:["Scenario set","シナリオセット"], setA:["Set A (fixed)","セットA（固定）"], setB:["Set B (fixed)","セットB（固定）"], setR:["Random","ランダム"],
+ sdaL:["SDA handoff events","SDA引継ぎ事象"], assistL:["Triage assistant","トリアージ支援"], thrL:["Maneuver threshold","回避しきい値"], restart:["New session","新しいセッション"],
+ logH:["Session log","セッション記録"], logHint:["Play the same set with the assistant off, then on, to compare.","同じセットを支援なし・支援ありで続けて行い、結果を比べてください。"],
+ howH:["How scoring works","採点の仕組み"],
+ ruL:["1 RU =","1 RU ="], uUsd:["$ (USD)","$（ドル）"], uJpy:["¥ (JPY)","円"], uKg:["kg fuel","kg（燃料）"], uH:["hours","時間"],
+ how1:["<b>Truth first.</b> Each scenario starts from a true miss distance. Noisy CDMs are generated from it about every 12 hours, from about 72 h to 12 h before closest approach. As in real data, the timing is irregular and an update is sometimes missing. About 30% of collision events are genuinely close, far more than in reality (in ESA's public CDM data, 0.8% of events end high-risk), so poor judgment shows up within one session. Some events carry optimistic covariance: the reported uncertainty is about a third of the real spread. A Pc below 10⁻¹² is shown as ≈0, as real CDMs often report zero.",
+       "<b>真実が先にある。</b>各シナリオは真の最接近距離から始まり、そこから誤差を含むCDMが最接近の約72時間前から12時間前まで、約12時間ごとに生成されます。実データと同様に配信間隔は不規則で、更新が欠けることもあります。衝突系の事象の約30%は実際に近接しており、現実よりはるかに多くしています（ESAの公開CDMデータでは高リスクで終わる事象は0.8%）。そのため1回のセッションで判断の誤りが表れます。一部の事象では共分散が楽観的で、報告される不確かさが実際の広がりの約3分の1しかありません。10⁻¹²未満のPcは「≈0」と表示します（実際のCDMでもゼロと報告されることが多いため）。"],
+ how2:["<b>Patterns from real data.</b> Four event shapes found in ESA's public CDMs appear in the sets. <i>Sharp collapse</i>: Pc reaches a notable level, then one poor orbit update reports it as near zero (Set A). <i>Resolves itself</i>: early CDMs look close, later ones show the objects pass far apart, and closing is right (Set A). <i>Thin evidence</i>: the first CDM arrives only 36 h out and the second shows a drop (Set B). <i>Dilution</i>: Pc stays low only because the uncertainty is huge (Set B). Each random session has one. Closing an event on a sudden collapse, or on a couple of CDMs while the risk is not negligible, is scored as a poor decision even if nothing happens.",
+       "<b>実データに基づくパターン。</b>ESAの公開CDMデータで見られた4つの典型が含まれます。<i>Pcの急落</i>：Pcが一定の水準に達した後、質の悪い軌道更新でほぼゼロと報告される（セットA）。<i>自然解消</i>：初期のCDMでは近く見えるが、後のCDMで十分離れて通過すると分かり、見送りが正解（セットA）。<i>根拠不足</i>：最初のCDMが最接近の36時間前に届き、2通目でPcが下がる（セットB）。<i>希釈（ダイリューション）</i>：不確かさが非常に大きいためにPcが低く見えるだけ（セットB）。ランダムでは各セッションに1件含まれます。Pcの急落直後や、リスクが無視できない状態で少数のCDMだけを根拠に見送った場合は、何も起きなくても判断の誤りとして採点します。"],
+ how3:["<b>Costs.</b> All costs are in <b>resource units (RU)</b>: one common unit for what an operator spends, such as money ($), fuel (kg) or staff time (hours). Each operator would set its own conversion, for example how many dollars or kilograms of fuel one RU represents. A maneuver costs fuel and mission downtime, rising from 25 RU at 72 h to 55 RU at 12 h. A tracking pass costs 8 RU and makes later CDMs sharper and honest about their uncertainty. A handoff to SDA review costs 5 RU in analyst time. Enter a conversion in the header (1 RU = …) to see costs in your own terms as well. A maneuver is required when the realistic Pc reaches the <b>maneuver threshold</b>, the operator's risk policy, set in the header (1×10⁻⁴ by default). It is the same for every event and every update: costs change how to act, never how much risk is accepted.",
+       "<b>費用。</b>費用はすべて<b>資源単位（RU）</b>で表します。RUは、金額（$）、燃料（kg）、人員の時間（時間）など、運用者が費やす資源を1つにまとめた共通の単位です。1 RUが何ドル・何kgの燃料に相当するかは、運用者ごとに設定します。回避には燃料とミッション停止の費用がかかり、72時間前の25 RUから12時間前の55 RUまで増えます。追加観測は8 RUで、以降のCDMの精度が上がり、不確かさも正しく報告されるようになります。SDA分析への引継ぎは分析者の工数として5 RUです。ヘッダーで換算（1 RU = …）を入力すると、自社の単位でも費用が表示されます。現実的なPcが<b>回避しきい値</b>（運用者のリスク方針。ヘッダーで設定、初期値1×10⁻⁴）に達したら回避が必要です。しきい値はすべての事象・更新で同じです。費用が変えるのは対応の仕方であり、受け入れるリスクの大きさではありません。"],
+ how4:["<b>SDA handoff events.</b> With the switch on, one event per session involves an active satellite that changes its orbit between updates. Its collision probability stays low, so collision logic alone says dismiss. What matters is the pattern: a deliberate approach closes in step after step, each step larger than the uncertainty band can explain. A routine station-keeping burn shifts the geometry once and then stops. Handing off with at least two consistent approach steps is a sound call. Handing off routine behavior costs analyst time and weakens the credibility of future flags. Judging intent stays with the SDA analysts; this desk only decides whether to pass it on.",
+       "<b>SDA引継ぎ事象。</b>スイッチをオンにすると、各セッションに1件、更新の間に軌道を変える運用中の衛星が含まれます。衝突確率は低いままなので、衝突の観点だけなら見送りになります。重要なのはパターンです。意図的な接近では、不確かさの帯では説明できない大きさで段階的に距離が縮まります。定常的な軌道保持の噴射なら、幾何が一度変わって止まります。一貫した接近が2段階以上確認できた時点での引継ぎが妥当な判断です。定常的な挙動を引き継ぐと分析者の工数を使い、今後の通報の信頼性も下がります。意図の判断はSDA分析者が行い、この担当は引き継ぐかどうかだけを決めます。"],
+ how5:["<b>Two scores.</b> Outcome is what actually happened. Decision quality compares your call with what a calibrated analyst would conclude from the same information. That separates a good call from a lucky one.",
+       "<b>2つの評価。</b>「結果」は実際に何が起きたか。「判断の質」は、同じ情報から較正された分析者が下す結論とあなたの判断を比べます。これにより、良い判断と単に運が良かっただけの判断を区別します。"],
+ how6:["Sample only. Geometry is simplified to a 2D encounter plane with isotropic uncertainty and a 20 m combined hard-body radius. Approach patterns are generic and do not describe any real operator or capability.",
+       "サンプルです。幾何は2次元の遭遇平面、等方的な不確かさ、合成ハードボディ半径20 mに簡略化しています。接近パターンは一般的なもので、実在の運用者や能力を表すものではありません。"]
+};
+const R=20, HOURS=[72,60,48,36,24,12], OBS_COST=8, HANDOFF_COST=5, N=8;
 const SETS={A:{seed:101,bridgeIdx:5,deliberate:true},B:{seed:202,bridgeIdx:2,deliberate:false}};
 const SECONDARIES=[
   {name:"FENGYUN 1C DEB",type:"Debris"},
@@ -199,14 +250,37 @@ const SECONDARIES=[
   {name:"Analyst object",type:"Uncatalogued"}
 ];
 // quadrant: S/P = sound/poor decision, G/B = good/bad outcome
+const TYPE_JA={"Debris":"デブリ","Rocket body":"ロケット機体","Other operator, may maneuver":"他の運用者・機動の可能性あり","Uncatalogued":"未カタログ物体"};
+const NAME_JA={"Active satellite":"運用中の衛星","Analyst object":"分析対象物体"};
+const typeL=t=>T(t,TYPE_JA[t]||t), nameL=n=>T(n,NAME_JA[n]||n);
+const VERDICT_JA={
+  "Good call":["適切な判断","実際に低かったリスクを受け入れ、事象は安全に終わりました。"],
+  "Lucky":["幸運","衝突はしませんでしたが、現実的な不確かさで見るとリスクは回避しきい値を超えていました。結果は運によるものです。実運用なら成功として記録されていたでしょう。"],
+  "Avoidable collision":["回避可能だった衝突","現実的な不確かさで見るとリスクは回避しきい値を超えており、衝突が起きました。"],
+  "Unlucky":["不運","判断時点のリスクは低く、見送りは妥当でした。低リスクの事象での衝突は、まれな不運です。"],
+  "Save":["回避成功","回避により実際の衝突を防ぎました。判断時点の情報もそれを支持していました。"],
+  "Justified caution":["妥当な慎重判断","実際には衝突しませんでしたが、判断時点のリスクは回避に値しました。費用はかかっても良い判断です。"],
+  "Wasted fuel":["燃料の浪費","リスクは回避しきい値を大きく下回っていました。理由のない回避で燃料とミッション時間を使いました。"],
+  "Lucky save":["幸運な回避","回避により実際の衝突を防ぎましたが、判断時点の情報はそれを支持していませんでした。"],
+  "Correct handoff":["適切な引継ぎ","意図的な接近でした。パターンが明確になった時点でSDA分析へ引き継ぎました。衝突の観点だけなら見送られていた事象です。"],
+  "Lucky handoff":["幸運な引継ぎ","意図的な接近でしたが、パターンが示される前に引き継ぎました。結果は正しくても根拠が弱く、こうした早期の通報は外れたときに信頼を損ないます。"],
+  "Missed approach":["接近の見逃し","意図的な接近が段階的に近づいていたのに、低リスクの接近として見送られました。Pcが低いことは無害を意味しません。"],
+  "Evaded, not reported":["回避したが未報告","離れたことで自機は安全でしたが、誰にも知らされませんでした。意図的な接近は他者が必要とする情報です。"],
+  "Unneeded handoff":["不要な引継ぎ","定常的な挙動でした。引継ぎで分析者の工数を使い、今後の通報が軽視されやすくなります。"],
+  "Collision after a collapse":["急落後の衝突","一定の水準から急落した直後のPcを根拠に見送りました。急落は質の悪い軌道更新によるもので、物体は軌道を変えずに衝突しました。"],
+  "Collision on thin evidence":["根拠不足での衝突","リスクが無視できない状態で、少数のCDMだけを根拠に見送りました。データが増えれば衝突軌道にあると分かったはずです。"],
+  "Trusted a collapse":["急落を信用","Pcが一定の水準から1回の更新でほぼゼロに下がり、それを根拠に見送りました。急落は質の悪い軌道更新によることが多く、見送る前に追加観測か次のCDMを待つべきです。"],
+  "Trusted thin evidence":["少ない根拠を信用","CDMは少数しかなく、判断時点のリスクも無視できませんでした。これほど少ないデータでの低下は、見送りの根拠として弱すぎます。"]
+};
+const vName=k=>T(k,VERDICT_JA[k][0]), vTxt=k=>T(VERDICT[k].txt,VERDICT_JA[k][1]);
 const VERDICT={
   "Good call":{cls:"ok",q:"SG",txt:"You accepted a risk that was genuinely low, and the event closed safely."},
-  "Lucky":{cls:"warn",q:"PG",txt:"The objects missed, but with realistic uncertainty the risk was above the maneuver line. The outcome was luck. Real operations would have logged this as a success."},
-  "Avoidable collision":{cls:"crit",q:"PB",txt:"With realistic uncertainty the risk was above the maneuver line, and the collision happened."},
+  "Lucky":{cls:"warn",q:"PG",txt:"The objects missed, but with realistic uncertainty the risk was above the maneuver threshold. The outcome was luck. Real operations would have logged this as a success."},
+  "Avoidable collision":{cls:"crit",q:"PB",txt:"With realistic uncertainty the risk was above the maneuver threshold, and the collision happened."},
   "Unlucky":{cls:"info",q:"SB",txt:"The informed risk was low and dismissing was reasonable. A collision from a low-risk event is rare bad luck."},
   "Save":{cls:"ok",q:"SG",txt:"The maneuver avoided a real collision, and the information at the time supported it."},
   "Justified caution":{cls:"ok",q:"SG",txt:"The objects would have missed, but the risk at the time justified the maneuver. A good decision that still has a cost."},
-  "Wasted fuel":{cls:"crit",q:"PB",txt:"The risk was well below the maneuver line. The maneuver spent fuel and downtime without a reason."},
+  "Wasted fuel":{cls:"crit",q:"PB",txt:"The risk was well below the maneuver threshold. The maneuver spent fuel and downtime without a reason."},
   "Lucky save":{cls:"warn",q:"PG",txt:"The maneuver avoided a real collision, but the information at the time did not support it."},
   "Correct handoff":{cls:"ok",q:"SG",txt:"The approach was deliberate, and you passed it to SDA review once the pattern was clear. Collision logic alone would have dismissed it."},
   "Lucky handoff":{cls:"warn",q:"PG",txt:"The approach was deliberate, but you handed it off before the evidence showed a pattern. Right result, weak basis. Early flags like this are what erode trust when they turn out wrong."},
@@ -218,13 +292,17 @@ const VERDICT={
   "Trusted a collapse":{cls:"warn",q:"PG",txt:"Pc fell from a notable level to almost zero in one update, and you closed the event on it. A sudden collapse often comes from a poor orbit update. Track or wait for the next CDM before closing."},
   "Trusted thin evidence":{cls:"warn",q:"PG",txt:"Only a couple of CDMs existed, and the risk at the time was not negligible. A drop backed by so little data is weak ground for closing an event."}
 };
-const ACT_LABEL={wait:"Wait for next CDM",observe:"Request tracking pass",maneuver:"Maneuver",dismiss:"Dismiss",handoff:"Hand off to SDA review"};
+const ACT_EN={wait:"Wait for next CDM",observe:"Request tracking pass",maneuver:"Maneuver",dismiss:"Dismiss",handoff:"Hand off to SDA review"};
+const ACT_JA={wait:"次のCDMを待つ",observe:"追加観測を依頼",maneuver:"回避",dismiss:"見送り",handoff:"SDA分析へ引継ぎ"};
+const actL=k=>T(ACT_EN[k],ACT_JA[k]);
 
 function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
 function gauss(r){let u=0;while(u===0)u=r();const v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
 function pcOf(d,s){return Math.min(0.9,(R*R/(2*s*s))*Math.exp(-d*d/(2*s*s)));}
 function manCost(h){return Math.round(25+(72-h)*0.5);}
-function pcStar(h){return manCost(h)/COLL;}
+/* Maneuver threshold: the operator's risk policy, the same for every event and time */
+let THR=1e-4;try{const t=parseFloat(localStorage.getItem("ct-thr"));if([1e-5,5e-5,1e-4,2e-4,5e-4].includes(t))THR=t;}catch(e){}
+function pcStar(h){return THR;}
 const SUP={"-":"⁻","0":"⁰","1":"¹","2":"²","3":"³","4":"⁴","5":"⁵","6":"⁶","7":"⁷","8":"⁸","9":"⁹"};
 function fmtPc(p){if(p<1e-12)return"≈0";const e=Math.floor(Math.log10(p));const m=p/Math.pow(10,e);return m.toFixed(1)+"×10"+String(e).split("").map(c=>SUP[c]).join("");}
 function fmtM(m){return m>=1000?(m/1000).toFixed(2)+" km":Math.round(m)+" m";}
@@ -265,7 +343,15 @@ function makeScenarios(setKey,seed,sda){
   out.forEach((s,i)=>{s.id=i+1;});
   return out;
 }
-const PATTERN_LABEL={collapse:"Sharp collapse",dilution:"Dilution",thin:"Thin evidence",settles:"Resolves itself"};
+const PATTERN_EN={collapse:"Sharp collapse",dilution:"Dilution",thin:"Thin evidence",settles:"Resolves itself"};
+const PATTERN_JA={collapse:"Pcの急落",dilution:"希釈",thin:"根拠不足",settles:"自然解消"};
+const PATTERN_NOTE_JA={
+  collapse:"Pcがほぼゼロを示したCDMは、質の悪い軌道更新によるものでした。報告位置は大きくずれましたが、物体は軌道を変えていません。ESAの公開CDMデータで見られたパターンです。",
+  dilution:"不確かさが非常に大きいためにPcが低く見えていただけで、予測最接近点は不確かさの内側にありました。ESAの公開CDMデータで見られたパターンです。",
+  thin:"最初のCDMは最接近の36時間前に届きました。更新がこれほど少ないと、1回の低い値は信用できません。ESAの公開CDMデータで見られたパターンです。",
+  settles:"初期のCDMは実際より近く見積もっていました。後の精度の高いデータで十分離れて通過すると分かり、最後に見送るのが正解でした。ESAの公開CDMデータで見られたパターンです。"
+};
+const patL=k=>T(PATTERN_EN[k],PATTERN_JA[k]), patN=k=>T(PATTERN_NOTE[k],PATTERN_NOTE_JA[k]);
 const PATTERN_NOTE={
   collapse:"The CDMs that showed Pc near zero came from a poor orbit update: the reported position jumped away while the objects stayed on course. Pattern seen in ESA's public CDM data.",
   dilution:"Pc stayed low only because the uncertainty was very large. The nominal miss sat well inside it. Pattern seen in ESA's public CDM data.",
@@ -312,7 +398,7 @@ function evidence(cdms){
 }
 
 function collapseFrom(list,star){for(let j=list.length-1;j>=Math.max(1,list.length-2);j--){const a=list[j-1],b=list[j];if(a.pc>=star/30&&b.pc<a.pc/1e4)return a.pc;}return 0;}
-// a one-update drop of more than 10,000x from a Pc within 30x of the maneuver line, in either of the last two updates
+// a one-update drop of more than 10,000x from a Pc within 30x of the maneuver threshold, in either of the last two updates
 function advise(ev){
   const list=ev.cdms, c=list[list.length-1], prev=list.length>1?list[list.length-2]:null;
   const last=ev.step===ev.sc.hours.length-1, star=pcStar(c.h), reasons=[];
@@ -320,51 +406,51 @@ function advise(ev){
   if(state.sessSda&&list.some(x=>x.secMan)){
     const evid=evidence(list);
     if(evid>=2){
-      reasons.push("Miss distance has closed in "+evid+" consecutive steps, each larger than the uncertainty band can explain.");
-      reasons.push("Collision probability is low ("+fmtPc(c.pc)+"), but low Pc does not mean benign. Intent is for SDA analysts to judge.");
+      reasons.push(T("Miss distance has closed in "+evid+" consecutive steps, each larger than the uncertainty band can explain.","最接近距離が"+evid+"回連続で縮まっており、いずれも不確かさの帯では説明できない大きさです。"));
+      reasons.push(T("Collision probability is low ("+fmtPc(c.pc)+"), but low Pc does not mean benign. Intent is for SDA analysts to judge.","衝突確率は低い（"+fmtPc(c.pc)+"）ものの、Pcが低いことは無害を意味しません。意図の判断はSDA分析者が行います。"));
       return {rec:"handoff",reasons,pcA:c.pc};
     }
     if(!last){
-      reasons.push("The secondary changed its orbit between updates. Watching for a consistent pattern before flagging.");
-      if(ev.obsFrom===null){reasons.push("A tracking pass shrinks the uncertainty band, so a real approach pattern becomes clear sooner.");return {rec:"observe",reasons,pcA:c.pc};}
+      reasons.push(T("The secondary changed its orbit between updates. Watching for a consistent pattern before flagging.","相手物体が更新の間に軌道を変えました。通報する前に、一貫したパターンかどうかを見極めます。"));
+      if(ev.obsFrom===null){reasons.push(T("A tracking pass shrinks the uncertainty band, so a real approach pattern becomes clear sooner.","追加観測で不確かさの帯が狭まり、本当の接近パターンが早く明確になります。"));return {rec:"observe",reasons,pcA:c.pc};}
       return {rec:"wait",reasons,pcA:c.pc};
     }
-    reasons.push("The secondary maneuvered, but there is no consistent approach pattern. Treat it as an ordinary conjunction.");
+    reasons.push(T("The secondary maneuvered, but there is no consistent approach pattern. Treat it as an ordinary conjunction.","相手物体は機動しましたが、一貫した接近パターンはありません。通常の接近として扱います。"));
   }
   const prevMax=list.length>1?Math.max.apply(null,list.slice(0,-1).map(x=>x.pc)):0, maxAll=Math.max(prevMax,c.pc);
   const cf=collapseFrom(list,star);
   if(!last&&cf&&c.pc<star/1000){
-    reasons.push("Pc collapsed from "+fmtPc(cf)+" to "+fmtPc(c.pc)+" in a single update. A sudden drop from a notable level is not trusted without fresh data.");
+    reasons.push(T("Pc collapsed from "+fmtPc(cf)+" to "+fmtPc(c.pc)+" in a single update. A sudden drop from a notable level is not trusted without fresh data.","Pcが1回の更新で"+fmtPc(cf)+"から"+fmtPc(c.pc)+"に急落しました。一定の水準からの急な低下は、新しいデータなしには信用しません。"));
     return {rec:ev.obsFrom===null?"observe":"wait",reasons,pcA:c.pc};
   }
   if(!last&&ev.obsFrom===null&&list.length<=2&&maxAll>=star/30&&c.pc<star){
-    reasons.push("Only "+list.length+" CDM"+(list.length===1?"":"s")+" so far, and Pc has reached "+fmtPc(maxAll)+". Too little evidence to trust a low reading: track first.");
+    reasons.push(T("Only "+list.length+" CDM"+(list.length===1?"":"s")+" so far, and Pc has reached "+fmtPc(maxAll)+". Too little evidence to trust a low reading: track first.","CDMはまだ"+list.length+"通だけで、Pcは"+fmtPc(maxAll)+"に達しています。低い値を信用するには根拠が少なすぎるため、まず追加観測を行います。"));
     return {rec:"observe",reasons,pcA:c.pc};
   }
   let inflate=1;
   if(prev){
     const jump=Math.abs(c.d-prev.d)/Math.max(c.sr,prev.sr);
-    if(jump>2.5&&!c.obs&&!c.secMan){inflate=2.5;reasons.push("Miss distance moved "+jump.toFixed(1)+"σ between updates. The reported uncertainty looks optimistic, so risk is recomputed with it widened.");}
-    if(c.pc>prev.pc*1.5&&c.pc>1e-6)reasons.push("Pc is rising across updates ("+fmtPc(prev.pc)+" → "+fmtPc(c.pc)+").");
+    if(jump>2.5&&!c.obs&&!c.secMan){inflate=2.5;reasons.push(T("Miss distance moved "+jump.toFixed(1)+"σ between updates. The reported uncertainty looks optimistic, so risk is recomputed with it widened.","更新の間に最接近距離が"+jump.toFixed(1)+"σ動きました。報告された不確かさは楽観的とみられるため、広げて再計算します。"));}
+    if(c.pc>prev.pc*1.5&&c.pc>1e-6)reasons.push(T("Pc is rising across updates ("+fmtPc(prev.pc)+" → "+fmtPc(c.pc)+").","Pcが更新ごとに上昇しています（"+fmtPc(prev.pc)+" → "+fmtPc(c.pc)+"）。"));
   }
   const pcA=Math.max(c.pc,pcOf(c.d,c.sr*inflate));
   const dmin=Math.max(c.d,1);
   const dilution=c.sr>1.5*dmin/Math.SQRT2&&(R*R/(dmin*dmin))*Math.exp(-1)>=star;
   let rec;
   if(pcA>=star){
-    if(!last&&ev.obsFrom===null&&c.sr>120&&c.h>=36){rec="observe";reasons.push("Risk is above the maneuver line, but uncertainty is large (1σ ≈ "+fmtM(c.sr)+"). A tracking pass now should settle it before committing fuel.");}
-    else{rec="maneuver";reasons.push("Risk "+fmtPc(pcA)+" is above the maneuver line "+fmtPc(star)+".");}
+    if(!last&&ev.obsFrom===null&&c.sr>120&&c.h>=36){rec="observe";reasons.push(T("Risk is above the maneuver threshold, but uncertainty is large (1σ ≈ "+fmtM(c.sr)+"). A tracking pass now should settle it before committing fuel.","リスクは回避しきい値を超えていますが、不確かさが大きい（1σ ≈ "+fmtM(c.sr)+"）状態です。燃料を使う前に、いま追加観測で見極めるべきです。"));}
+    else{rec="maneuver";reasons.push(T("Risk "+fmtPc(pcA)+" is above the maneuver threshold "+fmtPc(star)+".","リスク"+fmtPc(pcA)+"が回避しきい値"+fmtPc(star)+"を超えています。"));}
   }else if(dilution&&!last){
     rec=ev.obsFrom===null?"observe":"wait";
-    reasons.push("Low Pc here comes from large uncertainty, not from a safe geometry (dilution). The nominal miss is only "+fmtM(c.d)+".");
+    reasons.push(T("Low Pc here comes from large uncertainty, not from a safe geometry (dilution). The nominal miss is only "+fmtM(c.d)+".","このPcの低さは安全な幾何ではなく、大きな不確かさによるものです（希釈）。予測最接近距離はわずか"+fmtM(c.d)+"です。"));
   }else if(pcA>=star/30){
-    if(last){rec=pcA>=star/3?"maneuver":"dismiss";reasons.push("Final update. Risk "+fmtPc(pcA)+" against a line of "+fmtPc(star)+".");}
-    else if(ev.obsFrom===null&&c.sr>150){rec="observe";reasons.push("Close to the line and dominated by uncertainty. A tracking pass is cheaper than a precautionary maneuver.");}
-    else{rec="wait";reasons.push("Below the line for now. Next update is due in about "+gap+" h.");}
+    if(last){rec=pcA>=star/3?"maneuver":"dismiss";reasons.push(T("Final update. Risk "+fmtPc(pcA)+" against a threshold of "+fmtPc(star)+".","最後の更新です。リスク"+fmtPc(pcA)+"、回避しきい値"+fmtPc(star)+"。"));}
+    else if(ev.obsFrom===null&&c.sr>150){rec="observe";reasons.push(T("Close to the threshold and dominated by uncertainty. A tracking pass is cheaper than a precautionary maneuver.","しきい値に近く、不確かさが支配的です。予防的な回避より追加観測の方が安く済みます。"));}
+    else{rec="wait";reasons.push(T("Below the threshold for now. Next update is due in about "+gap+" h.","現時点ではしきい値未満です。次の更新は約"+gap+"時間後です。"));}
   }else{
-    rec="dismiss";reasons.push("Risk "+fmtPc(pcA)+" is far below the maneuver line, even with widened uncertainty.");
+    rec="dismiss";reasons.push(T("Risk "+fmtPc(pcA)+" is far below the maneuver threshold, even with widened uncertainty.","不確かさを広げても、リスク"+fmtPc(pcA)+"は回避しきい値を大きく下回っています。"));
   }
-  if(ev.sc.sec.type.indexOf("may maneuver")>=0&&(rec==="maneuver"||rec==="observe"))reasons.push("Secondary is an active satellite. Coordinate with its operator before acting.");
+  if(ev.sc.sec.type.indexOf("may maneuver")>=0&&(rec==="maneuver"||rec==="observe"))reasons.push(T("Secondary is an active satellite. Coordinate with its operator before acting.","相手は運用中の衛星です。対応の前に相手の運用者と調整してください。"));
   return {rec,reasons,pcA};
 }
 
@@ -421,11 +507,11 @@ function finalize(a){
 function nextEvent(){
   if(state.idx<N-1){state.idx++;startEvent();return;}
   const rs=state.results, has=v=>rs.filter(r=>r.verdict===v).length;
-  const sum={set:state.setKey==="R"?"Random":"Set "+state.setKey,assist:state.sessAssist,sda:state.sessSda,n:rs.length,
+  const sum={setKey:state.setKey,thr:THR,assist:state.sessAssist,sda:state.sessSda,n:rs.length,
     collisions:rs.filter(r=>r.collided).length,fuel:rs.reduce((a,r)=>a+r.fuel,0),obs:rs.reduce((a,r)=>a+r.obs,0),
     sound:rs.filter(r=>VERDICT[r.verdict].q[0]==="S").length,lucky:rs.filter(r=>VERDICT[r.verdict].q==="PG").length,
     hCorrect:has("Correct handoff")+has("Lucky handoff"),hMissed:has("Missed approach")+has("Evaded, not reported"),hUnneeded:has("Unneeded handoff"),
-    recs:rs.reduce((a,r)=>a+r.recs,0),agrees:rs.reduce((a,r)=>a+r.agrees,0),when:new Date().toLocaleString()};
+    recs:rs.reduce((a,r)=>a+r.recs,0),agrees:rs.reduce((a,r)=>a+r.agrees,0),when:Date.now()};
   state.sessions.push(sum);saveSessions();state.sessionDone=true;render();
 }
 
@@ -436,12 +522,12 @@ const xOf=h=>L+(72-h)/72*(W-L-RP);
 function pcChart(ev){
   const H=210,t=14,b=28,ph=H-t-b;
   const y=p=>{const lp=Math.log10(Math.min(Math.max(p,1e-9),1e-1));return t+(-1-lp)/8*ph;};
-  let s='<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Collision probability across CDM updates">';
+  let s='<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+T("Collision probability across CDM updates","CDM更新ごとの衝突確率")+'">';
   for(let e=-1;e>=-9;e--){const yy=y(Math.pow(10,e));s+='<line class="grid-l" x1="'+L+'" x2="'+(W-RP)+'" y1="'+yy+'" y2="'+yy+'"/>';if(e%2!==0)s+='<text class="ax" x="'+(L-6)+'" y="'+(yy+3.5)+'" text-anchor="end">'+fmtPc(Math.pow(10,e)).replace("1.0×","")+'</text>';}
   HOURS.concat([0]).forEach(h=>{s+='<text class="ax" x="'+xOf(h)+'" y="'+(H-9)+'" text-anchor="middle">'+(h===0?"TCA":"−"+h+"h")+'</text>';});
   const cur=ev.cdms[ev.cdms.length-1], ty=y(pcStar(cur.h));
-  s+='<line class="thr" x1="'+L+'" x2="'+(W-RP)+'" y1="'+ty+'" y2="'+ty+'"/><text class="thr-t" x="'+(W-RP-4)+'" y="'+(ty-5)+'" text-anchor="end">maneuver line</text>';
-  if(ev.obsFrom!==null){const ox=xOf(ev.sc.hours[ev.obsFrom]);s+='<line class="obs" x1="'+ox+'" x2="'+ox+'" y1="'+t+'" y2="'+(t+ph)+'"/><text class="obs-t" x="'+(ox+4)+'" y="'+(t+10)+'">tracking pass</text>';}
+  s+='<line class="thr" x1="'+L+'" x2="'+(W-RP)+'" y1="'+ty+'" y2="'+ty+'"/><text class="thr-t" x="'+(W-RP-4)+'" y="'+(ty-5)+'" text-anchor="end">'+T("maneuver threshold","回避しきい値")+'</text>';
+  if(ev.obsFrom!==null){const ox=xOf(ev.sc.hours[ev.obsFrom]);s+='<line class="obs" x1="'+ox+'" x2="'+ox+'" y1="'+t+'" y2="'+(t+ph)+'"/><text class="obs-t" x="'+(ox+4)+'" y="'+(t+10)+'">'+T("tracking pass","追加観測")+'</text>';}
   if(ev.done){s+='<polyline class="tru" points="'+ev.cdms.map(c=>xOf(c.h)+","+y(c.pcTrue)).join(" ")+'"/>';ev.cdms.forEach(c=>{s+='<circle class="tru-p" cx="'+xOf(c.h)+'" cy="'+y(c.pcTrue)+'" r="3"/>';});}
   s+='<polyline class="rep" points="'+ev.cdms.map(c=>xOf(c.h)+","+y(c.pc)).join(" ")+'"/>';
   ev.cdms.forEach(c=>{s+='<circle class="rep-p" cx="'+xOf(c.h)+'" cy="'+y(c.pc)+'" r="4.5"/>';});
@@ -454,7 +540,7 @@ function missChart(ev){
   if(ev.done)mx=Math.max(mx,Math.max.apply(null,cs.map(c=>c.tm)));
   mx=niceMax(mx*1.05);
   const y=v=>t+(1-Math.max(0,v)/mx)*ph;
-  let s='<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Miss distance with reported uncertainty band across CDM updates">';
+  let s='<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+T("Miss distance with reported uncertainty band across CDM updates","CDM更新ごとの最接近距離と報告された不確かさの帯")+'">';
   [0,0.5,1].forEach(f=>{const yy=y(mx*f);s+='<line class="grid-l" x1="'+L+'" x2="'+(W-RP)+'" y1="'+yy+'" y2="'+yy+'"/><text class="ax" x="'+(L-6)+'" y="'+(yy+3.5)+'" text-anchor="end">'+fmtM(mx*f)+'</text>';});
   HOURS.concat([0]).forEach(h=>{s+='<text class="ax" x="'+xOf(h)+'" y="'+(H-9)+'" text-anchor="middle">'+(h===0?"TCA":"−"+h+"h")+'</text>';});
   if(cs.length>1){
@@ -472,30 +558,30 @@ function renderEvent(){
   if(state.sessionDone){el.innerHTML=summaryHTML();return;}
   const ev=state.ev, sc=ev.sc, c=ev.cdms[ev.cdms.length-1], star=pcStar(c.h);
   const secCls=sc.sec.type==="Debris"?"warn":(sc.sec.type.indexOf("Other")===0?"info":"acc");
-  const rows=ev.cdms.map((d,i)=>'<tr class="'+(i===ev.cdms.length-1&&!ev.done?"cur":"")+'"><td>−'+d.h+' h</td><td>'+fmtM(d.d)+'</td><td>'+fmtM(d.sr)+'</td><td>'+fmtPc(d.pc)+'</td>'+(ev.done?'<td>'+fmtM(d.tm)+'</td><td>'+fmtPc(d.pcTrue)+'</td>':'')+'<td class="txt">'+(d.secMan?'<span class="chip warn">secondary maneuvered</span>':'')+(d.obs?'<span class="chip ok">tracked</span>':'')+'</td></tr>').join("");
+  const rows=ev.cdms.map((d,i)=>'<tr class="'+(i===ev.cdms.length-1&&!ev.done?"cur":"")+'"><td>−'+d.h+' h</td><td>'+fmtM(d.d)+'</td><td>'+fmtM(d.sr)+'</td><td>'+fmtPc(d.pc)+'</td>'+(ev.done?'<td>'+fmtM(d.tm)+'</td><td>'+fmtPc(d.pcTrue)+'</td>':'')+'<td class="txt">'+(d.secMan?'<span class="chip warn">'+T("secondary maneuvered","相手が機動")+'</span>':'')+(d.obs?'<span class="chip ok">'+T("tracked","追加観測後")+'</span>':'')+'</td></tr>').join("");
   el.innerHTML=
-   '<div class="evhead"><div style="display:grid;gap:4px;min-width:0"><div class="eyebrow">Event '+sc.id+' of '+N+' · CDM '+(ev.step+1)+' of '+sc.hours.length+'</div>'+
-   '<div class="evtitle">'+sc.prim+' × '+sc.sec.name+'</div></div><span class="chip '+secCls+'">'+sc.sec.type+'</span></div>'+
-   '<div class="meta"><span>Relative speed <span class="mono">'+sc.vrel+' km/s</span></span><span>Combined hard-body radius <span class="mono">'+R+' m</span></span><span>Time to closest approach <span class="mono">'+c.h+' h</span></span></div>'+
+   '<div class="evhead"><div style="display:grid;gap:4px;min-width:0"><div class="eyebrow">'+T('Event '+sc.id+' of '+N+' · CDM '+(ev.step+1)+' of '+sc.hours.length,'事象 '+sc.id+'/'+N+' · CDM '+(ev.step+1)+'/'+sc.hours.length)+'</div>'+
+   '<div class="evtitle">'+sc.prim+' × '+nameL(sc.sec.name)+'</div></div><span class="chip '+secCls+'">'+typeL(sc.sec.type)+'</span></div>'+
+   '<div class="meta"><span>'+T("Relative speed","相対速度")+' <span class="mono">'+sc.vrel+' km/s</span></span><span>'+T("Combined hard-body radius","合成ハードボディ半径")+' <span class="mono">'+R+' m</span></span><span>'+T("Time to closest approach","最接近まで")+' <span class="mono">'+c.h+' h</span></span></div>'+
    '<div class="stats">'+
-    '<div class="stat"><span class="k">Miss distance</span><span class="v">'+fmtM(c.d)+'</span></div>'+
-    '<div class="stat"><span class="k">Reported 1σ</span><span class="v">'+fmtM(c.sr)+'</span></div>'+
-    '<div class="stat"><span class="k">Reported Pc</span><span class="v'+(c.pc>=star?' hot':'')+'">'+fmtPc(c.pc)+'</span></div>'+
-    '<div class="stat"><span class="k">Maneuver line</span><span class="v">'+fmtPc(star)+'</span></div></div>'+
-   '<div class="charts"><div class="chart-t">Collision probability</div>'+pcChart(ev)+'</div>'+
-   '<div class="charts"><div class="chart-t">Miss distance and reported ±2σ band</div>'+missChart(ev)+'</div>'+
-   '<div class="legend"><span><i style="border-color:var(--accent)"></i>From CDM (what you see)</span><span><i class="sw"></i>Reported ±2σ</span>'+(ev.done?'<span><i style="border-color:var(--info);border-top-style:dashed"></i>Truth (revealed)</span>':'')+'<span><i style="border-color:var(--crit);border-top-style:dashed"></i>Maneuver line</span></div>'+
-   '<div class="tbl-wrap"><table><thead><tr><th>CDM at</th><th>Miss</th><th>Reported 1σ</th><th>Pc</th>'+(ev.done?'<th>True miss</th><th>Realistic Pc</th>':'')+'<th>Notes</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+    '<div class="stat"><span class="k">'+T("Miss distance","最接近距離")+'</span><span class="v">'+fmtM(c.d)+'</span></div>'+
+    '<div class="stat"><span class="k">'+T("Reported 1σ","報告1σ")+'</span><span class="v">'+fmtM(c.sr)+'</span></div>'+
+    '<div class="stat"><span class="k">'+T("Reported Pc","報告Pc")+'</span><span class="v'+(c.pc>=star?' hot':'')+'">'+fmtPc(c.pc)+'</span></div>'+
+    '<div class="stat"><span class="k">'+T("Maneuver threshold","回避しきい値")+'</span><span class="v">'+fmtPc(star)+'</span></div></div>'+
+   '<div class="charts"><div class="chart-t">'+T("Collision probability","衝突確率")+'</div>'+pcChart(ev)+'</div>'+
+   '<div class="charts"><div class="chart-t">'+T("Miss distance and reported ±2σ band","最接近距離と報告±2σの帯")+'</div>'+missChart(ev)+'</div>'+
+   '<div class="legend"><span><i style="border-color:var(--accent)"></i>'+T("From CDM (what you see)","CDMの値（見えている情報）")+'</span><span><i class="sw"></i>'+T("Reported ±2σ","報告±2σ")+'</span>'+(ev.done?'<span><i style="border-color:var(--info);border-top-style:dashed"></i>'+T("Truth (revealed)","真値（公開後）")+'</span>':'')+'<span><i style="border-color:var(--crit);border-top-style:dashed"></i>'+T("Maneuver threshold","回避しきい値")+'</span></div>'+
+   '<div class="tbl-wrap"><table><thead><tr><th>'+T("CDM at","CDM時刻")+'</th><th>'+T("Miss","最接近距離")+'</th><th>'+T("Reported 1σ","報告1σ")+'</th><th>Pc</th>'+(ev.done?'<th>'+T("True miss","真の距離")+'</th><th>'+T("Realistic Pc","現実的なPc")+'</th>':'')+'<th>'+T("Notes","備考")+'</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
 }
 
 function renderAssist(){
   const el=$("assistPanel");
   if(state.sessionDone){el.hidden=true;return;}
   el.hidden=false;
-  if(!state.assist){el.innerHTML='<div class="eyebrow">Triage assistant</div><p class="muted" style="font-size:.9rem">Off. You are deciding from the CDMs alone. Turn it on in the header to see recommendations and their reasons.</p>';return;}
-  if(state.ev.done){el.innerHTML='<div class="eyebrow">Triage assistant</div><p class="muted" style="font-size:.9rem">Event closed. '+(state.ev.result.recs?'You followed '+state.ev.result.agrees+' of '+state.ev.result.recs+' recommendations in this event.':'')+'</p>';return;}
+  if(!state.assist){el.innerHTML='<div class="eyebrow">'+T("Triage assistant","トリアージ支援")+'</div><p class="muted" style="font-size:.9rem">'+T("Off. You are deciding from the CDMs alone. Turn it on in the header to see recommendations and their reasons.","オフです。CDMだけで判断しています。ヘッダーでオンにすると、推奨とその理由が表示されます。")+'</p>';return;}
+  if(state.ev.done){el.innerHTML='<div class="eyebrow">'+T("Triage assistant","トリアージ支援")+'</div><p class="muted" style="font-size:.9rem">'+T("Event closed. ","事象は終了しました。")+(state.ev.result.recs?T('You followed '+state.ev.result.agrees+' of '+state.ev.result.recs+' recommendations in this event.','この事象では推奨'+state.ev.result.recs+'件のうち'+state.ev.result.agrees+'件に従いました。'):'')+'</p>';return;}
   const a=advise(state.ev);
-  el.innerHTML='<div class="eyebrow">Triage assistant</div><div class="rec-line"><b>'+ACT_LABEL[a.rec]+'</b><span class="chip acc">Pc '+fmtPc(a.pcA)+'</span></div><ul>'+a.reasons.map(r=>'<li>'+r+'</li>').join("")+'</ul>';
+  el.innerHTML='<div class="eyebrow">'+T("Triage assistant","トリアージ支援")+'</div><div class="rec-line"><b>'+actL(a.rec)+'</b><span class="chip acc">Pc '+fmtPc(a.pcA)+'</span></div><ul>'+a.reasons.map(r=>'<li>'+r+'</li>').join("")+'</ul>';
 }
 
 function renderActions(){
@@ -504,13 +590,13 @@ function renderActions(){
   el.hidden=false;
   const ev=state.ev, c=ev.cdms[ev.cdms.length-1], last=ev.step===ev.sc.hours.length-1, dis=ev.done, gap=last?0:ev.sc.hours[ev.step]-ev.sc.hours[ev.step+1];
   const rec=(state.assist&&!dis)?advise(ev).rec:null;
-  const b=(k,title,sub,disabled,wide)=>'<button type="button" class="act'+(wide?' wide':'')+(rec===k?' rec':'')+'" data-act="'+k+'"'+(disabled?' disabled':'')+'><strong>'+title+'</strong><span>'+sub+'</span></button>';
-  el.innerHTML='<div class="eyebrow">Your decision</div><div class="actions">'+
-    b("wait","Wait for next CDM",last?"No more updates before TCA":"Free · next CDM in "+gap+" h",dis||last)+
-    b("observe","Request tracking pass",ev.obsFrom!==null?"Already requested":(last?"Too late to schedule":"Cost "+OBS_COST+" · sharper next CDM"),dis||last||ev.obsFrom!==null)+
-    b("maneuver","Maneuver now","Cost "+manCost(c.h)+" in fuel and downtime",dis)+
-    b("dismiss","Dismiss","Free · catastrophic if real",dis)+
-    (state.sessSda?b("handoff","Hand off to SDA review","Cost "+HANDOFF_COST+" · closes the event here, analysts assess intent",dis,true):'')+'</div>';
+  const b=(k,title,sub,disabled,wide)=>'<button type="button" class="act'+(wide?' wide':'')+(rec===k?' rec':'')+'" data-rec="'+T("Recommended","推奨")+'" data-act="'+k+'"'+(disabled?' disabled':'')+'><strong>'+title+'</strong><span>'+sub+'</span></button>';
+  el.innerHTML='<div class="eyebrow">'+T("Your decision","あなたの判断")+'</div><div class="actions">'+
+    b("wait",T("Wait for next CDM","次のCDMを待つ"),last?T("No more updates before TCA","最接近までに更新なし"):T("0 RU · next CDM in "+gap+" h","0 RU · 次のCDMは"+gap+"時間後"),dis||last)+
+    b("observe",T("Request tracking pass","追加観測を依頼"),ev.obsFrom!==null?T("Already requested","依頼済み"):(last?T("Too late to schedule","間に合いません"):T(ru(OBS_COST)+" · sharper next CDM",ru(OBS_COST)+" · 次のCDMの精度が向上")),dis||last||ev.obsFrom!==null)+
+    b("maneuver",T("Maneuver now","今すぐ回避"),T(ru(manCost(c.h))+" · fuel and downtime",ru(manCost(c.h))+" · 燃料・停止時間"),dis)+
+    b("dismiss",T("Dismiss","見送り"),T("0 RU · catastrophic if real","0 RU · 実際に衝突すれば致命的"),dis)+
+    (state.sessSda?b("handoff",T("Hand off to SDA review","SDA分析へ引継ぎ"),T(ru(HANDOFF_COST)+" · closes the event here, analysts assess intent",ru(HANDOFF_COST)+" · ここで事象を閉じ、分析者が意図を評価"),dis,true):'')+'</div>';
   el.querySelectorAll("[data-act]").forEach(x=>x.addEventListener("click",()=>act(x.dataset.act)));
 }
 
@@ -521,51 +607,55 @@ function renderReveal(){
   const r=ev.result, v=VERDICT[r.verdict], sc=ev.sc;
   el.style.borderLeftColor="var(--"+v.cls+")";
   let truth;
-  if(sc.bridge)truth=sc.deliberate?'Inspection-style approach. Closed in step by step, then held at about '+fmtM(sc.miss)+'.':'Single station-keeping maneuver. The geometry shifted once, then the object drifted away to '+fmtM(sc.miss)+'.';
-  else truth='Objects pass at '+fmtM(sc.miss)+(sc.miss<R?' <span class="chip crit">inside '+R+' m</span>':'')+'.'+(sc.pattern?' <span class="chip acc">'+PATTERN_LABEL[sc.pattern]+'</span> '+PATTERN_NOTE[sc.pattern]:'');
-  el.innerHTML='<div class="eyebrow">Truth revealed</div><div class="verdict" style="color:var(--'+v.cls+')">'+r.verdict+'</div><p style="font-size:.92rem">'+v.txt+'</p>'+
-   '<dl><dt>Your call</dt><dd>'+ACT_LABEL[r.action]+' at −'+r.h+' h</dd>'+
-   '<dt>Truth</dt><dd>'+truth+'</dd>'+
-   (sc.bridge?'<dt>Evidence</dt><dd>'+r.evid+' consecutive approach step'+(r.evid===1?'':'s')+' beyond the uncertainty band at your decision (2 needed)</dd>':
-     '<dt>Realistic risk</dt><dd class="mono">'+fmtPc(r.pcTrue)+' vs line '+fmtPc(r.star)+'</dd><dt>Reported risk</dt><dd class="mono">'+fmtPc(r.pcRep)+'</dd>')+
-   (sc.optimistic?'<dt>Covariance</dt><dd>Reported uncertainty was about a third of the real spread'+(ev.obsFrom!==null?' until your tracking pass corrected it':'')+'.</dd>':'')+
-   '<dt>Cost</dt><dd class="mono">'+(r.collided?'Collision':(r.fuel+r.obs))+'</dd></dl>'+
-   '<button type="button" class="btn" id="next">'+(state.idx<N-1?'Next event':'Finish session')+'</button>';
+  if(sc.bridge)truth=sc.deliberate?T('Inspection-style approach. Closed in step by step, then held at about '+fmtM(sc.miss)+'.','点検型の接近。段階的に近づき、約'+fmtM(sc.miss)+'で保持。'):T('Single station-keeping maneuver. The geometry shifted once, then the object drifted away to '+fmtM(sc.miss)+'.','1回の軌道保持機動。幾何が一度変わった後、'+fmtM(sc.miss)+'まで離れた。');
+  else truth=T('Objects pass at '+fmtM(sc.miss),'最接近距離 '+fmtM(sc.miss))+(sc.miss<R?' <span class="chip crit">'+T('inside '+R+' m',R+' m以内')+'</span>':'')+T('.','。')+(sc.pattern?' <span class="chip acc">'+patL(sc.pattern)+'</span> '+patN(sc.pattern):'');
+  el.innerHTML='<div class="eyebrow">'+T("Truth revealed","真実の公開")+'</div><div class="verdict" style="color:var(--'+v.cls+')">'+vName(r.verdict)+'</div><p style="font-size:.92rem">'+vTxt(r.verdict)+'</p>'+
+   '<dl><dt>'+T("Your call","あなたの判断")+'</dt><dd>'+T(actL(r.action)+' at −'+r.h+' h','−'+r.h+' h に'+actL(r.action))+'</dd>'+
+   '<dt>'+T("Truth","真実")+'</dt><dd>'+truth+'</dd>'+
+   (sc.bridge?'<dt>'+T("Evidence","根拠")+'</dt><dd>'+T(r.evid+' consecutive approach step'+(r.evid===1?'':'s')+' beyond the uncertainty band at your decision (2 needed)','判断時点で、不確かさの帯を超える接近が'+r.evid+'回連続（必要なのは2回）')+'</dd>':
+     '<dt>'+T("Realistic risk","現実的なリスク")+'</dt><dd class="mono">'+fmtPc(r.pcTrue)+T(' vs threshold ',' / しきい値 ')+fmtPc(r.star)+'</dd><dt>'+T("Reported risk","報告されたリスク")+'</dt><dd class="mono">'+fmtPc(r.pcRep)+'</dd>')+
+   (sc.optimistic?'<dt>'+T("Covariance","共分散")+'</dt><dd>'+T('Reported uncertainty was about a third of the real spread'+(ev.obsFrom!==null?' until your tracking pass corrected it':'')+'.','報告された不確かさは実際の広がりの約3分の1でした'+(ev.obsFrom!==null?'（追加観測で補正されるまで）':'')+'。')+'</dd>':'')+
+   '<dt>'+T("Cost","費用")+'</dt><dd class="mono">'+(r.collided?T('Collision','衝突'):ru(r.fuel+r.obs))+'</dd></dl>'+
+   '<button type="button" class="btn" id="next">'+(state.idx<N-1?T('Next event','次の事象'):T('Finish session','セッションを終了'))+'</button>';
   $("next").addEventListener("click",nextEvent);
 }
 
+const setName=k=>k==="R"?T("Random","ランダム"):T("Set "+k,"セット"+k);
+const onOff=v=>v?T("on","オン"):T("off","オフ");
 function renderTally(){
   const rs=state.results, has=v=>rs.filter(r=>r.verdict===v).length;
-  const dots=state.scen.map((s,i)=>{const r=rs[i];const cls=r?VERDICT[r.verdict].cls:"";return '<span class="dot '+cls+(i===state.idx&&!state.sessionDone?' now':'')+'" title="Event '+(i+1)+(r?': '+r.verdict:'')+'"></span>';}).join("");
-  $("tally").innerHTML='<div class="eyebrow">This session · '+(state.setKey==="R"?"Random":"Set "+state.setKey)+' · SDA '+(state.sessSda?'on':'off')+' · assistant '+(state.sessAssist?'on':'off')+'</div><div class="dots">'+dots+'</div>'+
-   '<div class="tally"><div><span class="n">'+rs.filter(r=>r.collided).length+'</span><span class="l">Collisions</span></div>'+
-   '<div><span class="n">'+rs.reduce((a,r)=>a+r.fuel,0)+'</span><span class="l">Fuel &amp; downtime</span></div>'+
-   '<div><span class="n">'+rs.reduce((a,r)=>a+r.obs,0)+'</span><span class="l">Tracking &amp; analyst</span></div>'+
-   '<div><span class="n">'+rs.filter(r=>VERDICT[r.verdict].q[0]==="S").length+'/'+rs.length+'</span><span class="l">Sound decisions</span></div>'+
-   '<div><span class="n">'+rs.filter(r=>VERDICT[r.verdict].q==="PG").length+'</span><span class="l">Lucky outcomes</span></div>'+
-   (state.sessSda?'<div><span class="n">'+(has("Correct handoff")+has("Lucky handoff"))+'/'+(has("Missed approach")+has("Evaded, not reported"))+'/'+has("Unneeded handoff")+'</span><span class="l">Handoffs right / missed / unneeded</span></div>'
-     :'<div><span class="n">'+rs.filter(r=>r.action==="maneuver").length+'</span><span class="l">Maneuvers</span></div>')+'</div>';
+  const dots=state.scen.map((s,i)=>{const r=rs[i];const cls=r?VERDICT[r.verdict].cls:"";return '<span class="dot '+cls+(i===state.idx&&!state.sessionDone?' now':'')+'" title="'+T('Event ','事象 ')+(i+1)+(r?': '+vName(r.verdict):'')+'"></span>';}).join("");
+  $("tally").innerHTML='<div class="eyebrow">'+T("This session","このセッション")+' · '+setName(state.setKey)+' · SDA '+onOff(state.sessSda)+' · '+T("assistant","支援")+' '+onOff(state.sessAssist)+'</div><div class="dots">'+dots+'</div>'+
+   '<div class="tally"><div><span class="n">'+rs.filter(r=>r.collided).length+'</span><span class="l">'+T("Collisions","衝突")+'</span></div>'+
+   '<div><span class="n">'+rs.reduce((a,r)=>a+r.fuel,0)+'</span><span class="l">'+T("Fuel &amp; downtime (RU)","燃料・停止時間（RU）")+'</span>'+(conv(rs.reduce((a,r)=>a+r.fuel,0))?'<span class="c">≈ '+conv(rs.reduce((a,r)=>a+r.fuel,0))+'</span>':'')+'</div>'+
+   '<div><span class="n">'+rs.reduce((a,r)=>a+r.obs,0)+'</span><span class="l">'+T("Tracking &amp; analyst (RU)","追加観測・分析者（RU）")+'</span>'+(conv(rs.reduce((a,r)=>a+r.obs,0))?'<span class="c">≈ '+conv(rs.reduce((a,r)=>a+r.obs,0))+'</span>':'')+'</div>'+
+   '<div><span class="n">'+rs.filter(r=>VERDICT[r.verdict].q[0]==="S").length+'/'+rs.length+'</span><span class="l">'+T("Sound decisions","妥当な判断")+'</span></div>'+
+   '<div><span class="n">'+rs.filter(r=>VERDICT[r.verdict].q==="PG").length+'</span><span class="l">'+T("Lucky outcomes","運による結果")+'</span></div>'+
+   (state.sessSda?'<div><span class="n">'+(has("Correct handoff")+has("Lucky handoff"))+'/'+(has("Missed approach")+has("Evaded, not reported"))+'/'+has("Unneeded handoff")+'</span><span class="l">'+T("Handoffs right / missed / unneeded","引継ぎ 適切／見逃し／不要")+'</span></div>'
+     :'<div><span class="n">'+rs.filter(r=>r.action==="maneuver").length+'</span><span class="l">'+T("Maneuvers","回避")+'</span></div>')+'</div>';
 }
 
 function summaryHTML(){
   const rs=state.results, q=k=>rs.filter(r=>VERDICT[r.verdict].q===k).length;
   const s=state.sessions[state.sessions.length-1];
-  return '<div class="eyebrow">Session complete</div><h2>'+s.sound+' of '+N+' decisions were sound, '+s.collisions+' collision'+(s.collisions===1?'':'s')+'</h2>'+
-   '<p class="muted">The grid separates judgment from luck. The bottom-left cell is the one real operations cannot see: poor calls that happened to turn out fine.</p>'+
-   '<div class="matrix"><div class="h"></div><div class="h">Good outcome</div><div class="h">Bad outcome</div>'+
-   '<div class="h">Sound decision</div><div class="c"><b style="color:var(--ok)">'+q("SG")+'</b>Good call, save, justified caution, correct handoff</div><div class="c"><b style="color:var(--info)">'+q("SB")+'</b>Unlucky</div>'+
-   '<div class="h">Poor decision</div><div class="c"><b style="color:var(--warn)">'+q("PG")+'</b>Lucky</div><div class="c"><b style="color:var(--crit)">'+q("PB")+'</b>Collision, waste, missed or unneeded handoff</div></div>'+
-   '<div class="tbl-wrap"><table><thead><tr><th>Event</th><th>Call</th><th>At</th><th>Truth</th><th>Verdict</th></tr></thead><tbody>'+
-   rs.map((r,i)=>{const sc=state.scen[i];const tr=sc.bridge?(sc.deliberate?'Deliberate approach':'Routine maneuver'):'Miss '+fmtM(sc.miss)+(sc.pattern?' · '+PATTERN_LABEL[sc.pattern]:'');return '<tr><td>'+(i+1)+'</td><td class="txt">'+ACT_LABEL[r.action]+'</td><td>−'+r.h+' h</td><td class="txt">'+tr+'</td><td class="txt"><span class="chip '+VERDICT[r.verdict].cls+'">'+r.verdict+'</span></td></tr>';}).join("")+
-   '</tbody></table></div><div class="controls"><button type="button" class="btn" id="again">Play again</button><span class="muted" style="font-size:.88rem">Tip: replay the same set with the assistant '+(s.assist?'off':'on')+' to compare.</span></div>';
+  return '<div class="eyebrow">'+T("Session complete","セッション終了")+'</div><h2>'+T(s.sound+' of '+N+' decisions were sound, '+s.collisions+' collision'+(s.collisions===1?'':'s'),N+'件中'+s.sound+'件が妥当な判断、衝突'+s.collisions+'件')+'</h2>'+
+   '<p class="muted">'+T("The grid separates judgment from luck. The bottom-left cell is the one real operations cannot see: poor calls that happened to turn out fine.","この表は判断と運を分けて示します。左下のマスは実運用では見えないもの、つまり誤った判断がたまたま無事に終わったケースです。")+'</p>'+
+   '<div class="matrix"><div class="h"></div><div class="h">'+T("Good outcome","良い結果")+'</div><div class="h">'+T("Bad outcome","悪い結果")+'</div>'+
+   '<div class="h">'+T("Sound decision","妥当な判断")+'</div><div class="c"><b style="color:var(--ok)">'+q("SG")+'</b>'+T("Good call, save, justified caution, correct handoff","適切な判断、回避成功、妥当な慎重判断、適切な引継ぎ")+'</div><div class="c"><b style="color:var(--info)">'+q("SB")+'</b>'+T("Unlucky","不運")+'</div>'+
+   '<div class="h">'+T("Poor decision","誤った判断")+'</div><div class="c"><b style="color:var(--warn)">'+q("PG")+'</b>'+T("Lucky","幸運")+'</div><div class="c"><b style="color:var(--crit)">'+q("PB")+'</b>'+T("Collision, waste, missed or unneeded handoff","衝突、浪費、引継ぎの見逃し・不要な引継ぎ")+'</div></div>'+
+   '<div class="tbl-wrap"><table><thead><tr><th>'+T("Event","事象")+'</th><th>'+T("Call","判断")+'</th><th>'+T("At","時刻")+'</th><th>'+T("Truth","真実")+'</th><th>'+T("Verdict","評価")+'</th></tr></thead><tbody>'+
+   rs.map((r,i)=>{const sc=state.scen[i];const tr=sc.bridge?(sc.deliberate?T('Deliberate approach','意図的な接近'):T('Routine maneuver','定常的な機動')):T('Miss ','最接近距離 ')+fmtM(sc.miss)+(sc.pattern?' · '+patL(sc.pattern):'');return '<tr><td>'+(i+1)+'</td><td class="txt">'+actL(r.action)+'</td><td>−'+r.h+' h</td><td class="txt">'+tr+'</td><td class="txt"><span class="chip '+VERDICT[r.verdict].cls+'">'+vName(r.verdict)+'</span></td></tr>';}).join("")+
+   '</tbody></table></div><div class="controls"><button type="button" class="btn" id="again">'+T("Play again","もう一度")+'</button><span class="muted" style="font-size:.88rem">'+T('Tip: replay the same set with the assistant '+(s.assist?'off':'on')+' to compare.','ヒント：同じセットを支援'+(s.assist?'なし':'あり')+'でもう一度行い、比べてみてください。')+'</span></div>';
 }
 
 function renderSessions(){
   const el=$("sessions");
-  if(!state.sessions.length){el.innerHTML='<p class="empty">Finished sessions appear here with collisions, costs, sound decisions, SDA handoffs and how often the assistant was followed. Nothing logged yet.</p>';return;}
-  el.innerHTML='<div class="tbl-wrap"><table><thead><tr><th>Finished</th><th>Set</th><th>Assistant</th><th>Collisions</th><th>Fuel</th><th>Tracking &amp; analyst</th><th>Sound</th><th>Lucky</th><th>Handoffs right / missed / unneeded</th><th>Followed assistant</th></tr></thead><tbody>'+
-   state.sessions.slice().reverse().map(s=>'<tr><td class="txt">'+s.when+'</td><td class="txt">'+s.set+'</td><td class="txt">'+(s.assist?'On':'Off')+'</td><td>'+s.collisions+'</td><td>'+s.fuel+'</td><td>'+s.obs+'</td><td>'+s.sound+'/'+s.n+'</td><td>'+s.lucky+'</td><td>'+(s.sda?s.hCorrect+' / '+s.hMissed+' / '+s.hUnneeded:'SDA off')+'</td><td>'+(s.recs?Math.round(100*s.agrees/s.recs)+'%':'–')+'</td></tr>').join("")+
-   '</tbody></table></div><button type="button" class="btn ghost" id="clearLog" style="justify-self:start;margin-top:10px">Clear log</button>';
+  if(!state.sessions.length){el.innerHTML='<p class="empty">'+T("Finished sessions appear here with collisions, costs, sound decisions, SDA handoffs and how often the assistant was followed. Nothing logged yet.","終了したセッションが、衝突・費用・妥当な判断・SDA引継ぎ・支援に従った割合とともにここに表示されます。まだ記録はありません。")+'</p>';return;}
+  const when=s=>typeof s.when==="number"?new Date(s.when).toLocaleString(LANG==="ja"?"ja-JP":"en-US"):s.when;
+  const setCell=s=>(s.setKey?setName(s.setKey):(LANG==="ja"?String(s.set).replace("Set ","セット").replace("Random","ランダム"):s.set))+(s.thr?' · '+fmtPc(s.thr).replace(".0×","×"):'');
+  el.innerHTML='<div class="tbl-wrap"><table><thead><tr><th>'+T("Finished","終了日時")+'</th><th>'+T("Set","セット")+'</th><th>'+T("Assistant","支援")+'</th><th>'+T("Collisions","衝突")+'</th><th>'+T("Fuel (RU)","燃料（RU）")+'</th><th>'+T("Tracking &amp; analyst (RU)","追加観測・分析者（RU）")+'</th><th>'+T("Sound","妥当")+'</th><th>'+T("Lucky","幸運")+'</th><th>'+T("Handoffs right / missed / unneeded","引継ぎ 適切／見逃し／不要")+'</th><th>'+T("Followed assistant","支援に従った割合")+'</th></tr></thead><tbody>'+
+   state.sessions.slice().reverse().map(s=>'<tr><td class="txt">'+when(s)+'</td><td class="txt">'+setCell(s)+'</td><td class="txt">'+(s.assist?T('On','あり'):T('Off','なし'))+'</td><td>'+s.collisions+'</td><td>'+s.fuel+'</td><td>'+s.obs+'</td><td>'+s.sound+'/'+s.n+'</td><td>'+s.lucky+'</td><td>'+(s.sda?s.hCorrect+' / '+s.hMissed+' / '+s.hUnneeded:T('SDA off','SDAオフ'))+'</td><td>'+(s.recs?Math.round(100*s.agrees/s.recs)+'%':'–')+'</td></tr>').join("")+
+   '</tbody></table></div><button type="button" class="btn ghost" id="clearLog" style="justify-self:start;margin-top:10px">'+T("Clear log","記録を消去")+'</button>';
   $("clearLog").addEventListener("click",()=>{state.sessions=[];saveSessions();renderSessions();});
 }
 
@@ -578,6 +668,23 @@ $("set").addEventListener("change",e=>{state.setKey=e.target.value;newSession();
 $("sda").addEventListener("change",e=>{state.sda=e.target.checked;newSession();});
 $("assist").addEventListener("change",e=>{state.assist=e.target.checked;if(!state.results.length&&state.idx===0&&state.ev&&!state.ev.done&&state.ev.step===0)state.sessAssist=state.assist;render();});
 $("restart").addEventListener("click",newSession);
+$("thr").value=({1e-5:"1e-5",5e-5:"5e-5",1e-4:"1e-4",2e-4:"2e-4",5e-4:"5e-4"})[THR];
+$("thr").addEventListener("change",e=>{THR=parseFloat(e.target.value);try{localStorage.setItem("ct-thr",String(THR));}catch(x){}newSession();});
+function applyLang(){
+  document.documentElement.lang=LANG;
+  document.title=T("Conjunction Triage (SSA + SDA)","接近警報トリアージ（SSA＋SDA）");
+  document.querySelectorAll("[data-i18n]").forEach(el=>{const v=I18N[el.dataset.i18n];if(v)el.innerHTML=v[LANG==="ja"?1:0];});
+  document.querySelectorAll("[data-lang]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.lang===LANG)));
+}
+document.querySelectorAll("[data-lang]").forEach(b=>b.addEventListener("click",()=>{
+  if(LANG===b.dataset.lang)return;LANG=b.dataset.lang;try{localStorage.setItem("ct-lang",LANG);}catch(e){}
+  applyLang();render();
+}));
+const ruRate=$("ruRate"), ruUnit=$("ruUnit");
+if(RU.rate)ruRate.value=RU.rate; ruUnit.value=RU.unit;
+function saveRU(){const v=parseFloat(ruRate.value);RU={rate:v>0?v:0,unit:ruUnit.value};try{localStorage.setItem("ct-ru",JSON.stringify(RU));}catch(e){}render();}
+ruRate.addEventListener("input",saveRU); ruUnit.addEventListener("change",saveRU);
+applyLang();
 newSession();
 })();
 </script>

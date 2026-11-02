@@ -10,7 +10,8 @@
    Put a comma at the end of every line. Remove the demo line before sharing the link.
    A typo here only disables sign-in; the page shows a message saying so. */
 window.ACCOUNTS = [
-  "e83c92910793abb76526f550269f0ed5b1ecb49a02d54ade382b0e71523ca3a6",   // demo / orbitorus2026
+  "e83c92910793abb76526f550269f0ed5b1ecb49a02d54ade382b0e71523ca3a6",   // demo_default
+  "65623e2e5627ef2ce612036be2a15c1900ac5a6e58f0208e2485b0cea5f9cb14", // demo_1"
 ];
 /* ======================================================== */
 </script>
@@ -175,7 +176,16 @@ html,body{margin:0}
 .gate-form input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .gate-form .chk{display:flex;align-items:center;gap:8px;font-size:.88rem;color:var(--muted);cursor:pointer}
 .gate-form .btn{justify-self:start;padding:9px 22px}
-.gerr{color:var(--crit);font-size:.88rem;margin:0}
+.gerr{margin:0;background:var(--crit-soft);color:var(--crit);border:1px solid var(--crit);border-radius:4px;padding:10px 12px;font-size:.9rem;font-weight:500;display:flex;gap:8px;align-items:flex-start}
+.gerr::before{content:"!";flex:none;width:18px;height:18px;border-radius:50%;background:var(--crit);color:var(--panel);font-weight:700;font-size:.78rem;display:grid;place-items:center;margin-top:1px}
+.gwarn{margin:-4px 0 0;color:var(--warn);font-size:.84rem;font-weight:600}
+.gate-form input.bad{border-color:var(--crit);box-shadow:0 0 0 1px var(--crit)}
+.pw{position:relative}
+.pw input{padding-right:76px!important}
+.pw button{position:absolute;right:5px;top:50%;transform:translateY(-50%);border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:3px;padding:4px 10px;font:inherit;font-size:.8rem;cursor:pointer}
+.pw button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+@media (prefers-reduced-motion:no-preference){.shake{animation:shake .32s ease}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}50%{transform:translateX(5px)}75%{transform:translateX(-3px)}}
 .small{font-size:.82rem}
 .who{display:inline-flex;align-items:center;gap:10px;font-size:.85rem;color:var(--muted)}
 .who .btn{padding:4px 10px;font-size:.8rem}
@@ -200,10 +210,11 @@ html,body{margin:0}
       <label class="f" for="gUser" data-i18n="gUserL">Username</label>
       <input id="gUser" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required>
       <label class="f" for="gPass" data-i18n="gPassL">Password</label>
-      <input id="gPass" type="password" autocomplete="current-password" required>
+      <div class="pw"><input id="gPass" type="password" autocomplete="current-password" required aria-describedby="gCaps gErr"><button type="button" id="gShow" aria-controls="gPass" aria-pressed="false">Show</button></div>
+      <p id="gCaps" class="gwarn" hidden data-i18n="gCaps">Caps Lock is on.</p>
+      <p id="gErr" class="gerr" role="alert" aria-live="assertive" hidden></p>
       <label class="chk"><input type="checkbox" id="gRemember"><span data-i18n="gRemember">Keep me signed in on this device</span></label>
       <button class="btn" type="submit" data-i18n="gEnter">Enter</button>
-      <p id="gErr" class="gerr" role="alert" hidden></p>
     </form>
     <p class="muted small" data-i18n="gNote">For invited testers. Contact Orbitorus for an account.</p>
   </main>
@@ -291,7 +302,7 @@ const I18N={
  g5:["All data is synthetic; event patterns are based on ESA's public CDM data.","データはすべて合成です。事象のパターンはESAの公開CDMデータに基づいています。"],
  gUserL:["Username","ユーザー名"], gPassL:["Password","パスワード"],
  gRemember:["Keep me signed in on this device","この端末でログイン状態を保持する"],
- gEnter:["Enter","開始"], gOut:["Sign out","ログアウト"],
+ gEnter:["Enter","開始"], gShow:["Show","表示"], gHide:["Hide","隠す"], gCaps:["Caps Lock is on.","Caps Lockがオンになっています。"], gOut:["Sign out","ログアウト"],
  gNote:["For invited testers. Contact Orbitorus for an account.","招待されたテスター向けです。アカウントはOrbitorusにお問い合わせください。"],
  ruL:["1 RU =","1 RU ="], uUsd:["$ (USD)","$（ドル）"], uJpy:["¥ (JPY)","円"], uKg:["kg fuel","kg（燃料）"], uH:["hours","時間"],
  how1:["<b>Truth first.</b> Each scenario starts from a true miss distance. Noisy CDMs are generated from it about every 12 hours, from about 72 h to 12 h before closest approach. As in real data, the timing is irregular and an update is sometimes missing. About 30% of collision events are genuinely close, far more than in reality (in ESA's public CDM data, 0.8% of events end high-risk), so poor judgment shows up within one session. Some events carry optimistic covariance: the reported uncertainty is about a third of the real spread. A Pc below 10⁻¹² is shown as ≈0, as real CDMs often report zero.",
@@ -741,6 +752,7 @@ $("thr").addEventListener("change",e=>{THR=parseFloat(e.target.value);try{localS
 function applyLang(){
   document.documentElement.lang=LANG;
   const ge=document.getElementById("gErr");if(ge)ge.hidden=true;
+  const gs=document.getElementById("gShow"),gp=document.getElementById("gPass");if(gs&&gp)gs.textContent=gp.type==="text"?T("Hide","隠す"):T("Show","表示");
   document.title=T("Conjunction Triage (SSA + SDA)","接近警報トリアージ（SSA＋SDA）");
   document.querySelectorAll("[data-i18n]").forEach(el=>{const v=I18N[el.dataset.i18n];if(v)el.innerHTML=v[LANG==="ja"?1:0];});
   document.querySelectorAll("[data-lang]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.lang===LANG)));
@@ -780,14 +792,36 @@ let AUTH=null;
 function esc(t){return String(t).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);}
 function readAuth(){if(!ACCOUNTS)return null;for(const st of [sessionStorage,localStorage]){try{const a=JSON.parse(st.getItem("ct-auth")||"null");if(a&&ACCOUNTS.includes(a.h))return a;}catch(e){}}return null;}
 function showApp(){$("gate").hidden=true;$("app").hidden=false;$("whoName").textContent=AUTH.u;render();}
-function showGate(){$("app").hidden=true;$("gate").hidden=false;$("gPass").value="";$("gErr").hidden=true;setTimeout(()=>$("gUser").focus(),0);}
+function showGate(){$("app").hidden=true;$("gate").hidden=false;$("gPass").value="";$("gPass").type="password";$("gShow").setAttribute("aria-pressed","false");$("gShow").textContent=T("Show","表示");$("gErr").hidden=true;setTimeout(()=>$("gUser").focus(),0);}
+let tries=0;
+function gateError(msg,field){
+  const err=$("gErr");err.textContent=msg;err.hidden=false;
+  ["gUser","gPass"].forEach(id=>$(id).classList.toggle("bad",id===field||field==="both"));
+  err.classList.remove("shake");void err.offsetWidth;err.classList.add("shake");
+  if(field&&field!=="both")$(field).focus();
+}
+function clearGateError(){$("gErr").hidden=true;$("gUser").classList.remove("bad");$("gPass").classList.remove("bad");}
+["gUser","gPass"].forEach(id=>$(id).addEventListener("input",clearGateError));
+$("gShow").addEventListener("click",()=>{
+  const pw=$("gPass"),show=pw.type==="password";pw.type=show?"text":"password";
+  $("gShow").setAttribute("aria-pressed",String(show));$("gShow").textContent=show?T("Hide","隠す"):T("Show","表示");
+});
+$("gPass").addEventListener("keyup",e=>{if(e.getModifierState)$("gCaps").hidden=!e.getModifierState("CapsLock");});
+$("gPass").addEventListener("blur",()=>{$("gCaps").hidden=true;});
 $("gateForm").addEventListener("submit",e=>{
   e.preventDefault();
-  const u=$("gUser").value.trim(), p=$("gPass").value, err=$("gErr");
-  if(!ACCOUNTS){err.textContent=T("Sign-in is unavailable: the account list in index.html has a typo (often a missing comma).","ログインできません：index.html のアカウント一覧に誤りがあります（カンマ漏れが多い原因です）。");err.hidden=false;return;}
-  if(!u||!p){err.textContent=T("Enter your username and password.","ユーザー名とパスワードを入力してください。");err.hidden=false;return;}
+  const u=$("gUser").value.trim(), p=$("gPass").value;
+  if(!ACCOUNTS){gateError(T("Sign-in is unavailable: the account list in index.html has a typo (often a missing comma).","ログインできません：index.html のアカウント一覧に誤りがあります（カンマ漏れが多い原因です）。"),null);return;}
+  if(!u){gateError(T("Enter your username.","ユーザー名を入力してください。"),"gUser");return;}
+  if(!p){gateError(T("Enter your password.","パスワードを入力してください。"),"gPass");return;}
   const h=credHash(u,p);
-  if(!ACCOUNTS.includes(h)){err.textContent=T("Username or password is incorrect.","ユーザー名またはパスワードが正しくありません。");err.hidden=false;$("gPass").select();return;}
+  if(!ACCOUNTS.includes(h)){
+    tries++;
+    gateError(T("Incorrect username or password. Check the spelling, and that Caps Lock is off."+(tries>1?" (attempt "+tries+")":""),
+                "ユーザー名またはパスワードが正しくありません。綴りとCaps Lockを確認してください。"+(tries>1?"（"+tries+"回目）":"")),"both");
+    $("gPass").select();return;
+  }
+  tries=0;clearGateError();
   AUTH={u,h};
   try{(($("gRemember").checked)?localStorage:sessionStorage).setItem("ct-auth",JSON.stringify(AUTH));}catch(x){}
   showApp();
